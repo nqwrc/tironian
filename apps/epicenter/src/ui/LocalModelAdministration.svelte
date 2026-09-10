@@ -59,7 +59,7 @@
 	<Card.Header>
 		<Card.Title class="text-lg">Local transcription model</Card.Title>
 		<Card.Description>
-			Epicenter runs every local transcription on one active model. Apps choose
+			Tironian runs every local transcription on one active model. Apps choose
 			whether to transcribe locally; this is where you choose what they run on.
 			Models live in your shared Hugging Face cache and stay on this device.
 		</Card.Description>
@@ -215,7 +215,7 @@
 				</Select.Content>
 			</Select.Root>
 			<p class="text-sm text-muted-foreground">
-				When Epicenter drops the loaded model from memory. Lower memory means a
+				When Tironian drops the loaded model from memory. Lower memory means a
 				fresh load on the next transcription.
 			</p>
 		</div>

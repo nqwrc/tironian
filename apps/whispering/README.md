@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://tironian.app">
-    <img width="180" src="./src/lib/assets/studio-microphone.png" alt="Tironian">
+  <a href="../../docs/brand/tironian.md">
+    <img width="160" src="../../docs/brand/icon/tironian-1024.png" alt="Tironian">
   </a>
   <h1 align="center">Tironian</h1>
   <p align="center">Dictation you own.</p>

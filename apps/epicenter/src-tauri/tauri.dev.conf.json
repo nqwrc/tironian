@@ -1,6 +1,6 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Epicenter Dev",
+	"productName": "Tironian Dev",
 	"identifier": "so.epicenter.dev",
 	"app": {
 		"security": {

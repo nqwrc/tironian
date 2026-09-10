@@ -1,0 +1,392 @@
+# Builds Tironian for Windows and macOS, smoke-tests the macOS build, and on a
+# `v*` tag collects both into a draft GitHub Release.
+#
+# The desktop app is the Tauri host in apps/epicenter (its code keeps upstream's
+# name; the bundle it produces is Tironian). This is the only workflow that
+# compiles Rust.
+#
+# Why a full `tauri build` per platform instead of a cheap `cargo check` leg:
+#   - Most of the native code sits behind `cfg(windows)` and
+#     `cfg(target_os = "macos")` (the `windows` crate, winreg, enigo, objc2,
+#     accessibility-sys, tauri-nspanel). A check job on a third OS resolves a
+#     different dependency set and would miss exactly the code most likely to
+#     break.
+#   - `cargo check` is not meaningfully cheaper here. transcribe-cpp-sys
+#     configures and compiles ggml through CMake in its build script, and build
+#     scripts run for `check` too, so the C++ compile dominates either way.
+#   - Once the crate is linked, bundling costs minutes and yields the .msi,
+#     NSIS .exe, and .app a human can actually install.
+#
+# Why the Windows leg audits the installers it uploads: on Windows x86_64
+# transcribe-cpp is built with `dynamic-backends`, so the ggml runtime ships as
+# loose DLLs rather than being linked in. build.rs stages them into
+# src-tauri/transcribe-libs, and tauri.conf.json maps that directory onto the
+# bundle resource root. tauri-bundler's WiX path packs loose DLLs on its own,
+# but the NSIS path does not, so a build can go green while producing an NSIS
+# installer whose app registers zero compute devices. The audit below is the
+# only thing that proves the installers carry the runtime.
+#
+# Why no Linux leg: tauri-bundler intersects `bundle.targets` with the target
+# platform's own list, so ["app", "msi", "nsis"] resolves to an EMPTY list on
+# Linux. Adding one first requires deb/rpm/AppImage targets and a
+# `bundle.linux` mapping for the transcribe-cpp shared libraries.
+#
+# Signing: macOS is ad-hoc (`signingIdentity: "-"`) and Windows is unsigned.
+# Both run, but Gatekeeper and SmartScreen warn on first open. Developer ID
+# signing plus notarization, and an Authenticode certificate, are purchases
+# with their own secrets and are not wired here.
+
+name: Tironian desktop build
+
+# No `paths:` filter: `beforeBuildCommand` runs `bun run build:desktop`, which
+# builds the Home frontend plus the Whispering and Honeycrisp bundles and
+# compiles the Bun sidecar, so almost any workspace package can break it.
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Pull requests only. On main two pushes minutes apart would otherwise cancel
+  # the first build, and a red second run could not be attributed to either.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: ${{ matrix.suffix }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    # A cold leg is minutes, not hours; anything past this is hung, not slow.
+    timeout-minutes: 120
+
+    strategy:
+      # One platform failing must not hide whether the other compiles.
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            os: windows
+            suffix: windows-x86_64
+          # macOS is arm64 only, on purpose. scripts/build-sidecar.ts refuses
+          # when TAURI_ENV_TARGET_TRIPLE differs from the rustc host triple,
+          # because `bun build --compile` cannot produce the sidecar for another
+          # architecture. Covering Intel Macs means an x86_64 runner, not a
+          # cross-compile flag. Pinned so the image cannot move under the build.
+          - runner: macos-15
+            os: macos
+            suffix: macos-aarch64
+
+    env:
+      CI: true
+      # ggml's CMakeLists still declares `cmake_minimum_required(VERSION 3.5)`,
+      # which CMake 4 rejects outright, and so does audiopus_sys's bundled opus.
+      CMAKE_POLICY_VERSION_MINIMUM: '3.5'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Vulkan is the GPU backend transcribe-cpp uses on Windows x86_64 and is
+      # not preinstalled on any runner image. Pinned so a LunarG registry change
+      # cannot move the build.
+      - name: Install Vulkan SDK (Windows)
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        env:
+          VULKAN_SDK_VERSION: 1.3.290.0
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:RUNNER_TEMP "VulkanSDK-$env:VULKAN_SDK_VERSION.exe"
+          Invoke-WebRequest "https://sdk.lunarg.com/sdk/download/$env:VULKAN_SDK_VERSION/windows/VulkanSDK-$env:VULKAN_SDK_VERSION-Installer.exe" -OutFile $installer
+          # -PassThru plus a Test-Path, because the install is silent: without
+          # both, an aborted install leaves this step green and the failure
+          # surfaces twenty minutes later as a find_package(Vulkan) error.
+          $proc = Start-Process -FilePath $installer -ArgumentList "--accept-licenses --default-answer --confirm-command install" -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { Write-Host "::error::Vulkan SDK installer exited $($proc.ExitCode)"; exit 1 }
+          $sdk = "C:\VulkanSDK\$env:VULKAN_SDK_VERSION"
+          if (-not (Test-Path $sdk)) { Write-Host "::error::Vulkan SDK installer reported success but $sdk does not exist"; exit 1 }
+          "VULKAN_SDK=$sdk" >> $env:GITHUB_ENV
+          "$sdk\Bin" >> $env:GITHUB_PATH
+
+      # ggml-vulkan does `find_package(SPIRV-Headers CONFIG REQUIRED)`, and the
+      # 1.3.290.0 SDK exposes no SPIRV-HeadersConfig.cmake. vcpkg carries the
+      # header-only package. 1.4.357.0 ships it; whoever bumps the SDK into 1.4
+      # should check whether this step can go.
+      - name: Install SPIRV-Headers for the Vulkan backend (Windows)
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          vcpkg install spirv-headers:x64-windows
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::vcpkg install spirv-headers:x64-windows exited $LASTEXITCODE"; exit 1 }
+          if (-not $env:VCPKG_INSTALLATION_ROOT) { Write-Host "::error::VCPKG_INSTALLATION_ROOT is unset; cannot resolve the vcpkg prefix for SPIRV-Headers"; exit 1 }
+          $prefix = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" -replace '\\','/'
+          if (-not (Test-Path $prefix)) { Write-Host "::error::vcpkg prefix $prefix does not exist after installing spirv-headers"; exit 1 }
+          $combined = if ($env:CMAKE_PREFIX_PATH) { "$prefix;$env:CMAKE_PREFIX_PATH" } else { $prefix }
+          Add-Content $env:GITHUB_ENV "CMAKE_PREFIX_PATH=$combined"
+          Write-Host "CMAKE_PREFIX_PATH=$combined"
+
+      # transcribe-cpp-sys's CMake build nests deep enough to exceed Windows
+      # MAX_PATH from a normal workspace path, so the target directory moves to
+      # a drive-root path. Everything downstream on Windows reads
+      # CARGO_TARGET_DIR, not src-tauri/target.
+      - name: Shorten the Windows build path
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        run: |
+          $drive = Split-Path -Qualifier $env:GITHUB_WORKSPACE
+          $targetDir = Join-Path $drive "t"
+          New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+          "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: 'package.json'
+
+      - name: Cache the Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './apps/epicenter/src-tauri -> target'
+          # Windows redirects CARGO_TARGET_DIR off the workspace, so only the
+          # registry and git caches survive there.
+          cache-targets: ${{ matrix.os != 'windows' }}
+          # Save only from main: a macOS target directory is over a gigabyte,
+          # and branch entries would evict main's, which every run restores.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # `postinstall` runs `build:declarations`, so the .d.ts files the app
+      # builds against exist after this step with no separate build call.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # tauri.conf.json's `beforeBuildCommand` is `bun run build:desktop`, which
+      # builds Home, Whispering, and Honeycrisp, then compiles the Bun sidecar
+      # that `externalBin` requires.
+      - name: Build the desktop app
+        run: bun run --cwd apps/epicenter desktop:build
+
+      - name: Stage Windows installers
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Join-Path $env:CARGO_TARGET_DIR 'release\bundle'
+          $out = Join-Path $env:GITHUB_WORKSPACE 'ci-artifacts'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $msi = @(Get-ChildItem (Join-Path $bundle 'msi') -Filter *.msi -ErrorAction SilentlyContinue)
+          $nsis = @(Get-ChildItem (Join-Path $bundle 'nsis') -Filter *.exe -ErrorAction SilentlyContinue)
+          if ($msi.Count -eq 0) { Write-Host "::error::tauri build produced no .msi under $bundle"; exit 1 }
+          if ($nsis.Count -eq 0) { Write-Host "::error::tauri build produced no NSIS .exe under $bundle"; exit 1 }
+          ($msi + $nsis) | ForEach-Object { Copy-Item $_.FullName -Destination $out }
+
+      # Presence audit on the exact bytes the artifact carries: transcribe.dll
+      # plus a ggml-cpu backend, the module that keeps a machine with no usable
+      # Vulkan device from registering zero devices.
+      - name: Audit the Windows installers carry the transcribe-cpp runtime
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script:fail = $false
+          function Assert-Runtime([string]$label, [string[]]$dllNames) {
+            Write-Host "${label}: $($dllNames -join ', ')"
+            if ($dllNames -notcontains 'transcribe.dll') {
+              Write-Host "::error::$label is missing transcribe.dll"; $script:fail = $true
+            }
+            if (-not ($dllNames | Where-Object { $_ -like 'ggml-cpu*.dll' })) {
+              Write-Host "::error::$label is missing a ggml-cpu*.dll backend"; $script:fail = $true
+            }
+          }
+          function Dlls([string]$dir) {
+            @(Get-ChildItem $dir -Recurse -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object Name)
+          }
+          Assert-Runtime 'staged transcribe-libs' (Dlls 'apps/epicenter/src-tauri/transcribe-libs')
+          $out = Join-Path $env:GITHUB_WORKSPACE 'ci-artifacts'
+          # WiX MSI: an administrative install extracts the payload without
+          # elevation and without touching the registry.
+          $msi = Get-ChildItem $out -Filter *.msi | Select-Object -First 1
+          $msiDir = Join-Path $env:RUNNER_TEMP 'msi-audit'
+          $msiLog = Join-Path $env:RUNNER_TEMP 'msi-audit.log'
+          $proc = Start-Process msiexec.exe -ArgumentList "/a `"$($msi.FullName)`" /qn /L*v `"$msiLog`" TARGETDIR=`"$msiDir`"" -Wait -NoNewWindow -PassThru
+          if ($proc.ExitCode -ne 0) { Write-Host "::error::msiexec /a exited $($proc.ExitCode) extracting $($msi.Name); see $msiLog"; exit 1 }
+          Assert-Runtime "MSI ($($msi.Name))" (Dlls $msiDir)
+          # NSIS .exe: 7-Zip reads NSIS installers directly. Its exit 1 is a
+          # warning (the $PLUGINSDIR stubs); 2 and up is fatal.
+          $PSNativeCommandUseErrorActionPreference = $false
+          $exe = Get-ChildItem $out -Filter *.exe | Select-Object -First 1
+          $nsisDir = Join-Path $env:RUNNER_TEMP 'nsis-audit'
+          & 7z x "-o$nsisDir" $exe.FullName -y > $null
+          if ($LASTEXITCODE -ge 2) { Write-Host "::error::7z failed to extract $($exe.Name) (exit $LASTEXITCODE)"; exit 1 }
+          Assert-Runtime "NSIS ($($exe.Name))" (Dlls $nsisDir)
+          if ($script:fail) { Write-Host "::error::a Windows installer would ship without the transcribe-cpp runtime"; exit 1 }
+          Write-Host "Staging dir, MSI, and NSIS installer all carry transcribe.dll plus a ggml-cpu backend."
+
+      - name: Stage the macOS app bundle
+        if: ${{ matrix.os == 'macos' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="apps/epicenter/src-tauri/target/release/bundle/macos"
+          test -d "$BUNDLE" || { echo "::error::no macOS bundle directory at $BUNDLE"; exit 1; }
+          APP="$(find "$BUNDLE" -maxdepth 1 -name '*.app' -type d | head -1)"
+          test -n "$APP" || { echo "::error::tauri build produced no .app bundle under $BUNDLE"; exit 1; }
+          echo "APP_PATH=$GITHUB_WORKSPACE/$APP" >> "$GITHUB_ENV"
+          mkdir -p ci-artifacts
+          # ditto, not zip: upload-artifact's own archive drops the executable
+          # bit and the symlink layout inside Contents/, which invalidates the
+          # ad-hoc signature and leaves a .app that will not launch.
+          ditto -c -k --keepParent "$APP" "ci-artifacts/Tironian-${{ matrix.suffix }}.app.zip"
+
+      # The macOS test. Pass means all four hold, checked here rather than read
+      # off a green build:
+      #   1. the bundled executable is still running 45 s after launch;
+      #   2. the loopback host answers HTTP on 127.0.0.1:39130;
+      #   3. at least one on-screen window is owned by the app;
+      #   4. no crash report for it appeared while it ran.
+      # Known limits of a runner, not failures: no microphone grant (TCC), no
+      # local model downloaded, so no dictation round trip is attempted.
+      - name: Smoke-test the macOS app
+        if: ${{ matrix.os == 'macos' }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT="$GITHUB_WORKSPACE/smoke"; mkdir -p "$OUT"
+          EXE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
+          APP_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$APP_PATH/Contents/Info.plist")"
+          echo "bundle: $APP_PATH executable: $EXE_NAME name: $APP_NAME" | tee "$OUT/summary.txt"
+          CRASH_DIR="$HOME/Library/Logs/DiagnosticReports"
+          mkdir -p "$CRASH_DIR"; touch "$OUT/.launch-marker"
+
+          "$APP_PATH/Contents/MacOS/$EXE_NAME" > "$OUT/stdout.log" 2>&1 &
+          PID=$!
+          sleep 45
+
+          fail=0
+          if kill -0 "$PID" 2>/dev/null; then echo "PASS 1: process $PID alive after 45 s" | tee -a "$OUT/summary.txt"
+          else echo "::error::FAIL 1: the app exited within 45 s"; fail=1; fi
+
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:39130/ || true)"
+          if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then echo "PASS 2: loopback host answered HTTP $CODE" | tee -a "$OUT/summary.txt"
+          else echo "::error::FAIL 2: nothing answered on 127.0.0.1:39130"; fail=1; fi
+
+          # Window owner names need no screen-recording grant; titles might.
+          cat > "$RUNNER_TEMP/windows.swift" <<'SWIFT'
+          import CoreGraphics
+          import Foundation
+          let owner = CommandLine.arguments[1]
+          let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+          var count = 0
+          for w in list where (w[kCGWindowOwnerName as String] as? String) == owner {
+            let b = w[kCGWindowBounds as String] as? [String: Any] ?? [:]
+            let width = (b["Width"] as? Double) ?? 0
+            let height = (b["Height"] as? Double) ?? 0
+            print("window owner=\(owner) name=\(w[kCGWindowName as String] ?? "?") size=\(Int(width))x\(Int(height))")
+            if width > 200 && height > 200 { count += 1 }
+          }
+          print("windows=\(count)")
+          SWIFT
+          WINDOWS="$(swift "$RUNNER_TEMP/windows.swift" "$APP_NAME" 2>&1 | tee "$OUT/windows.txt" | awk -F= '/^windows=/{print $2}')"
+          if [ "${WINDOWS:-0}" -ge 1 ]; then echo "PASS 3: $WINDOWS on-screen window(s) owned by $APP_NAME" | tee -a "$OUT/summary.txt"
+          else echo "::error::FAIL 3: no on-screen window owned by $APP_NAME"; fail=1; fi
+
+          screencapture -x "$OUT/screen-home.png" || echo "::warning::screencapture failed (screen recording not granted on this image)"
+          # Open the dictation window through the app's own deep link, then
+          # capture it. Informational: a runner may not route the scheme.
+          open "epicenter://app/whispering" || true
+          sleep 10
+          screencapture -x "$OUT/screen-dictation.png" || true
+
+          CRASHES="$(find "$CRASH_DIR" -newer "$OUT/.launch-marker" -iname "*${EXE_NAME}*" 2>/dev/null)"
+          if [ -z "$CRASHES" ]; then echo "PASS 4: no crash report" | tee -a "$OUT/summary.txt"
+          else echo "::error::FAIL 4: crash report(s): $CRASHES"; cp $CRASHES "$OUT/" || true; fail=1; fi
+
+          kill "$PID" 2>/dev/null || true
+          sleep 3
+          cp -R "$HOME/Library/Logs/so.epicenter" "$OUT/logs" 2>/dev/null || true
+          exit $fail
+
+      # The suites, on the platform under test. The host's own TypeScript suite
+      # is reported but does not gate: 51 of its 98 tests already fail on
+      # Windows on the commit this repo started from, and this leg is what says
+      # whether that is Windows-only.
+      - name: Test the dictation app and the Rust host (macOS)
+        if: ${{ matrix.os == 'macos' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run --cwd apps/whispering test
+          cd apps/epicenter/src-tauri && cargo test --release --lib
+
+      - name: Test the host TypeScript suite (macOS, reported only)
+        if: ${{ matrix.os == 'macos' }}
+        continue-on-error: true
+        shell: bash
+        run: bun run --cwd apps/epicenter test
+
+      - name: Upload the smoke-test evidence
+        if: ${{ always() && matrix.os == 'macos' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-${{ matrix.suffix }}
+          path: smoke/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: tironian-${{ matrix.suffix }}
+          path: ci-artifacts/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # Only a `v*` tag publishes, and only as a draft: nothing a person can see
+  # until someone opens the draft and presses Publish.
+  release:
+    name: draft release
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: tironian-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ls -la dist
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft \
+            --title "Tironian $GITHUB_REF_NAME" \
+            --notes "Windows x86_64 (.msi, .exe) and macOS Apple Silicon (.app.zip). Unsigned: macOS asks you to confirm on first open (right-click, Open), and Windows SmartScreen asks once."

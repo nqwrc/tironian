@@ -261,11 +261,30 @@ typography.
 
 One product name. No sub-brands, no "Tironian Pro", no capitalized feature names.
 
-- The app is Tironian.
-- The desktop host that serves it is upstream's Epicenter and keeps its name in
-  the code. It is not marketed, and it is not on the download page.
+- The app is Tironian, and so is the installed bundle: `productName`, the
+  installers, window titles, the tray menu and tooltip, and the host's own
+  error messages all say Tironian (`apps/epicenter/src-tauri/tauri.conf.json`,
+  `lib.rs`, `shell.rs`). The desktop host keeps upstream's Epicenter name only
+  inside the code: the `apps/epicenter` directory, the Rust crate, and log
+  lines a developer reads.
+- The bundle identifier is still `so.epicenter`. It names the data root on
+  every platform and is pinned equal in Rust, TypeScript and both Tauri configs
+  by a test, so changing it relocates every existing install's recordings. It
+  moves in its own change, with a migration or a stated clean start, not as a
+  side effect of the rename.
 - Package identifiers, TypeScript types and import paths keep the `whispering`
   and `@epicenter/` names. See the next section for why.
+
+## Icon
+
+The app icon is the mark from the section above, drawn as geometry rather than
+set from a font: a 96-unit bar and a vertical stem on a 1024 canvas, `--text`
+on `--ground`, inside the macOS 824-unit rounded square. A font's glyph would
+carry that font's license into the logo, and a slanted stem reads as a 7.
+`docs/brand/icon/mark.ps1` renders it at any size; `tironian-1024.png` is the
+source `tauri icon` expands into the `.icns`, `.ico` and PNG set in
+`apps/epicenter/src-tauri/icons/`. The tray still shows the recorder-state
+images in `recorder-state-icons/`, not the mark.
 
 ## Rename tiers
 

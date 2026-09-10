@@ -31,7 +31,7 @@
 	async function readApplications(): Promise<Application[]> {
 		const response = await fetch(APPLICATIONS_ROUTE.url(location.origin));
 		if (!response.ok) {
-			throw new Error(`Epicenter answered ${response.status}.`);
+			throw new Error(`Tironian answered ${response.status}.`);
 		}
 		return ((await response.json()) as ApplicationsResponse).apps;
 	}
@@ -76,7 +76,7 @@
 			<Empty.Title>Apps open on the desktop</Empty.Title>
 			<Empty.Description>
 				This Home is showing the session from a browser. Apps open in their own
-				windows on the machine running Epicenter.
+				windows on the machine running Tironian.
 			</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>

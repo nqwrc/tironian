@@ -3613,6 +3613,8 @@
 
     "@epicenter/ui/layerchart": ["layerchart@2.0.0-next.48", "", { "dependencies": { "@dagrejs/dagre": "^2.0.4", "@layerstack/svelte-actions": "1.0.1-next.18", "@layerstack/svelte-state": "0.1.0-next.23", "@layerstack/tailwind": "2.0.0-next.21", "@layerstack/utils": "2.0.0-next.18", "@types/d3-contour": "^3.0.6", "d3-array": "^3.2.4", "d3-chord": "^3.0.1", "d3-color": "^3.1.0", "d3-contour": "^4.0.2", "d3-delaunay": "^6.0.4", "d3-dsv": "^3.0.1", "d3-force": "^3.0.0", "d3-geo": "^3.1.1", "d3-geo-voronoi": "^2.1.0", "d3-hierarchy": "^3.1.2", "d3-interpolate": "^3.0.1", "d3-interpolate-path": "^2.3.0", "d3-path": "^3.1.0", "d3-quadtree": "^3.0.1", "d3-random": "^3.0.1", "d3-sankey": "^0.12.3", "d3-scale": "^4.0.2", "d3-scale-chromatic": "^3.1.0", "d3-shape": "^3.2.0", "d3-tile": "^1.0.0", "d3-time": "^3.1.0", "memoize": "^10.2.0", "runed": "^0.37.1" }, "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-XoEYBztamA8lMxtF/Jz3aDX0HMk8dI+o4fK9fSl8ecT2Tdx3DQUjtKGtlQAOFdwC/AWifeLmKq5cMTQt9COZPQ=="],
 
+    "@epicenter/whispering/fflate": ["fflate@0.8.3", "", {}, "sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA=="],
+
     "@esbuild-kit/esm-loader/get-tsconfig": ["get-tsconfig@4.13.7", "", { "dependencies": { "resolve-pkg-maps": "^1.0.0" } }, "sha512-7tN6rFgBlMgpBML5j8typ92BKFi2sFQvIdpAqLA2beia5avZDrMs0FLZiM5etShWq5irVyGcGMEA1jcDaK7A/Q=="],
 
     "@img/sharp-freebsd-wasm32/@img/sharp-wasm32": ["@img/sharp-wasm32@0.35.2", "", { "dependencies": { "@emnapi/runtime": "^1.11.1" } }, "sha512-Mrv4JQNYVQ94xH+jzZ9r+gowleN8mv2FTgKT+PI6bx5C0G8TdNYndu161pg2i7uoBwxy2ImPMHrJOM2LZef7Bw=="],

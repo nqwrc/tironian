@@ -74,7 +74,7 @@
 			<Empty.Title>Settings live on the desktop</Empty.Title>
 			<Empty.Description>
 				Choosing the local transcription model needs the model files and the
-				hardware on the machine running Epicenter, so it happens there.
+				hardware on the machine running Tironian, so it happens there.
 			</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>

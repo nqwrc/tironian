@@ -10,8 +10,11 @@ project.
   Forked at: 3ef2103a72, 2026-08-27
 
 Tironian is distributed under the same license. The full text is in LICENSE.
-Corresponding source for any network-served instance is published at the fork's
-repository, as AGPL-3.0 section 13 requires.
+The corresponding source of every build is the repository it was built from,
+https://github.com/nqwrc/tironian. AGPL-3.0 sections 6 and 13 require that
+source to be available to everyone who receives a build or uses a
+network-served instance, so the repository is public before any build is
+distributed.
 
 "Whispering" and "Epicenter" are the upstream project's names and appear in this
 repository only as attribution and as internal identifiers inherited from the

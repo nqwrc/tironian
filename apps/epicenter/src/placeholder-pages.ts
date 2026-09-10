@@ -14,7 +14,7 @@ function placeholderPage(title: string, status: string): string {
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="color-scheme" content="light dark" />
-		<title>${title} | Epicenter</title>
+		<title>${title} | Tironian</title>
 		<style>
 			:root { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #211f1b; background: #f4f0e8; }
 			body { min-height: 100vh; margin: 0; display: grid; place-items: center; }

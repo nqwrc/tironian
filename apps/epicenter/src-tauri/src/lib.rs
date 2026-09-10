@@ -152,11 +152,11 @@ impl BuiltInApp {
 
     const fn title(self) -> &'static str {
         match self {
-            Self::Home => "Epicenter: Home",
-            Self::Whispering => "Epicenter: Whispering",
-            Self::Honeycrisp => "Epicenter: Honeycrisp",
-            Self::Mail => "Epicenter: Mail",
-            Self::Books => "Epicenter: Books",
+            Self::Home => "Tironian: Home",
+            Self::Whispering => "Tironian",
+            Self::Honeycrisp => "Tironian: Honeycrisp",
+            Self::Mail => "Tironian: Mail",
+            Self::Books => "Tironian: Books",
         }
     }
 
@@ -644,7 +644,7 @@ fn ensure_app_window(app: &DesktopAppHandle, id: &str, port: u16, token: &str) -
     let url: tauri::Url = format!("{origin}/apps/{id}/").parse()?;
     let initialization_script = initialization_script(&origin, token)?;
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(url))
-        .title(format!("Epicenter: {id}"))
+        .title(format!("Tironian: {id}"))
         .inner_size(1100.0, 760.0)
         .min_inner_size(680.0, 480.0)
         .initialization_script(initialization_script)
@@ -1538,9 +1538,9 @@ fn show_failure_dialog(app: &DesktopAppHandle, message: &str) -> FailureChoice {
             // kept because this is a startup crash, where the one useful thing
             // anybody can do with it is paste it into a report.
             .message(format!(
-                "Epicenter could not start.\n\nNo app window was opened. Retry, or reveal the logs if it keeps happening.\n\nDetails: {message}"
+                "Tironian could not start.\n\nNo app window was opened. Retry, or reveal the logs if it keeps happening.\n\nDetails: {message}"
             ))
-            .title("Epicenter could not start")
+            .title("Tironian could not start")
             .kind(MessageDialogKind::Error)
             .buttons(MessageDialogButtons::YesNoCancelCustom(
                 "Retry".to_string(),
@@ -1788,11 +1788,11 @@ mod tests {
         assert_eq!(
             actual,
             [
-                ("home", "/apps/home/", "Epicenter: Home"),
-                ("whispering", "/apps/whispering/", "Epicenter: Whispering"),
-                ("honeycrisp", "/apps/honeycrisp/", "Epicenter: Honeycrisp"),
-                ("mail", "/apps/mail/", "Epicenter: Mail"),
-                ("books", "/apps/books/", "Epicenter: Books"),
+                ("home", "/apps/home/", "Tironian: Home"),
+                ("whispering", "/apps/whispering/", "Tironian"),
+                ("honeycrisp", "/apps/honeycrisp/", "Tironian: Honeycrisp"),
+                ("mail", "/apps/mail/", "Tironian: Mail"),
+                ("books", "/apps/books/", "Tironian: Books"),
             ]
         );
     }
@@ -2312,8 +2312,8 @@ mod tests {
         let production: serde_json::Value =
             serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
 
-        assert_eq!(production["productName"], "Epicenter");
-        assert_eq!(development["productName"], "Epicenter Dev");
+        assert_eq!(production["productName"], "Tironian");
+        assert_eq!(development["productName"], "Tironian Dev");
         assert_ne!(production["identifier"], development["identifier"]);
     }
 
