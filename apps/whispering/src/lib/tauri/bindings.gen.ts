@@ -9,10 +9,18 @@ export const commands = {
 	 *  Delivers text to the cursor, falling back to the clipboard when it cannot.
 	 *
 	 *  With `keep_on_clipboard`, the transcript is the intended final clipboard
-	 *  state. Otherwise this command borrows the clipboard, pastes, then restores
-	 *  the exact previous macOS pasteboard, or the previous text on other
-	 *  platforms — clearing instead when there was no previous text, so the
-	 *  borrowed transcript never lingers.
+	 *  state. Otherwise this command borrows the clipboard, pastes, and schedules
+	 *  the previous contents to go back: the exact previous macOS pasteboard, or
+	 *  the previous text on other platforms, clearing instead when there was no
+	 *  previous text, so the borrowed transcript never lingers.
+	 *
+	 *  That restore is deferred past this command's return and is conditional. It
+	 *  does not fire when a later dictation has taken the borrow over (that one
+	 *  hands the same content back instead), nor when the clipboard has visibly
+	 *  changed hands while borrowed, where stamping a stale snapshot over newer
+	 *  content is the worse loss. A path that means to leave the transcript on the
+	 *  clipboard, the reach fallback and `keep_on_clipboard`, ends the borrow
+	 *  without a restore at all.
 	 */
 	writeText: (text: string, keepOnClipboard: boolean) =>
 		typedError<WriteTextOutcome, string>(
@@ -21,7 +29,19 @@ export const commands = {
 	/**  Simulates pressing the Enter/Return key. */
 	simulateEnterKeystroke: () =>
 		typedError<null, string>(__TAURI_INVOKE('simulate_enter_keystroke')),
-	/**  Simulates the platform copy shortcut with layout-independent key codes. */
+	/**
+	 *  Simulates the platform copy shortcut with layout-independent key codes.
+	 *
+	 *  Refuses on Windows when injected input cannot reach the foreground window,
+	 *  the same gate `write_text` applies to the paste. The copy needs it more.
+	 *  A dropped paste loses a transcript that is still on the clipboard, while a
+	 *  dropped copy produces a plausible wrong answer: `captureSelection` posts the
+	 *  copy, waits, then reads the clipboard, so a copy UIPI swallowed hands back
+	 *  whatever the user already had there as if they had selected it, and that
+	 *  text goes on to a transformation provider. Enter and Backspace need no such
+	 *  gate: Enter follows a paste already proved reachable, and backspaces that go
+	 *  nowhere leave the text visibly undeleted rather than answering wrongly.
+	 */
 	simulateCopyKeystroke: () =>
 		typedError<null, string>(__TAURI_INVOKE('simulate_copy_keystroke')),
 	/**
@@ -604,7 +624,8 @@ export type ForegroundContext = {
 	/**
 	 *  Stable per-platform identity: lowercased exe file name on Windows
 	 *  ("code.exe"), bundle identifier on macOS ("com.microsoft.VSCode").
-	 *  `None` when the OS refuses to say (elevated target, no frontmost app).
+	 *  `None` when the OS refuses to say (no frontmost app, or a SYSTEM-owned,
+	 *  protected, or other-user process).
 	 */
 	appId: string | null;
 	/**  Human-readable name for settings helper UI only. Never matched against. */
