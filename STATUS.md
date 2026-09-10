@@ -1,7 +1,7 @@
 # status
 
 state: active
-remote: github-private
+remote: github-public
 updated: 2026-09-11
 stale-after-days: 30
 
@@ -16,7 +16,7 @@ stale-after-days: 30
 
 ## next
 - Read the first `desktop.yml` run: the macOS smoke verdict (four checks) and whether the host TypeScript failures are Windows-only.
-- Decisions that are Nicola's: KPIs for this repo; bundle identifier `so.epicenter` (it names the data root); `HOSTED_AUTH_ORIGIN` still points at api.epicenter.so, so sign-in and sync use upstream's service; Apple Developer ID and Windows code-signing purchases; making the repo public before any build is distributed (AGPL).
+- Decisions that are Nicola's: KPIs for this repo; bundle identifier `so.epicenter` (it names the data root); `HOSTED_AUTH_ORIGIN` still points at api.epicenter.so, so sign-in and sync use upstream's service; Apple Developer ID and Windows code-signing purchases. The repository is public as of 2026-09-11, which the AGPL needs before any build is distributed.
 
 ## blockers
 - The 13 Vivavoce artboards stay unreachable until `/design-login` runs once in an interactive `claude` terminal.
