@@ -47,7 +47,7 @@ The reason should reference the gate that fired: surface shrank, file count shra
 Grouped by package, each with a one-line reason:
 
 ```
-packages/auth
+packages/identity
   - <finding>: requires <product input | external CLI/SDK callers | invariant decision>
 packages/data
   - <finding>: requires <...>
@@ -76,7 +76,7 @@ Net: -<M - N>
 Per package, the final pass/fail counts:
 
 ```
-packages/auth:       NN pass, 0 fail
+packages/identity:   NN pass, 0 fail
 packages/data:      NN pass, 0 fail
 ...
 ```
@@ -85,7 +85,7 @@ If a test was pre-existing-broken before the pass started, note it once:
 
 ```
 Pre-existing failures (not introduced by this pass):
-  packages/server/src/routes/ai.test.ts: 3 failures (missing provider key)
+  apps/desktop/src-tauri/src/lib.rs: 3 failures (missing model fixture)
 ```
 
 ### 7. Rejected smells

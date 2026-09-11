@@ -42,7 +42,7 @@ grep -rn "\.then\s*\(\s*(\(\)|=> \{\}|=> undefined)" packages --include="*.ts"
 
 **Recipe**: when you see this pattern, look at where the promise is being assigned. If the consumer awaits-and-discards (typical for readiness/teardown barriers), widen the field type to `Promise<unknown>`. The tail disappears.
 
-**Example fix**: this codebase's readiness fields such as `whenReady`, `whenLoaded`, and `whenConnected` were widened from `Promise<void>` to `Promise<unknown>` exactly to eliminate this ceremony. See spec `specs/20260424T000000-self-gating-attachments.md` for the rationale.
+**Example fix**: this codebase's readiness fields such as `whenReady`, `whenLoaded`, and `whenConnected` were widened from `Promise<void>` to `Promise<unknown>` exactly to eliminate this ceremony.
 
 **False positive**: if the `.then(() => result)` returns a *meaningful* transformed value, leave it. The smell is specifically the "discard the value" form.
 
@@ -51,7 +51,7 @@ grep -rn "\.then\s*\(\s*(\(\)|=> \{\}|=> undefined)" packages --include="*.ts"
 **Pattern**: `console.log` / `console.error` / `console.warn` outside of CLIs, tests, and benchmarks.
 
 ```bash
-grep -rn "console\.(log|error|warn)" packages/workspace packages/sync --include="*.ts" | grep -v test
+grep -rn "console\.(log|error|warn)" packages apps --include="*.ts" | grep -v test
 ```
 
 **Why it matters**: library code that calls `console` directly can't be redirected, silenced, or piped to a custom sink (in-memory test introspection, telemetry shipping). Every `console.log` is a hardcoded output decision the consumer can't override.
@@ -112,7 +112,7 @@ rg "Pick<[^>]+,\s*['\"][^'\"|]+['\"]\s*>" packages apps
 
 **Why it matters**: a single-method pick can keep an old object boundary alive after the caller only needs one operation. The type looks narrow, but the object name still tells readers to think about the whole capability family.
 
-**Example fix**: `packages/workspace/src/daemon/unix-socket.ts` used `Pick<Hono, 'fetch'>` for the socket binder. The binder's job is "bind one request handler to a unix socket and harden the socket file", so the dependency became a `UnixSocketRequestHandler` function instead of a Hono-shaped object.
+**Example fix**: a socket binder used `Pick<Hono, 'fetch'>` to accept its request-handler dependency. The binder's job is "bind one request handler to a unix socket and harden the socket file", so the dependency became a `UnixSocketRequestHandler` function instead of a Hono-shaped object.
 
 **Triage**: write the one-sentence job of the caller and mentally inline the picked method. Keep the object only when that sentence names the object or the caller coordinates the object's life cycle. If the sentence only names one verb, accept a named capability function in the caller's language and update tests to fake that function. Do not replace `Pick<Thing, 'method'>` with `Thing['method']` unless `Thing` is still the caller's real concept.
 
@@ -168,7 +168,7 @@ grep -rn "\.error\.name === '" packages apps --include="*.ts" | grep -v test
 
 **Why it matters**: the `else` silently absorbs any variant added later; a `switch` with `default: x satisfies never` makes the producer's new variant break the consumer's build instead.
 
-**Validated**: a sweep of `workspace`/`sync`/`cli`/`api` found four (`run-handler.ts`, `run.ts`, `list.ts`, `materializer.ts`), all fixed. Re-run after adding variants to a wire or IPC error union.
+**Validated**: this smell surfaces most often in handler, list, and materializer functions that switch on `kind`. Re-run after adding a variant to a wire or IPC error union.
 
 **The pattern itself lives elsewhere**: the rule, the predicate/guard/fold triage, and the before/after are in the `define-errors` skill ("Consuming a Variant Union"). This entry is only the detection recipe: use it to find hits, use that skill to classify them.
 
@@ -177,9 +177,9 @@ grep -rn "\.error\.name === '" packages apps --include="*.ts" | grep -v test
 Tested and rejected as not-actually-smells in this codebase:
 
 - **Dead `kind:` branches**: exhaustiveness via `never` enforces this aggressively. No dead branches survive.
-- **Dead exported types**: many exports across `packages/workspace`; spot-checks always hit consumers. Would need deeper dependency analysis to find real dead ones.
+- **Dead exported types**: many exports across this codebase's packages; spot-checks always hit consumers. Would need deeper dependency analysis to find real dead ones.
 - **Stale file names** (`*-manager.ts`, `*-handler.ts`): none found. Naming matches responsibility.
-- **Async wrappers doing no work**: Yjs is sync-friendly; the codebase doesn't fake async.
+- **Async wrappers doing no work**: the store's CRDT layer is sync-friendly; the codebase doesn't fake async.
 - **Casual `@ts-expect-error` / `@ts-ignore`**: ~234 of them, but all justified (test doubles, duck-typing at system boundaries with comments).
 
 If a future audit finds patterns consistent with these categories, they should be added here. If a category proves false (zero hits across multiple sweeps), demote it.

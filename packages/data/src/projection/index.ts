@@ -35,7 +35,7 @@
  * const handle = new sqlite3.oo1.DB(':memory:');
  * const sql = createSqliteProjection({
  *   data,
- *   sqlite: createBrowserSqliteAdapter(handle),
+ *   sqlite: adaptToSqliteDatabase(handle), // the caller's own adapter
  * });
  * ```
  */

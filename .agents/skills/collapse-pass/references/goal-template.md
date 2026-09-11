@@ -21,14 +21,13 @@ A `/goal` that invokes this skill should be 5-10 lines. The skill carries the ri
 ### Audit-style pass with deepwiki grounding
 
 ```
-/goal Run a collapse pass on packages/auth and packages/encryption.
+/goal Run a collapse pass on packages/identity and packages/client.
 
   Load skill: collapse-pass.
-  Scope: packages/auth, packages/auth-svelte, packages/encryption
+  Scope: packages/identity, packages/client
   Stop condition: 8 checkpoints
-  Citation: mandatory; cite arktypeio/arktype, better-auth/better-auth,
-    signalapp/libsignal as relevant
-  Starting target: packages/auth
+  Citation: mandatory; cite arktypeio/arktype as relevant
+  Starting target: packages/identity
 
   Begin.
 ```
@@ -50,13 +49,13 @@ A `/goal` that invokes this skill should be 5-10 lines. The skill carries the ri
 ### Exhaustive pass
 
 ```
-/goal Run a collapse pass on the hosted API surface.
+/goal Run a collapse pass on the desktop host surface.
 
   Load skill: collapse-pass.
-  Scope: packages/server, apps/api
+  Scope: apps/desktop, packages/client
   Stop condition: queue empty
   Citation: optional
-  Starting target: packages/server
+  Starting target: apps/desktop
 
   Begin.
 ```

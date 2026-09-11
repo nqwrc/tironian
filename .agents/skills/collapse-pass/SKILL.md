@@ -114,7 +114,7 @@ A goal that invokes this skill should say:
 - **Scope**: which packages and which apps
 - **Stop condition**: "three no-finding files" or "N checkpoints" or "queue empty"
 - **Citation requirement**: whether library refusals must be backed by a deepwiki citation against the upstream repo
-- **Starting target**: usually the narrowest surface first (e.g. `packages/auth` before `apps/api`)
+- **Starting target**: usually the narrowest surface first (e.g. `packages/identity` before `apps/desktop`)
 
 Everything else (the ritual, gate, finding format, never-touch list, report shape) is in this skill.
 

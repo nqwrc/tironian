@@ -7,33 +7,16 @@
  * Key behaviors:
  * - bound writes and object-row reads agree across adapters
  * - transaction exceptions roll back every write
- * - nesting is not part of the contract, and the browser adapter says so
- *   loudly (OO1 refuses a nested BEGIN) rather than pretending
- *
- * The browser adapter runs against sqlite.org's real WASM build, not a
- * bun:sqlite stand-in, so what is pinned here is OO1's own semantics.
  */
 import { Database } from 'bun:sqlite';
 import { expect, test } from 'bun:test';
-import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { createBrowserSqliteAdapter } from './browser.js';
 import { createBunSqliteAdapter } from './bun.js';
 import type { SqliteDatabase } from './index.js';
-
-const sqlite3 = await sqlite3InitModule();
 
 type OpenDatabase = () => {
 	database: SqliteDatabase;
 	close(): void;
 };
-
-function openBrowser() {
-	const handle = new sqlite3.oo1.DB(':memory:');
-	return {
-		database: createBrowserSqliteAdapter(handle),
-		close: () => handle.close(),
-	};
-}
 
 const adapters: [name: string, open: OpenDatabase][] = [
 	[
@@ -46,7 +29,6 @@ const adapters: [name: string, open: OpenDatabase][] = [
 			};
 		},
 	],
-	['browser SQLite OO1', openBrowser],
 ];
 
 for (const [name, open] of adapters) {
@@ -71,51 +53,3 @@ for (const [name, open] of adapters) {
 		}
 	});
 }
-
-test('browser SQLite OO1: a nested transaction is refused loudly, and the outer work survives', () => {
-	// Nesting has no production caller (the store's projection rebuild is the
-	// only browser-reachable transaction, never nested), so the adapter does
-	// not emulate it. OO1's own refusal is the honest answer, and the outer
-	// transaction is still the caller's to complete: catching the refusal and
-	// finishing commits the outer work.
-	const { database, close } = openBrowser();
-	try {
-		database.run('CREATE TABLE nested_values(value TEXT NOT NULL)');
-		database.transaction(() => {
-			database.run("INSERT INTO nested_values VALUES ('outer')");
-			expect(() => database.transaction(() => undefined)).toThrow(
-				/transaction within a transaction/,
-			);
-		});
-		expect(database.all('SELECT value FROM nested_values')).toEqual([
-			{ value: 'outer' },
-		]);
-	} finally {
-		close();
-	}
-});
-
-test('browser SQLite OO1: object rows come back with bound values intact', () => {
-	// The two exec shapes the façade declares, exercised against the real
-	// overload set: a run for effects, and an object-rows read.
-	const { database, close } = openBrowser();
-	try {
-		database.run('CREATE TABLE typed(label TEXT, count INTEGER, blob BLOB)');
-		database.run('INSERT INTO typed VALUES (?, ?, ?)', [
-			'a',
-			2,
-			new Uint8Array([7]),
-		]);
-		const rows = database.all<{
-			label: string;
-			count: number;
-			blob: Uint8Array;
-		}>('SELECT label, count, blob FROM typed');
-		expect(rows).toHaveLength(1);
-		expect(rows[0]?.label).toBe('a');
-		expect(rows[0]?.count).toBe(2);
-		expect(new Uint8Array(rows[0]?.blob ?? [])).toEqual(new Uint8Array([7]));
-	} finally {
-		close();
-	}
-});

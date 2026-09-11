@@ -1681,9 +1681,9 @@ mod tests {
             }
         }
 
-        // Catalog apps transcribe through the same public client, so the same
-        // separation has to hold for the window class that did not exist when
-        // ADR-0180 was written.
+        // The dictation window transcribes through the same public client, so
+        // the same separation has to hold for its window class, not just
+        // Home's.
         for encoded in APP_WINDOW_CAPABILITIES {
             let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
             let permissions = capability["permissions"].as_array().unwrap();
@@ -1737,12 +1737,11 @@ mod tests {
     /// nothing the client cannot call, and nothing it can call that the window
     /// was not granted.
     ///
-    /// This is API admission, not a sandbox. ADR-0179 is explicit that an
-    /// admitted app already holds the shared origin, the session, and the
-    /// Tironian application's own device grants; what an equality check buys
-    /// is that the *product* boundary stays a decision. A permission pasted in
-    /// to unblock something fails here rather than quietly widening what every
-    /// installed app can do.
+    /// This checks API surface parity, not a sandbox: the dictation window
+    /// already shares the origin, the session, and the host's device grants,
+    /// so what the equality check buys is that the command surface stays a
+    /// decision. A permission pasted in to unblock something fails here
+    /// rather than quietly widening what the window can call.
     #[test]
     fn app_windows_reach_exactly_the_public_client_api() {
         let expected: std::collections::BTreeSet<String> = PUBLIC_CLIENT_COMMANDS

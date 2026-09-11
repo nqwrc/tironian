@@ -193,6 +193,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ## Open questions and review triggers
 
-- Revisit if a meaningful external contributor lands a PR on `apps/api`, `apps/self-host`, or `packages/server`. Decide then whether to add CLA Assistant.
+- Revisit if a meaningful external contributor lands a PR on `apps/tironian`, `apps/desktop`, or another AGPL component. Decide then whether to add CLA Assistant.
 - Revisit if a specific paying customer requires a feature that AGPL would let them self-host for free. This is the trigger to populate the proprietary tier (one feature, scoped to a subdirectory). Until that happens, the tier stays empty by design.
 - Revisit if we sell self-hosted enterprise licenses. That would be the trigger for moving to a real dual-license posture (and retroactively adding CLAs).

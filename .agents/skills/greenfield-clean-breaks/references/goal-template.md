@@ -37,13 +37,13 @@ per pass.
 ### Implementation Pass
 
 ```txt
-/goal Run a greenfield clean-break pass on the tab manager mount boundary.
+/goal Run a greenfield clean-break pass on the desktop host's boot boundary.
 
   Load skill: greenfield-clean-breaks.
-  Target: apps/tab-manager/mount.ts and apps/tab-manager/src/lib/workspace
-  Compatibility stance: assume no users; preserve only documented durable workspace schema.
+  Target: apps/desktop/src/main.ts and apps/desktop/src-tauri/src/lib.rs
+  Compatibility stance: assume no users; preserve only the documented data-root layout.
   Stop condition: 4 approved checkpoints or when remaining findings need product input.
-  Starting target: apps/tab-manager/mount.ts
+  Starting target: apps/desktop/src/main.ts
 
   Begin.
 ```
@@ -51,13 +51,13 @@ per pass.
 ### Broader Boundary Pass
 
 ```txt
-/goal Run a greenfield clean-break pass on the workspace runtime storage boundary.
+/goal Run a greenfield clean-break pass on the store's persistence boundary.
 
   Load skill: greenfield-clean-breaks.
-  Target: packages/workspace storage and persistence modules
+  Target: packages/data/src/store and packages/data/src/projection
   Compatibility stance: ask before public API, sync wire format, or persisted data shape changes.
   Stop condition: three consecutive inspected files produce no actionable findings.
-  Starting target: packages/workspace
+  Starting target: packages/data/src/store
 
   Begin.
 ```

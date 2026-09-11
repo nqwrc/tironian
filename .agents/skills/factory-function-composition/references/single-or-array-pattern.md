@@ -56,21 +56,21 @@ function createServer(clientOrClients: Client | Client[], options?: Options) {
 
 ## Codebase Examples
 
-### Server Factory (`packages/server/src/server.ts`)
+### Connection Factory
 
 ```typescript
-function createServer(
-	clientOrClients: AnyWorkspaceClient | AnyWorkspaceClient[],
-	options?: ServerOptions,
+function createConnection(
+	handleOrHandles: ConnectionHandle | ConnectionHandle[],
+	options?: ConnectionOptions,
 ) {
-	const clients = Array.isArray(clientOrClients)
-		? clientOrClients
-		: [clientOrClients];
+	const handles = Array.isArray(handleOrHandles)
+		? handleOrHandles
+		: [handleOrHandles];
 
-	// All server setup logic directly here
-	const workspaces: Record<string, AnyWorkspaceClient> = {};
-	for (const client of clients) {
-		workspaces[client.id] = client;
+	// All connection setup logic directly here
+	const byId: Record<string, ConnectionHandle> = {};
+	for (const handle of handles) {
+		byId[handle.id] = handle;
 	}
 	// ...
 }

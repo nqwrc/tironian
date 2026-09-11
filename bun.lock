@@ -216,7 +216,6 @@
       "name": "@tironian/sqlite",
       "version": "0.0.1",
       "devDependencies": {
-        "@sqlite.org/sqlite-wasm": "catalog:",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },

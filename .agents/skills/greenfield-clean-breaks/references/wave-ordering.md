@@ -57,8 +57,7 @@ Coherence is necessary. It is not proof.
 
 ## Worked Example
 
-See `specs/20260504T040000-machine-auth-adopt-better-auth-device-client.md` for
-the machine-auth migration:
+A migration that swaps a transport wholesale:
 
 ```txt
 Wave 5    Stop importing the old transport
