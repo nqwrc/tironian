@@ -31,6 +31,12 @@ mock.module('$lib/operations/completion', () => ({
 		seen = args;
 		return Promise.resolve(Ok('transformed'));
 	},
+	// `run-polish.test.ts` fakes this module too, and `mock.module` is
+	// process-global with the first registration winning. `run-polish.ts` imports
+	// `resolveCompletionState` at module scope, so a fake without it fails that
+	// file with a SyntaxError whenever this file runs first, which is the order
+	// macOS lists them in. Both fakes carry both exports.
+	resolveCompletionState: () => ({ canRun: true }),
 }));
 
 const { runRecipe } = await import('./run-recipe.js');
