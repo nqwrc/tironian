@@ -36,8 +36,7 @@
 		"resources": {
 			"../dist": "apps-dist",
 			"recorder-state-icons/studio_microphone.png": "recorder-state-icons/studio_microphone.png",
-			"recorder-state-icons/red_large_square.png": "recorder-state-icons/red_large_square.png",
-			"transcribe-libs": ""
+			"recorder-state-icons/red_large_square.png": "recorder-state-icons/red_large_square.png"
 		},
 		"icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
 		"macOS": {

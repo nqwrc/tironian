@@ -20,8 +20,11 @@
 # Why the Windows leg audits the installers it uploads: on Windows x86_64
 # transcribe-cpp is built with `dynamic-backends`, so the ggml runtime ships as
 # loose DLLs rather than being linked in. build.rs stages them into
-# src-tauri/transcribe-libs, and tauri.conf.json maps that directory onto the
-# bundle resource root. tauri-bundler's WiX path packs loose DLLs on its own,
+# src-tauri/transcribe-libs, and tauri.windows.conf.json maps that directory
+# onto the bundle resource root. The mapping is Windows-only on purpose: macOS
+# links Metal statically and leaves the directory empty, and an empty mapped
+# directory makes the CLI's tauri-utils 2.8.3 stop copying every resource after
+# it. tauri-bundler's WiX path packs loose DLLs on its own,
 # but the NSIS path does not, so a build can go green while producing an NSIS
 # installer whose app registers zero compute devices. The audit below is the
 # only thing that proves the installers carry the runtime.
@@ -253,6 +256,17 @@ jobs:
           APP="$(find "$BUNDLE" -maxdepth 1 -name '*.app' -type d | head -1)"
           test -n "$APP" || { echo "::error::tauri build produced no .app bundle under $BUNDLE"; exit 1; }
           echo "APP_PATH=$GITHUB_WORKSPACE/$APP" >> "$GITHUB_ENV"
+          # Every resource tauri.conf.json maps must be in the bundle. The CLI's
+          # tauri-utils 2.8.3 stops copying resources at the first empty
+          # directory it meets, in hash-map order, and the build stays green:
+          # every macOS bundle before this check shipped without apps-dist and
+          # could not start. Assert the files the host needs at launch.
+          missing=0
+          for f in apps-dist/home/index.html apps-dist/whispering/index.html apps-dist/honeycrisp/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
+            test -f "$APP/Contents/Resources/$f" || { echo "::error::bundle is missing Contents/Resources/$f"; missing=1; }
+          done
+          ls -R "$APP/Contents/Resources" | head -40
+          test "$missing" -eq 0 || exit 1
           mkdir -p ci-artifacts
           # ditto, not zip: upload-artifact's own archive drops the executable
           # bit and the symlink layout inside Contents/, which invalidates the
