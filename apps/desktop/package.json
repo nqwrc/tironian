@@ -10,10 +10,10 @@
 	"scripts": {
 		"dev": "bun run dev:desktop",
 		"dev:desktop": "tauri dev --config src-tauri/tauri.dev.conf.json",
-		"build": "bun run clean:dist && bun run build:home && bun run build:tironian",
+		"build": "bun run clean:dist && bun run build:home && bun run build:dictation",
 		"build:home": "vite build",
 		"build:sidecar": "bun run scripts/build-sidecar.ts",
-		"build:tironian": "bun run --cwd ../tironian build:tironian-host",
+		"build:dictation": "bun run --cwd ../tironian build:tironian-host",
 		"clean:dist": "bun run scripts/clean-dist.ts",
 		"build:desktop": "bun run build && bun run build:sidecar",
 		"desktop:build": "tauri build",

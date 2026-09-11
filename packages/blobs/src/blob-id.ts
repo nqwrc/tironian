@@ -53,7 +53,7 @@ export const BlobId = type(new RegExp(`^${BLOB_ID_ROUTE_REGEX}$`)).as<BlobId>();
  * parse of one via the {@link BlobId} validator.
  *
  * One other implementation mints this same shape: Tironian's native recorder,
- * in `apps/tironian/src-tauri/src/recorder/blob.rs`, because the host decides
+ * in `apps/desktop/src-tauri/src/recorder/blob.rs`, because the host decides
  * which recording exists and hands the id back over IPC. The two mints must
  * agree, and each side has a round-trip test against its own parse to keep them
  * from drifting apart.

@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COMPILED_APPLICATIONS } from '../src/applications.ts';
 
-const tironianDir = fileURLToPath(new URL('..', import.meta.url));
+const desktopDir = fileURLToPath(new URL('..', import.meta.url));
 
 const BUILD_TIMEOUT_MS = 180_000;
 
@@ -39,10 +39,10 @@ describe('compiled application builds', () => {
 		test(
 			`${application.title} builds and is served below its id`,
 			async () => {
-				await run(`build:${application.id}`, tironianDir);
+				await run(`build:${application.id}`, desktopDir);
 
 				const page = await Bun.file(
-					join(tironianDir, 'dist', application.id, 'index.html'),
+					join(desktopDir, 'dist', application.id, 'index.html'),
 				).text();
 				expect(page).toContain(`/apps/${application.id}/`);
 			},
