@@ -1,4 +1,4 @@
-import { field } from '@epicenter/data/definition';
+import { field } from '@tironian/data/definition';
 /**
  * The optimistic persistence boundary (ADR-0238): acceptance is live and
  * cannot fail for storage reasons; durability is an ordered queue flushed
@@ -11,8 +11,8 @@ import { field } from '@epicenter/data/definition';
 
 import { Database } from 'bun:sqlite';
 import { describe, expect, test } from 'bun:test';
-import { defineData, parseData } from '@epicenter/data/definition';
-import { createBunSqliteAdapter } from '@epicenter/sqlite/bun';
+import { defineData, parseData } from '@tironian/data/definition';
+import { createBunSqliteAdapter } from '@tironian/sqlite/bun';
 import type { Logger } from 'wellcrafted/logger';
 import type { Result } from 'wellcrafted/result';
 

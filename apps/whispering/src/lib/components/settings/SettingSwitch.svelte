@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as Field from '@epicenter/ui/field';
-	import { Switch } from '@epicenter/ui/switch';
+	import * as Field from '@tironian/ui/field';
+	import { Switch } from '@tironian/ui/switch';
 	import type { BooleanSettingKey } from '$lib/state/settings.svelte';
 	import { getWhisperingApp } from '$lib/whispering/context';
 

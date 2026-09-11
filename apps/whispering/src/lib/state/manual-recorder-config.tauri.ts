@@ -1,4 +1,4 @@
-import { asDeviceIdentifier } from '@epicenter/recorder';
+import { asDeviceIdentifier } from '@tironian/recorder';
 import type { BaseRecordingParams } from '$lib/services/recorder/contract';
 import { deviceConfig } from '$lib/state/device-config.svelte';
 

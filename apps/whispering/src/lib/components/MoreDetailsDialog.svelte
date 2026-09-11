@@ -58,8 +58,8 @@
 </script>
 
 <script lang="ts">
-	import { Button } from '@epicenter/ui/button';
-	import * as Modal from '@epicenter/ui/modal';
+	import { Button } from '@tironian/ui/button';
+	import * as Modal from '@tironian/ui/modal';
 </script>
 
 <Modal.Root bind:open={moreDetailsDialog.isOpen}>

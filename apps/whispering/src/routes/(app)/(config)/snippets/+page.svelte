@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { Card } from '@epicenter/ui/card';
-	import { confirmationDialog } from '@epicenter/ui/confirmation-dialog';
-	import { Input } from '@epicenter/ui/input';
-	import { Label } from '@epicenter/ui/label';
-	import * as Modal from '@epicenter/ui/modal';
-	import * as SectionHeader from '@epicenter/ui/section-header';
-	import { Textarea } from '@epicenter/ui/textarea';
+	import { Button } from '@tironian/ui/button';
+	import { Card } from '@tironian/ui/card';
+	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
+	import { Input } from '@tironian/ui/input';
+	import { Label } from '@tironian/ui/label';
+	import * as Modal from '@tironian/ui/modal';
+	import * as SectionHeader from '@tironian/ui/section-header';
+	import { Textarea } from '@tironian/ui/textarea';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';

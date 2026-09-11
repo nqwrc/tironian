@@ -8,9 +8,9 @@
  */
 import { Database } from 'bun:sqlite';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { defineData, field } from '@epicenter/data/definition';
-import type { SqliteDatabase, SqliteValue } from '@epicenter/sqlite';
-import { createBunSqliteAdapter } from '@epicenter/sqlite/bun';
+import { defineData, field } from '@tironian/data/definition';
+import type { SqliteDatabase, SqliteValue } from '@tironian/sqlite';
+import { createBunSqliteAdapter } from '@tironian/sqlite/bun';
 import { openMemory } from '../store/bun.js';
 import { encodeEnvelope } from '../store/envelope.js';
 import { APP_DOCUMENT } from '../store/log.js';

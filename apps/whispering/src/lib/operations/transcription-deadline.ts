@@ -142,7 +142,7 @@ export function transcriptionTimedOut(
  * ceiling wins.
  *
  * Abandon, not cancel, and that distinction is the honest part: nothing under
- * this deadline takes an `AbortSignal`. `transcribe()` in `@epicenter/client`
+ * this deadline takes an `AbortSignal`. `transcribe()` in `@tironian/client`
  * has no signal parameter, `HttpService.post` (Deepgram, ElevenLabs) has none,
  * Mistral goes through its own SDK, and the on-device route is a Tauri
  * `invoke`, which cannot be cancelled at all. So the work keeps running; what

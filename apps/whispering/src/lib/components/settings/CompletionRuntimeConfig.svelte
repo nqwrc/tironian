@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import * as Alert from '@epicenter/ui/alert';
-	import * as Field from '@epicenter/ui/field';
-	import { Input } from '@epicenter/ui/input';
-	import * as Select from '@epicenter/ui/select';
+	import * as Alert from '@tironian/ui/alert';
+	import * as Field from '@tironian/ui/field';
+	import { Input } from '@tironian/ui/input';
+	import * as Select from '@tironian/ui/select';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import {
 		hasModelSelect,

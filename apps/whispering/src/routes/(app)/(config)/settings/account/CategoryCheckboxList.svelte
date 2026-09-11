@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Checkbox } from '@epicenter/ui/checkbox';
-	import { Label } from '@epicenter/ui/label';
+	import { Checkbox } from '@tironian/ui/checkbox';
+	import { Label } from '@tironian/ui/label';
 
 	// One list, used for both directions: on export it offers everything this
 	// install has, on import only what the chosen file carries. The two differ

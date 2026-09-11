@@ -1,4 +1,4 @@
-/** Recordings domain tests over the real Bun @epicenter/data stack. */
+/** Recordings domain tests over the real Bun @tironian/data stack. */
 import { expect, test } from 'bun:test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,9 +7,9 @@ import {
 	type BlobStore,
 	BlobStoreError,
 	generateBlobId,
-} from '@epicenter/blobs';
-import { open } from '@epicenter/data/bun';
-import { InstantString } from '@epicenter/field';
+} from '@tironian/blobs';
+import { open } from '@tironian/data/bun';
+import { InstantString } from '@tironian/field';
 import type { Result } from 'wellcrafted/result';
 import { Ok } from 'wellcrafted/result';
 import { expectErr, expectOk as expectResult } from 'wellcrafted/testing';

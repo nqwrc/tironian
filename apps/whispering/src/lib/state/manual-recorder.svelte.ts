@@ -1,4 +1,4 @@
-import type { BlobId } from '@epicenter/blobs';
+import type { BlobId } from '@tironian/blobs';
 import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import { defineKeys, resultQueryOptions } from 'wellcrafted/query';
 import { Err, Ok, type Result } from 'wellcrafted/result';

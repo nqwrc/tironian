@@ -1,5 +1,5 @@
-import type { BlobId } from '@epicenter/blobs';
-import type { DeviceAcquisitionOutcome } from '@epicenter/recorder';
+import type { BlobId } from '@tironian/blobs';
+import type { DeviceAcquisitionOutcome } from '@tironian/recorder';
 import { createLogger } from 'wellcrafted/logger';
 import { manualRecorderConfig } from '#platform/manual-recorder-config';
 import { reportRecordingMicLevel } from '#platform/recording-mic-level';

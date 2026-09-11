@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'bun:test';
-import { type BlobId, generateBlobId } from '@epicenter/blobs';
+import { type BlobId, generateBlobId } from '@tironian/blobs';
 import type { WhisperingApp } from '$lib/whispering/app';
 
 let recorderState: 'STOPPED' | 'RECORDING' = 'STOPPED';

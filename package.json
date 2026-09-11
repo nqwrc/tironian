@@ -113,7 +113,7 @@
 		"check": "bun run lint:ci && bun run typecheck && bun run test && bun run check:structure",
 		"dev": "bun run dev:epicenter",
 		"dev:epicenter": "bun run --cwd apps/epicenter dev",
-		"dev:whispering": "bun run --filter @epicenter/whispering dev",
+		"dev:whispering": "bun run --filter @tironian/app dev",
 		"dev:whispering:ui": "bun run --cwd apps/whispering dev",
 		"format": "biome check --write --linter-enabled=false",
 		"format:check": "biome ci --linter-enabled=false",
@@ -145,7 +145,7 @@
 		"wrangler": "catalog:"
 	},
 	"dependencies": {
-		"@epicenter/constants": "workspace:*",
+		"@tironian/constants": "workspace:*",
 		"tinyexec": "^1.0.4"
 	},
 	"patchedDependencies": {

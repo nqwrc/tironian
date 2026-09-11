@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import * as Command from '@epicenter/ui/command';
-	import * as Empty from '@epicenter/ui/empty';
-	import { useCombobox } from '@epicenter/ui/hooks';
-	import * as Popover from '@epicenter/ui/popover';
-	import { cn } from '@epicenter/ui/utils';
+	import { Button } from '@tironian/ui/button';
+	import * as Command from '@tironian/ui/command';
+	import * as Empty from '@tironian/ui/empty';
+	import { useCombobox } from '@tironian/ui/hooks';
+	import * as Popover from '@tironian/ui/popover';
+	import { cn } from '@tironian/ui/utils';
 	import CaptionsIcon from '@lucide/svelte/icons/captions';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import MicIcon from '@lucide/svelte/icons/mic';

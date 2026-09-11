@@ -1,4 +1,4 @@
-import { CompleteError, complete, resolveConnection } from '@epicenter/client';
+import { CompleteError, complete, resolveConnection } from '@tironian/client';
 import type { Result } from 'wellcrafted/result';
 import { customFetch } from '#platform/http';
 import {

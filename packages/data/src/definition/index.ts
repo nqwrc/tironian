@@ -12,7 +12,7 @@ export {
 	recognize,
 	referenceTargetOf,
 	storageOf,
-} from '@epicenter/field';
+} from '@tironian/field';
 export * from './addresses.js';
 export * from './canonical.js';
 export {

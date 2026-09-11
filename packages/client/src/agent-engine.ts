@@ -1,6 +1,6 @@
 /**
  * The fetch an engine calls: a function from a URL plus init to a response.
- * Structurally `@epicenter/auth`'s `AuthFetch` and a plain `globalThis.fetch`,
+ * Structurally `@tironian/auth`'s `AuthFetch` and a plain `globalThis.fetch`,
  * but typed as the function shape rather than `typeof globalThis.fetch` because
  * the engine never needs `fetch.preconnect`, and an authed fetch wrapper (which
  * is what the gateway path passes) does not carry it. This is purely how the

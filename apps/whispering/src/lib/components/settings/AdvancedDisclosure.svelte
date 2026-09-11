@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import * as Collapsible from '@epicenter/ui/collapsible';
+	import * as Collapsible from '@tironian/ui/collapsible';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import type { Snippet } from 'svelte';
 
@@ -9,7 +9,7 @@
 	// its open-state rotation, so every settings surface renders the exact same
 	// affordance from one place instead of restating the class stack.
 	//
-	// This composes the headless `@epicenter/ui` Collapsible by hand, which is the
+	// This composes the headless `@tironian/ui` Collapsible by hand, which is the
 	// shadcn-svelte pattern for a bespoke labeled disclosure: Collapsible ships
 	// unstyled on purpose, and Accordion (which bakes in a chevron) is for a
 	// coordinated set of sections, not a lone toggle. It stays app-local until a

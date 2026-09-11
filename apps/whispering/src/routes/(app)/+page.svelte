@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { PRODUCT_NAME, pageTitle } from '$lib/constants/brand';
-	import { Button } from '@epicenter/ui/button';
-	import { FileDropZone } from '@epicenter/ui/file-drop-zone';
-	import { Link } from '@epicenter/ui/link';
-	import * as SectionHeader from '@epicenter/ui/section-header';
-	import * as ToggleGroup from '@epicenter/ui/toggle-group';
+	import { Button } from '@tironian/ui/button';
+	import { FileDropZone } from '@tironian/ui/file-drop-zone';
+	import { Link } from '@tironian/ui/link';
+	import * as SectionHeader from '@tironian/ui/section-header';
+	import * as ToggleGroup from '@tironian/ui/toggle-group';
 	import type { UnlistenFn } from '@tauri-apps/api/event';
 	import { onDestroy, onMount } from 'svelte';
 	import { defineErrors, extractErrorMessage } from 'wellcrafted/error';

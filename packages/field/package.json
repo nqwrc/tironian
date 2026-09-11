@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/field",
+	"name": "@tironian/field",
 	"description": "The closed field-type vocabulary: field.* builders and recognize(), inverses over one JSON Schema wire-form.",
 	"version": "0.3.0",
 	"type": "module",

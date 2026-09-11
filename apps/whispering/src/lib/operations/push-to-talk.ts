@@ -1,4 +1,4 @@
-import type { BlobId } from '@epicenter/blobs';
+import type { BlobId } from '@tironian/blobs';
 import { defineErrors } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';
 import { report } from '$lib/report';

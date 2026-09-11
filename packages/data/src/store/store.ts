@@ -13,8 +13,8 @@ import {
 	type RowAddress,
 	type RowOf,
 	type TableInvalidationListener,
-} from '@epicenter/data/definition';
-import type { SqliteDatabase } from '@epicenter/sqlite';
+} from '@tironian/data/definition';
+import type { SqliteDatabase } from '@tironian/sqlite';
 import * as Y from '@y/y';
 import { customAlphabet } from 'nanoid';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
@@ -251,7 +251,7 @@ export type UpdateRowError = RowAbsentError;
 export type {
 	TableInvalidation,
 	TableInvalidationListener,
-} from '@epicenter/data/definition';
+} from '@tironian/data/definition';
 
 export type Row = { id: string } & JsonObject;
 
@@ -355,7 +355,7 @@ export type TableHandle = {
 	 * listener has run. That phase order is a contract a follower can build
 	 * on: a derived cache that marks itself dirty in `onCommitted` is already
 	 * dirty by the time any table subscriber reads through it
-	 * (`@epicenter/data/projection` is built on exactly this). The ids come
+	 * (`@tironian/data/projection` is built on exactly this). The ids come
 	 * from the type's `'delta'` event, which fires synchronously inside
 	 * `applyUpdateV2` mid-acceptance, so they are held until acceptance
 	 * completes.
@@ -444,7 +444,7 @@ export type DataView<TDatabase extends DataDefinition> = {
  * replica, sync: what a transport needs and a feature never touches. Merging
  * the two put thirteen names on one object where four are used, and cost a
  * forwarded getter and a cast to build it. SQL is deliberately not here: it
- * is a follower an application composes (`@epicenter/data/projection`), not
+ * is a follower an application composes (`@tironian/data/projection`), not
  * a verb the store owes.
  *
  * The view and the store are born together: an opened runtime holds exactly
@@ -695,7 +695,7 @@ export type DataStoreBase = {
 	 * its own surface below. Delivered BEFORE table and KV notifications in
 	 * the same flush, and that order is a contract: a composed follower marks
 	 * itself dirty here, so it is already dirty by the time any table
-	 * subscriber reads through it (`@epicenter/data/projection` depends on
+	 * subscriber reads through it (`@tironian/data/projection` depends on
 	 * exactly this). Strictly wider than `onLocalWork`, and the two are not
 	 * interchangeable: the transport wants to know that THIS replica owes the
 	 * authority something, so bytes that arrived from a peer must not nudge
@@ -1092,7 +1092,7 @@ function createStoreEngine(
 	/**
 	 * Where a table's `'delta'` event becomes a subscriber's invalidation.
 	 *
-	 * `@epicenter/data/definition` owns the grouping, the per-table dedup and the delivery
+	 * `@tironian/data/definition` owns the grouping, the per-table dedup and the delivery
 	 * laws, and a delta-fed producer needs exactly those. Nothing about them is
 	 * specific to a carrier, which is why they were written once there rather
 	 * than here (ADR-0187).
@@ -1353,7 +1353,7 @@ function createStoreEngine(
 	 * definition (ADR-0240).
 	 *
 	 * SQL is deliberately not built here: a projection is a follower an
-	 * application composes over this surface (`@epicenter/data/projection`),
+	 * application composes over this surface (`@tironian/data/projection`),
 	 * not a verb the store owes.
 	 */
 	function buildView(): UntypedDataView {

@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { Card } from '@epicenter/ui/card';
-	import * as Field from '@epicenter/ui/field';
-	import { Input } from '@epicenter/ui/input';
-	import { Link } from '@epicenter/ui/link';
-	import * as SectionHeader from '@epicenter/ui/section-header';
-	import { Textarea } from '@epicenter/ui/textarea';
+	import { Button } from '@tironian/ui/button';
+	import { Card } from '@tironian/ui/card';
+	import * as Field from '@tironian/ui/field';
+	import { Input } from '@tironian/ui/input';
+	import { Link } from '@tironian/ui/link';
+	import * as SectionHeader from '@tironian/ui/section-header';
+	import { Textarea } from '@tironian/ui/textarea';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';

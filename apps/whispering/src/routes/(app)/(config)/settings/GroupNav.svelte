@@ -14,8 +14,8 @@
 -->
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { cn } from '@epicenter/ui/utils';
+	import { Button } from '@tironian/ui/button';
+	import { cn } from '@tironian/ui/utils';
 	import { cubicInOut } from 'svelte/easing';
 	import { crossfade } from 'svelte/transition';
 	import { page } from '$app/state';

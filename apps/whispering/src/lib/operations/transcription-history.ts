@@ -1,4 +1,4 @@
-import { InstantString } from '@epicenter/field';
+import { InstantString } from '@tironian/field';
 import {
 	type AnyTaggedError,
 	defineErrors,

@@ -10,7 +10,7 @@
  * Excluded (per spec § Decisions Log):
  *   - The constants files themselves (they ARE the source of truth).
  *   - Vendored mirrors that intentionally re-declare these paths to avoid a
- *     runtime dependency on @epicenter/constants (apps/epicenter/src/routes.ts,
+ *     runtime dependency on @tironian/constants (apps/epicenter/src/routes.ts,
  *     whose /api/session is the shell's own loopback contract, not the cloud
  *     session endpoint).
  *   - *.test.ts / *.test.tsx (mock URL matchers may reference paths verbatim).
@@ -39,7 +39,7 @@ const EXCLUDED_DIRS = new Set([
 	'.svelte-kit',
 ]);
 
-// A quoted route literal for a path @epicenter/constants owns. `([^a-z]|$)`
+// A quoted route literal for a path @tironian/constants owns. `([^a-z]|$)`
 // keeps `/api/sessions-of-mine` style prefixes from matching.
 const HARDCODED_PATH =
 	/['"`]\/api\/(session|rooms|blobs|ai)([^a-z]|$)|['"`]\/auth\/oauth2\/[a-z]+/;
@@ -104,7 +104,7 @@ for (const record of violations) {
 }
 console.error(
 	'\n::error::Hardcoded API path literal found. Use API_ROUTES.* from\n' +
-		'@epicenter/constants/api-routes or OAUTH_ROUTES.* from\n' +
-		'@epicenter/constants/oauth-routes instead.',
+		'@tironian/constants/api-routes or OAUTH_ROUTES.* from\n' +
+		'@tironian/constants/oauth-routes instead.',
 );
 process.exit(1);

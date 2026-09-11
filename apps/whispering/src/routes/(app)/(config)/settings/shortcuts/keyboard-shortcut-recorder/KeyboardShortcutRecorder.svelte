@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import * as Kbd from '@epicenter/ui/kbd';
-	import * as Popover from '@epicenter/ui/popover';
+	import { Button } from '@tironian/ui/button';
+	import * as Kbd from '@tironian/ui/kbd';
+	import * as Popover from '@tironian/ui/popover';
 	import AppWindow from '@lucide/svelte/icons/app-window';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Plus from '@lucide/svelte/icons/plus';

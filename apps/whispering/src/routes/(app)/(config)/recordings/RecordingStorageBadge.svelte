@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Badge } from '@epicenter/ui/badge';
+	import { Badge } from '@tironian/ui/badge';
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { Recording } from '$lib/state/recordings.svelte';
 	import { getWhisperingQueries } from '$lib/whispering/context';

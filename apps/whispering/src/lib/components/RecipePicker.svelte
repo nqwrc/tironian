@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Badge } from '@epicenter/ui/badge';
-	import * as Command from '@epicenter/ui/command';
-	import * as Modal from '@epicenter/ui/modal';
+	import { Badge } from '@tironian/ui/badge';
+	import * as Command from '@tironian/ui/command';
+	import * as Modal from '@tironian/ui/modal';
 	import { deliverRecipeResult } from '$lib/operations/delivery';
 	import { runRecipe } from '$lib/operations/run-recipe';
 	import { playSoundIfEnabled } from '$lib/operations/sound';

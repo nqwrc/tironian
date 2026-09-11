@@ -1,4 +1,4 @@
-import { field } from '@epicenter/data/definition';
+import { field } from '@tironian/data/definition';
 /**
  * The client half of sync: what a replica owes the authority, and what it has
  * read from it.
@@ -11,8 +11,8 @@ import { field } from '@epicenter/data/definition';
 
 import { Database } from 'bun:sqlite';
 import { describe, expect, test } from 'bun:test';
-import { defineData } from '@epicenter/data/definition';
-import { createBunSqliteAdapter } from '@epicenter/sqlite/bun';
+import { defineData } from '@tironian/data/definition';
+import { createBunSqliteAdapter } from '@tironian/sqlite/bun';
 import type { Result } from 'wellcrafted/result';
 
 import { encodeEnvelope } from './envelope.js';

@@ -15,8 +15,8 @@ import type {
 	JsonValue,
 	ParsedDataDefinition,
 	ParsedTable,
-} from '@epicenter/data/definition';
-import type { SqliteDatabase, SqliteRow, SqliteValue } from '@epicenter/sqlite';
+} from '@tironian/data/definition';
+import type { SqliteDatabase, SqliteRow, SqliteValue } from '@tironian/sqlite';
 
 /**
  * A projection table per declared table: `id` plus one column per declared

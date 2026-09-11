@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as Command from '@epicenter/ui/command';
-	import { cn } from '@epicenter/ui/utils';
+	import * as Command from '@tironian/ui/command';
+	import { cn } from '@tironian/ui/utils';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';

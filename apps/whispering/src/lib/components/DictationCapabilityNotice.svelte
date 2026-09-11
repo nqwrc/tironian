@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import * as Item from '@epicenter/ui/item';
+	import { Button } from '@tironian/ui/button';
+	import * as Item from '@tironian/ui/item';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { accessibilityGuide } from '$lib/components/MacosAccessibilityGuideDialog.svelte';
 	import { outputWritesToCursor } from '$lib/operations/delivery';

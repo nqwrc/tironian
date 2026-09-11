@@ -6,8 +6,8 @@
  */
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { parseBlobId } from '@epicenter/blobs';
-import type { BunBlobStore } from '@epicenter/blobs/bun';
+import { parseBlobId } from '@tironian/blobs';
+import type { BunBlobStore } from '@tironian/blobs/bun';
 import { type Context, Hono, type Next } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import {

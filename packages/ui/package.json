@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/ui",
+	"name": "@tironian/ui",
 	"version": "0.3.0",
 	"private": true,
 	"description": "Svelte 5 UI components for Epicenter apps. Built with shadcn-svelte and Tailwind CSS.",
@@ -31,7 +31,7 @@
 		"typecheck": "svelte-check --tsconfig ./tsconfig.json"
 	},
 	"dependencies": {
-		"@epicenter/field": "workspace:*",
+		"@tironian/field": "workspace:*",
 		"@fontsource-variable/geist": "^5.2.9",
 		"@fontsource-variable/geist-mono": "^5.2.8",
 		"@lucide/svelte": "^1.7.0",

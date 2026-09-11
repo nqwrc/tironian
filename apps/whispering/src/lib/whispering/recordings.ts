@@ -3,8 +3,8 @@ import {
 	type BlobId,
 	type BlobStoreFailed,
 	generateBlobId,
-} from '@epicenter/blobs';
-import type { NonconformingRow } from '@epicenter/data';
+} from '@tironian/blobs';
+import type { NonconformingRow } from '@tironian/data';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
 import { Ok, type Result } from 'wellcrafted/result';
 import type { WhisperingData } from '../workspace';

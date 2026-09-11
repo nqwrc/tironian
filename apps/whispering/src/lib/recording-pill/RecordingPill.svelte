@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { cn } from '@epicenter/ui/utils';
+	import { cn } from '@tironian/ui/utils';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import MicOffIcon from '@lucide/svelte/icons/mic-off';
 	import SquareIcon from '@lucide/svelte/icons/square';

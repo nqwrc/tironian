@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { extractErrorMessage } from 'wellcrafted/error';
-	import { InstantString } from '@epicenter/field';
-	import { Button } from '@epicenter/ui/button';
-	import { confirmationDialog } from '@epicenter/ui/confirmation-dialog';
-	import { CopyButton } from '@epicenter/ui/copy-button';
-	import { Input } from '@epicenter/ui/input';
-	import { Label } from '@epicenter/ui/label';
-	import * as Modal from '@epicenter/ui/modal';
-	import { Separator } from '@epicenter/ui/separator';
-	import { Textarea } from '@epicenter/ui/textarea';
-	import { TimezoneCombobox } from '@epicenter/ui/timezone-combobox';
+	import { InstantString } from '@tironian/field';
+	import { Button } from '@tironian/ui/button';
+	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
+	import { CopyButton } from '@tironian/ui/copy-button';
+	import { Input } from '@tironian/ui/input';
+	import { Label } from '@tironian/ui/label';
+	import * as Modal from '@tironian/ui/modal';
+	import { Separator } from '@tironian/ui/separator';
+	import { Textarea } from '@tironian/ui/textarea';
+	import { TimezoneCombobox } from '@tironian/ui/timezone-combobox';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { Snippet } from 'svelte';

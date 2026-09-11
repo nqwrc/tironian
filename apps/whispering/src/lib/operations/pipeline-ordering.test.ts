@@ -12,7 +12,7 @@
  * - A failed run does not poison the queue for the runs behind it
  */
 import { afterEach, expect, mock, test } from 'bun:test';
-import { generateBlobId } from '@epicenter/blobs';
+import { generateBlobId } from '@tironian/blobs';
 import { Err, Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
 import { expandSnippets } from './expand-snippets';

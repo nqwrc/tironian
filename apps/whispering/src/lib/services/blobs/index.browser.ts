@@ -1,8 +1,8 @@
-import type { BlobSources, BlobStore } from '@epicenter/blobs';
+import type { BlobSources, BlobStore } from '@tironian/blobs';
 import {
 	createBrowserBlobSources,
 	createBrowserBlobStore,
-} from '@epicenter/blobs/browser';
+} from '@tironian/blobs/browser';
 
 const local = createBrowserBlobStore();
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import * as Popover from '@epicenter/ui/popover';
+	import { Button } from '@tironian/ui/button';
+	import * as Popover from '@tironian/ui/popover';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import OutputDeliveryControls from '$lib/components/OutputDeliveryControls.svelte';
 	import { SettingSwitch } from '$lib/components/settings';

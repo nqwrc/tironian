@@ -1,6 +1,6 @@
 //! The one Epicenter application-data root, resolved natively.
 //!
-//! `@epicenter/constants/app-data` is the authority on this path, and the Bun
+//! `@tironian/constants/app-data` is the authority on this path, and the Bun
 //! sidecar calls it directly (ADR-0201). Rust resolves it here for the one
 //! consumer that cannot be handed the sidecar's answer: the staged-recording
 //! blob store in [`crate::recorder::blob`], which writes `<root>/blobs` from
@@ -146,7 +146,7 @@ mod tests {
         let output = Command::new("bun")
             .arg("-e")
             .arg(concat!(
-                "import { epicenterDataRoot } from '@epicenter/constants/app-data';",
+                "import { epicenterDataRoot } from '@tironian/constants/app-data';",
                 "process.stdout.write(epicenterDataRoot());"
             ))
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
@@ -165,7 +165,7 @@ mod tests {
 
     /// The one equality neither side can check by reading the other.
     ///
-    /// `@epicenter/constants/app-data` transcribes what Tauri 2.11 and `dirs`
+    /// `@tironian/constants/app-data` transcribes what Tauri 2.11 and `dirs`
     /// 6.0 do; this runs both implementations on the machine the test is on and
     /// compares the answers. A `dirs` bump, a Tauri change, or an edited
     /// identifier fails here instead of silently splitting a person's data

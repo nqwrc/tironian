@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '@epicenter/ui/utils';
+	import { cn } from '@tironian/ui/utils';
 	import { page } from '$app/state';
 	import { NAV_ITEMS } from './nav-items';
 </script>

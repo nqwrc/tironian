@@ -5,7 +5,7 @@ import {
 	recognize,
 	referenceTargetOf,
 	storageOf,
-} from '@epicenter/field';
+} from '@tironian/field';
 import { type Static, type TSchema, Type } from 'typebox';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
 import { Ok, type Result } from 'wellcrafted/result';
@@ -298,7 +298,7 @@ function compileTable(
 			return DataDefinitionParseError.UnrecognizedField({
 				table: tableName,
 				field: fieldName,
-				reason: 'expected a closed @epicenter/field descriptor',
+				reason: 'expected a closed @tironian/field descriptor',
 			});
 		}
 		const check = compileField(base.schema);

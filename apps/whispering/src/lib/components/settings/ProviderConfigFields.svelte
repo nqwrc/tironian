@@ -211,9 +211,9 @@
 </script>
 
 <script lang="ts">
-	import * as Field from '@epicenter/ui/field';
-	import { Input } from '@epicenter/ui/input';
-	import { Link } from '@epicenter/ui/link';
+	import * as Field from '@tironian/ui/field';
+	import { Input } from '@tironian/ui/input';
+	import { Link } from '@tironian/ui/link';
 	import {
 		deviceConfig,
 		SECRET_KEYS,

@@ -7,9 +7,9 @@
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
 	import { pageTitle } from '$lib/constants/brand';
-	import { Button } from '@epicenter/ui/button';
-	import * as Field from '@epicenter/ui/field';
-	import { Link } from '@epicenter/ui/link';
+	import { Button } from '@tironian/ui/button';
+	import * as Field from '@tironian/ui/field';
+	import { Link } from '@tironian/ui/link';
 	import { createMutation } from '@tanstack/svelte-query';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import UploadIcon from '@lucide/svelte/icons/upload';

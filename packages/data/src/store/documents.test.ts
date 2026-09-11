@@ -5,8 +5,8 @@
  */
 import { Database } from 'bun:sqlite';
 import { describe, expect, test } from 'bun:test';
-import { defineData, documentAddress, field } from '@epicenter/data/definition';
-import { createBunSqliteAdapter } from '@epicenter/sqlite/bun';
+import { defineData, documentAddress, field } from '@tironian/data/definition';
+import { createBunSqliteAdapter } from '@tironian/sqlite/bun';
 import * as Y from '@y/y';
 import type { Result } from 'wellcrafted/result';
 import { expectOk as expectResult } from 'wellcrafted/testing';

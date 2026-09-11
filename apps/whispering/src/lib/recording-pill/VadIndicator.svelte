@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Spinner } from '@epicenter/ui/spinner';
-	import { cn } from '@epicenter/ui/utils';
+	import { Spinner } from '@tironian/ui/spinner';
+	import { cn } from '@tironian/ui/utils';
 
 	// A VAD session's capture state, shown beside the pill's live meter as one
 	// small mark: a dot that is dim while merely listening (armed, hearing sound

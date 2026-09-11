@@ -6,7 +6,7 @@
  * The two shared a file and nothing else: this is what the document IS and what
  * `../sync` reads, while a projection is a cache rebuilt from it at open.
  */
-import type { SqliteDatabase, SqliteRow } from '@epicenter/sqlite';
+import type { SqliteDatabase, SqliteRow } from '@tironian/sqlite';
 import * as Y from '@y/y';
 
 import type {

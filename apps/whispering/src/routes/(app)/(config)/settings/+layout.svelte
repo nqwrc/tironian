@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { confirmationDialog } from '@epicenter/ui/confirmation-dialog';
-	import * as SectionHeader from '@epicenter/ui/section-header';
-	import { Separator } from '@epicenter/ui/separator';
+	import { Button } from '@tironian/ui/button';
+	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
+	import * as SectionHeader from '@tironian/ui/section-header';
+	import { Separator } from '@tironian/ui/separator';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { report } from '$lib/report';
 	import { deviceConfig } from '$lib/state/device-config.svelte';

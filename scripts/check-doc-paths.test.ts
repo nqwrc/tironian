@@ -85,7 +85,7 @@ test('non-repo-rooted tokens are not treated as file claims', () => {
 		write(
 			dir,
 			'README.md',
-			'Examples: `src/lib.ts`, `node_modules/lib/index.ts`, `@epicenter/ui`.\n',
+			'Examples: `src/lib.ts`, `node_modules/lib/index.ts`, `@tironian/ui`.\n',
 		);
 		commitAll(dir);
 

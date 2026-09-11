@@ -9,8 +9,8 @@
 -->
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import type { BlobId } from '@epicenter/blobs';
+	import { Button } from '@tironian/ui/button';
+	import type { BlobId } from '@tironian/blobs';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import AudioBlobPlayer from '$lib/components/AudioBlobPlayer.svelte';
 	import TextPreviewDialog from '$lib/components/copyable/TextPreviewDialog.svelte';

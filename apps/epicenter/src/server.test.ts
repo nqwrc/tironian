@@ -28,9 +28,9 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateBlobId } from '@epicenter/blobs';
-import { createBunBlobStore } from '@epicenter/blobs/bun';
-import { desktopBlobUrl } from '@epicenter/blobs/webview';
+import { generateBlobId } from '@tironian/blobs';
+import { createBunBlobStore } from '@tironian/blobs/bun';
+import { desktopBlobUrl } from '@tironian/blobs/webview';
 import { COMPILED_APPLICATIONS } from './applications.ts';
 import {
 	BOOTSTRAP_ROUTE,

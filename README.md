@@ -59,9 +59,9 @@ opus builds.
 | `packages/data`, `packages/ui` | The local store and the component library the app is built on. |
 | `docs/brand/` | Name, mark, palette, type, voice, and the claims ledger. |
 
-Code keeps upstream's `whispering` and `@epicenter/*` identifiers so upstream
-fixes can still be merged. The reasoning is in the brand document under
-"Rename tiers".
+Code keeps upstream's `whispering` identifiers so upstream fixes can still be
+merged; the package scope moved to `@tironian/*` in the package-scope rename.
+The reasoning is in the brand document under "Rename tiers".
 
 ## Attribution and license
 

@@ -1,5 +1,5 @@
-import type { DataOf } from '@epicenter/data';
-import { type DeviceStore, openDevice } from '@epicenter/data/browser';
+import type { DataOf } from '@tironian/data';
+import { type DeviceStore, openDevice } from '@tironian/data/browser';
 import {
 	type WhisperingSettingValues,
 	whisperingDefinition,

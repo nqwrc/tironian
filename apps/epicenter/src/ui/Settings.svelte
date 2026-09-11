@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Alert from '@epicenter/ui/alert';
-	import { Button } from '@epicenter/ui/button';
-	import * as Empty from '@epicenter/ui/empty';
-	import * as Item from '@epicenter/ui/item';
+	import * as Alert from '@tironian/ui/alert';
+	import { Button } from '@tironian/ui/button';
+	import * as Empty from '@tironian/ui/empty';
+	import * as Item from '@tironian/ui/item';
 	import { WHISPERING_APPLICATION } from '../applications.ts';
 	import { createLaunch } from './launch.svelte.ts';
 	import LocalModelAdministration from './LocalModelAdministration.svelte';

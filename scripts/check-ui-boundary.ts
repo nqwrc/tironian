@@ -22,7 +22,7 @@ const ignoredDirectories = new Set(['node_modules', '.svelte-kit', '.wxt']);
 const uiPrivateImportPattern =
 	/^\s*import(?:\s+type)?(?:\s+[^'"]*\s+from)?\s+['"]#(?:['"]|\/|ui|utils|hooks|lib)|\bimport\s*\(\s*['"]#(?:['"]|\/|ui|utils|hooks|lib)/;
 const uiSelfPackageImportPattern =
-	/^\s*import(?:\s+type)?(?:\s+[^'"]*\s+from)?\s+['"]@epicenter\/ui\/|\bimport\s*\(\s*['"]@epicenter\/ui\//;
+	/^\s*import(?:\s+type)?(?:\s+[^'"]*\s+from)?\s+['"]@tironian\/ui\/|\bimport\s*\(\s*['"]@tironian\/ui\//;
 const uiSourcePathPattern = /packages\/ui\/src/;
 const privateUiConfigPattern = /["']#(?:\/\*|ui|utils|hooks|lib)/;
 const consumerUiSourceImportPattern =
@@ -90,7 +90,7 @@ function checkLine(file: string, line: string, lineNumber: number) {
 
 	if (isUiSource && uiSelfPackageImportPattern.test(line)) {
 		addViolation(
-			'UI source must not self-import through @epicenter/ui',
+			'UI source must not self-import through @tironian/ui',
 			file,
 			lineNumber,
 			line,

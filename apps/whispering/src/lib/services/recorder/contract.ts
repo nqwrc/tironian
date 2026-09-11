@@ -3,12 +3,12 @@ import type {
 	BlobId,
 	BlobNotFound,
 	BlobStoreFailed,
-} from '@epicenter/blobs';
+} from '@tironian/blobs';
 import type {
 	Device,
 	DeviceAcquisitionOutcome,
 	DeviceIdentifier,
-} from '@epicenter/recorder';
+} from '@tironian/recorder';
 import {
 	defineErrors,
 	extractErrorMessage,

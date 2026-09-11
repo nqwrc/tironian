@@ -23,9 +23,10 @@ Tironian is a modified version of **Whispering**, part of the
 AGPL-3.0. Forked at `3ef2103a72` on 2026-08-27. The upstream project does not
 endorse this fork. See [NOTICE](../../NOTICE).
 
-Internal identifiers, package names and import paths still read `whispering` and
-`@epicenter/*` on purpose, so this fork can keep taking upstream fixes. The
-reasoning is in the brand document under "Rename tiers".
+Internal identifiers and import paths still read `whispering` on purpose, so
+this fork can keep taking upstream fixes; the package scope moved to
+`@tironian/*` in the package-scope rename. The reasoning is in the brand
+document under "Rename tiers".
 
 ## Hosting
 

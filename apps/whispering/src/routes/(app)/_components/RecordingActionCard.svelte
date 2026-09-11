@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button } from '@epicenter/ui/button';
-	import * as Kbd from '@epicenter/ui/kbd';
-	import { Spinner } from '@epicenter/ui/spinner';
-	import { cn } from '@epicenter/ui/utils';
+	import { Button } from '@tironian/ui/button';
+	import * as Kbd from '@tironian/ui/kbd';
+	import { Spinner } from '@tironian/ui/spinner';
+	import { cn } from '@tironian/ui/utils';
 	import type { Snippet } from 'svelte';
 	import type { RecordingActionController } from './recording-action-controller';
 

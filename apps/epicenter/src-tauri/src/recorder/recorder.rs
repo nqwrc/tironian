@@ -1061,7 +1061,7 @@ fn await_resolution(capture: StagedCapture, cmd_rx: &mpsc::Receiver<RecorderCmd>
 /// Which microphone a recording actually opened, and whether that was the one
 /// asked for.
 ///
-/// Serialized to match `DeviceAcquisitionOutcome` in `@epicenter/recorder`,
+/// Serialized to match `DeviceAcquisitionOutcome` in `@tironian/recorder`,
 /// which the browser recorder already produces, so both platforms report device
 /// acquisition in one shape.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]

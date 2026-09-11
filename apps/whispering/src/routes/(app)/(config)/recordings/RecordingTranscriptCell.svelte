@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { CopyButton } from '@epicenter/ui/copy-button';
-	import * as InputGroup from '@epicenter/ui/input-group';
+	import { Button } from '@tironian/ui/button';
+	import { CopyButton } from '@tironian/ui/copy-button';
+	import * as InputGroup from '@tironian/ui/input-group';
 	import type { RecordingId } from '$lib/workspace';
 	import { createCopyFn } from '$lib/utils/createCopyFn';
 	import { viewTransition } from '$lib/utils/viewTransitions';

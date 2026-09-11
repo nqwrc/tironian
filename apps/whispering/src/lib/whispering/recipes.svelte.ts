@@ -14,7 +14,7 @@
  * loop, all of which arbitrated between asynchronous reads that could land out
  * of order. Reads are synchronous now (ADR-0215), so none of that can happen.
  */
-import type { NonconformingRow } from '@epicenter/data';
+import type { NonconformingRow } from '@tironian/data';
 import { BUILTIN_RECIPES } from '../state/builtin-recipes';
 import type { Recipe, WhisperingData } from '../workspace';
 

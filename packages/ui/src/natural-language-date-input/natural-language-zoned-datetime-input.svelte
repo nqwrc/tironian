@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { DateTimeString } from '@epicenter/field';
+	import type { DateTimeString } from '@tironian/field';
 	import type { IanaTimeZone } from './iana-time-zone.js';
 
 	export type ZonedDateTimeChoice = {

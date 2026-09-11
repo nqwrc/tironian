@@ -17,7 +17,7 @@
  * only copy of the name outside this file that a rename has to remember.
  *
  * Internal identifiers (`WhisperingApp`, `$lib/whispering/*`,
- * `@epicenter/whispering`) are deliberately not renamed. See
+ * `@tironian/app`) are deliberately not renamed. See
  * `docs/brand/tironian.md`, "Rename tiers": this fork still takes upstream
  * changes, and renaming 520 identifiers would put a merge conflict on every
  * file that names one.

@@ -1,4 +1,4 @@
-import { field } from '@epicenter/data/definition';
+import { field } from '@tironian/data/definition';
 /**
  * Whispering's inert data definition.
  *
@@ -27,8 +27,8 @@ import { field } from '@epicenter/data/definition';
  * which a read applies and a write never stores.
  */
 
-import type { DataView } from '@epicenter/data';
-import { defineData, type KvOf, type RowOf } from '@epicenter/data/definition';
+import type { DataView } from '@tironian/data';
+import { defineData, type KvOf, type RowOf } from '@tironian/data/definition';
 
 /** Runtime-minted structural row ids. */
 export type RecordingId = string;

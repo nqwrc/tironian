@@ -1,10 +1,10 @@
-import type { BlobId } from '@epicenter/blobs';
+import type { BlobId } from '@tironian/blobs';
 import {
 	type ResolvedConnection,
 	resolveConnection,
 	transcribe,
-} from '@epicenter/client';
-import { containsSpeech } from '@epicenter/recorder';
+} from '@tironian/client';
+import { containsSpeech } from '@tironian/recorder';
 import { type AnyTaggedError, defineErrors } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';
 import { Err, Ok, type Result } from 'wellcrafted/result';

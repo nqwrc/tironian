@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import type { BlobId, BlobSource } from '@epicenter/blobs';
+	import type { BlobId, BlobSource } from '@tironian/blobs';
 	import { services } from '$lib/services';
 
 	let {

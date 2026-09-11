@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { PRODUCT_NAME } from '$lib/constants/brand';
-	import * as Sidebar from '@epicenter/ui/sidebar';
-	import { useSidebar } from '@epicenter/ui/sidebar';
+	import * as Sidebar from '@tironian/ui/sidebar';
+	import { useSidebar } from '@tironian/ui/sidebar';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import { toggleMode } from 'mode-watcher';

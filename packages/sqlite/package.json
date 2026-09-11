@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/sqlite",
+	"name": "@tironian/sqlite",
 	"version": "0.0.1",
 	"description": "Portable synchronous SQLite driver contracts for Epicenter's embedded runtimes.",
 	"type": "module",

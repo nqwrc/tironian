@@ -1,6 +1,6 @@
 /** Home's entry point: mount the model administration shell. */
 
-import '@epicenter/ui/app.css';
+import '@tironian/ui/app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
 

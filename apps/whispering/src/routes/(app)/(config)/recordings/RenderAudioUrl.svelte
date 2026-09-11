@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BlobId } from '@epicenter/blobs';
+	import type { BlobId } from '@tironian/blobs';
 	import AudioBlobPlayer from '$lib/components/AudioBlobPlayer.svelte';
 	import { viewTransition } from '$lib/utils/viewTransitions';
 	import type { RecordingId } from '$lib/workspace';

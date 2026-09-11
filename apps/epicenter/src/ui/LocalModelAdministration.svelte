@@ -1,12 +1,12 @@
 <script lang="ts">
-	import * as Alert from '@epicenter/ui/alert';
-	import { Badge } from '@epicenter/ui/badge';
-	import { Button } from '@epicenter/ui/button';
-	import * as Card from '@epicenter/ui/card';
-	import * as Empty from '@epicenter/ui/empty';
-	import * as Item from '@epicenter/ui/item';
-	import { Progress } from '@epicenter/ui/progress';
-	import * as Select from '@epicenter/ui/select';
+	import * as Alert from '@tironian/ui/alert';
+	import { Badge } from '@tironian/ui/badge';
+	import { Button } from '@tironian/ui/button';
+	import * as Card from '@tironian/ui/card';
+	import * as Empty from '@tironian/ui/empty';
+	import * as Item from '@tironian/ui/item';
+	import { Progress } from '@tironian/ui/progress';
+	import * as Select from '@tironian/ui/select';
 	import type { ModelInfo } from './bindings.gen';
 	import { LOCAL_MODEL_UNLOAD_POLICY_OPTIONS } from './local-model-unload-policy';
 	import { localModels } from './local-models.svelte';

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/constants/brand';
-	import { Toaster } from '@epicenter/ui/sonner';
+	import { Toaster } from '@tironian/ui/sonner';
 	import { ModeWatcher } from 'mode-watcher';
 	import { onNavigate } from '$app/navigation';
-	import { FlushEditsOnHide } from '@epicenter/svelte';
-	import '@epicenter/ui/app.css';
+	import { FlushEditsOnHide } from '@tironian/svelte';
+	import '@tironian/ui/app.css';
 	// Tironian's brand overrides, layered after the shared theme so they win.
 	// Keep this import last among the stylesheets.
 	import '../app.css';

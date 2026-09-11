@@ -267,16 +267,16 @@ One product name. No sub-brands, no "Tironian Pro", no capitalized feature names
   `lib.rs`, `shell.rs`). The Rust crate, the deep-link scheme, the sidecar
   binary, the log directory and every `EPICENTER_*` environment variable
   moved to Tironian names in the runtime-identifier rename; upstream's
-  Epicenter name survives only in the `apps/epicenter` directory itself, the
-  package scope, and the `whispering`-named code identifiers, none of which
-  is renamed yet.
+  Epicenter name survives only in the `apps/epicenter` directory itself and
+  the `whispering`-named code identifiers, neither of which is renamed yet.
 - The bundle identifier is now `app.tironian` (`app.tironian.dev` for the dev
   build), moved off `so.epicenter` in the runtime-identifier rename. It names
   the data root on every platform and is pinned equal in Rust, TypeScript and
   both Tauri configs by a test. The move carries no migration: nothing has
   shipped an installed build under the old identifier to migrate.
-- Package identifiers, TypeScript types and import paths keep the `whispering`
-  and `@epicenter/` names. See the next section for why.
+- The package scope moved to `@tironian/*` in the package-scope rename.
+  TypeScript types and import paths still keep the `whispering` name. See the
+  next section for why.
 
 ## Icon
 

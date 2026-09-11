@@ -1,4 +1,4 @@
-import type { CopyFn } from '@epicenter/ui/copy-button';
+import type { CopyFn } from '@tironian/ui/copy-button';
 import { report } from '$lib/report';
 import { services } from '$lib/services';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { PRODUCT_NAME } from '$lib/constants/brand';
-	import * as Field from '@epicenter/ui/field';
-	import { Switch } from '@epicenter/ui/switch';
+	import * as Field from '@tironian/ui/field';
+	import { Switch } from '@tironian/ui/switch';
 	import {
 		createMutation,
 		createQuery,

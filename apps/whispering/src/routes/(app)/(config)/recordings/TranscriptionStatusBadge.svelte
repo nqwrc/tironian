@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Badge } from '@epicenter/ui/badge';
+	import { Badge } from '@tironian/ui/badge';
 	import type { RecordingId } from '$lib/workspace';
 	import { getWhisperingApp } from '$lib/whispering/context';
 

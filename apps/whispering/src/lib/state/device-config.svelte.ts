@@ -1,4 +1,4 @@
-import { createPersistedMap, defineEntry } from '@epicenter/svelte';
+import { createPersistedMap, defineEntry } from '@tironian/svelte';
 import { type } from 'arktype';
 import { extractErrorMessage } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';

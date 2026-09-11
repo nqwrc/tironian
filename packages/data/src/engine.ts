@@ -3,7 +3,7 @@
  * itself.
  *
  * Not the public story. An application opens its data through a runtime's
- * opener (`@epicenter/data/browser`, `@epicenter/data/bun`), which owns the
+ * opener (`@tironian/data/browser`, `@tironian/data/bun`), which owns the
  * address, the claim, the format enforcement, and deletion. This entry point
  * exists for runtimes that have no named opener: today that is exclusively
  * test infrastructure inside `workerd`, where the only synchronous SQLite is

@@ -1,8 +1,8 @@
-import type { BlobSources, BlobStore } from '@epicenter/blobs';
+import type { BlobSources, BlobStore } from '@tironian/blobs';
 import {
 	createWebviewBlobSources,
 	createWebviewBlobStore,
-} from '@epicenter/blobs/webview';
+} from '@tironian/blobs/webview';
 
 const local = createWebviewBlobStore();
 

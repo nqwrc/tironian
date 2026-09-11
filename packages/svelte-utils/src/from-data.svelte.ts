@@ -59,7 +59,7 @@
 import { createSubscriber } from 'svelte/reactivity';
 
 /**
- * The slice of `@epicenter/data`'s `TableHandle` this adapter touches: the
+ * The slice of `@tironian/data`'s `TableHandle` this adapter touches: the
  * read verbs it makes reactive, and the invalidation feed it rides.
  *
  * Structural rather than imported, and that is a variance requirement, not a
@@ -141,7 +141,7 @@ function reactiveTable<TTable extends AdaptableTable>(
 	// public `onCommitted` listeners run first, table invalidations after, so
 	// a cache invalidated by the table subscription would still serve
 	// pre-commit rows to an `onCommitted` reader (a composed follower like
-	// `@epicenter/data/projection` reads in exactly that phase). The handle's
+	// `@tironian/data/projection` reads in exactly that phase). The handle's
 	// `list()` is a walk over a document already in memory and builds fresh
 	// arrays per call either way, so a read-through is the store's own
 	// contract; this adapter adds tracking, never a second copy of the data.

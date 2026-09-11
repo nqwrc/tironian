@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { pageTitle } from '$lib/constants/brand';
-	import * as Field from '@epicenter/ui/field';
+	import * as Field from '@tironian/ui/field';
 	import {
 		CompletionRuntimeConfig,
 		SettingSwitch,

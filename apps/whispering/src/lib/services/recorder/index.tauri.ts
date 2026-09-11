@@ -1,9 +1,9 @@
-import { type BlobId, parseBlobId } from '@epicenter/blobs';
+import { type BlobId, parseBlobId } from '@tironian/blobs';
 import {
 	asDeviceIdentifier,
 	type Device,
 	type DeviceAcquisitionOutcome,
-} from '@epicenter/recorder';
+} from '@tironian/recorder';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Err, Ok, type Result } from 'wellcrafted/result';
 import { recorderErrorFromIpc } from '$lib/services/recorder/categorize-error';

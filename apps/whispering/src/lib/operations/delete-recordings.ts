@@ -1,4 +1,4 @@
-import { confirmationDialog } from '@epicenter/ui/confirmation-dialog';
+import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
 import { report } from '$lib/report';
 import type { Recording } from '$lib/state/recordings.svelte';
 import type { WhisperingApp } from '$lib/whispering/app';

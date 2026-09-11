@@ -9,7 +9,7 @@
  * SPA reaches domain code.
  */
 
-import { LOCAL_BLOB_PATH } from '@epicenter/blobs/webview';
+import { LOCAL_BLOB_PATH } from '@tironian/blobs/webview';
 
 const stripTrailing = (value: string) => value.replace(/\/+$/, '');
 

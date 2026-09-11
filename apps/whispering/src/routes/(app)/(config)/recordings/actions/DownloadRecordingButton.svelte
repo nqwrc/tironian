@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { Spinner } from '@epicenter/ui/spinner';
+	import { Button } from '@tironian/ui/button';
+	import { Spinner } from '@tironian/ui/spinner';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import { createMutation } from '@tanstack/svelte-query';
 	import type { ComponentProps } from 'svelte';

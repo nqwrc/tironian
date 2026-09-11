@@ -1,13 +1,10 @@
-import { APPS } from '@epicenter/constants/apps';
+import { APPS } from '@tironian/constants/apps';
 // VAD fetches these files from `/vad/*` at runtime (they are not bundled). The
 // recorder package owns the VAD capability and resolves the asset source paths
 // from its own pinned dependency tree; we just copy them into the served `/vad/`
-// directory at build time (see @epicenter/recorder/vad-assets).
-import {
-	VAD_ASSET_DEST,
-	vadAssetSources,
-} from '@epicenter/recorder/vad-assets';
-import { workspaceAppViteConfig } from '@epicenter/vite-config';
+// directory at build time (see @tironian/recorder/vad-assets).
+import { VAD_ASSET_DEST, vadAssetSources } from '@tironian/recorder/vad-assets';
+import { workspaceAppViteConfig } from '@tironian/vite-config';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { defaultClientConditions, defineConfig, mergeConfig } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';

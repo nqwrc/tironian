@@ -1,5 +1,5 @@
-import type { BlobId } from '@epicenter/blobs';
-import { InstantString } from '@epicenter/field';
+import type { BlobId } from '@tironian/blobs';
+import { InstantString } from '@tironian/field';
 import {
 	deliverTranscriptionResult,
 	type TranscriptionSource,

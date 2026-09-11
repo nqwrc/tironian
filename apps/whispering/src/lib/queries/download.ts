@@ -1,4 +1,4 @@
-import type { BlobNotFound, BlobStoreFailed } from '@epicenter/blobs';
+import type { BlobNotFound, BlobStoreFailed } from '@tironian/blobs';
 import { defineKeys } from 'wellcrafted/query';
 import { Err, type Result } from 'wellcrafted/result';
 import type { DownloadError } from '#platform/download';

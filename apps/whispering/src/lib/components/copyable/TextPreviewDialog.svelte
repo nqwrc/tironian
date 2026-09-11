@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { CopyButton } from '@epicenter/ui/copy-button';
-	import * as InputGroup from '@epicenter/ui/input-group';
-	import * as Modal from '@epicenter/ui/modal';
-	import { Textarea } from '@epicenter/ui/textarea';
+	import { Button } from '@tironian/ui/button';
+	import { CopyButton } from '@tironian/ui/copy-button';
+	import * as InputGroup from '@tironian/ui/input-group';
+	import * as Modal from '@tironian/ui/modal';
+	import { Textarea } from '@tironian/ui/textarea';
 	import { createCopyFn } from '$lib/utils/createCopyFn';
 
 	/**

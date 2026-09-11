@@ -11,10 +11,10 @@
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { Loading } from '@epicenter/ui/loading';
-	import * as Sidebar from '@epicenter/ui/sidebar';
-	import * as Tooltip from '@epicenter/ui/tooltip';
+	import { Button } from '@tironian/ui/button';
+	import { Loading } from '@tironian/ui/loading';
+	import * as Sidebar from '@tironian/ui/sidebar';
+	import * as Tooltip from '@tironian/ui/tooltip';
 	import { onDestroy } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { createLogger } from 'wellcrafted/logger';

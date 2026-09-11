@@ -12,10 +12,10 @@
 	import { PRODUCT_NAME, pageTitle } from '$lib/constants/brand';
 	import { INTERFACE_LOCALE_OPTIONS } from '$lib/constants/locales';
 	import { m } from '$lib/paraglide/messages';
-	import * as Alert from '@epicenter/ui/alert';
-	import { Button } from '@epicenter/ui/button';
-	import * as Field from '@epicenter/ui/field';
-	import { Link } from '@epicenter/ui/link';
+	import * as Alert from '@tironian/ui/alert';
+	import { Button } from '@tironian/ui/button';
+	import * as Field from '@tironian/ui/field';
+	import { Link } from '@tironian/ui/link';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import OutputDeliveryControls from '$lib/components/OutputDeliveryControls.svelte';
 	import { SettingSelect, SettingSwitch } from '$lib/components/settings';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
+	import { Button } from '@tironian/ui/button';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import {
 		clipboardFallback,

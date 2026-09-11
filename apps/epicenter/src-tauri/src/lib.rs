@@ -1703,7 +1703,7 @@ mod tests {
         include_str!("../capabilities/trusted-app-windows-production.json"),
     ];
 
-    /// The operations `@epicenter/app` exposes, and therefore the complete set
+    /// The operations `@tironian/app` exposes, and therefore the complete set
     /// of this crate's commands an app window is granted.
     const PUBLIC_CLIENT_COMMANDS: &[&str] = &[
         "start_recording",
@@ -1808,7 +1808,7 @@ mod tests {
         assert!(
             BINDINGS.contains("'recording-ended-event'")
                 || BINDINGS.contains("\"recording-ended-event\""),
-            "the host no longer emits the event @epicenter/app subscribes to"
+            "the host no longer emits the event @tironian/app subscribes to"
         );
     }
 

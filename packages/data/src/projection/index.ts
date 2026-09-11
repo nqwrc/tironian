@@ -45,8 +45,8 @@ import {
 	type JsonObject,
 	KV_ROOT,
 	parseData,
-} from '@epicenter/data/definition';
-import type { SqliteDatabase, SqliteRow, SqliteValue } from '@epicenter/sqlite';
+} from '@tironian/data/definition';
+import type { SqliteDatabase, SqliteRow, SqliteValue } from '@tironian/sqlite';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
 import { Err, type Result, trySync } from 'wellcrafted/result';
 

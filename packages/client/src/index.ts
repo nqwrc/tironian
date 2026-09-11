@@ -1,5 +1,5 @@
 /**
- * `@epicenter/client`: typed HTTP helpers for bring-your-own-key transcription
+ * `@tironian/client`: typed HTTP helpers for bring-your-own-key transcription
  * and completion providers.
  *
  * Every surface here takes a caller-built connection (base URL, API key,

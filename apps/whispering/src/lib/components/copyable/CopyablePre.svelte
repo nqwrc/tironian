@@ -18,8 +18,8 @@
 </script>
 
 <script lang="ts">
-	import { CopyButton } from '@epicenter/ui/copy-button';
-	import { cn } from '@epicenter/ui/utils';
+	import { CopyButton } from '@tironian/ui/copy-button';
+	import { cn } from '@tironian/ui/utils';
 	import { createCopyFn } from '$lib/utils/createCopyFn';
 
 	const {

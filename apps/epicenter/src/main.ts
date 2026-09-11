@@ -5,8 +5,8 @@
  */
 
 import { join } from 'node:path';
-import { createBunBlobStore } from '@epicenter/blobs/bun';
-import { epicenterDataRoot } from '@epicenter/constants/app-data';
+import { createBunBlobStore } from '@tironian/blobs/bun';
+import { epicenterDataRoot } from '@tironian/constants/app-data';
 import { extractErrorMessage } from 'wellcrafted/error';
 import { COMPILED_APPLICATIONS } from './applications.ts';
 import { createHomeServer } from './server.ts';

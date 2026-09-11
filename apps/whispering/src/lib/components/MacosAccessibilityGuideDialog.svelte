@@ -1,7 +1,7 @@
 <script module lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { PRODUCT_NAME } from '$lib/constants/brand';
-	import { toast } from '@epicenter/ui/sonner';
+	import { toast } from '@tironian/ui/sonner';
 	import { tauri } from '#platform/tauri';
 
 	/**
@@ -70,9 +70,9 @@
 </script>
 
 <script lang="ts">
-	import { Badge } from '@epicenter/ui/badge';
-	import { Button } from '@epicenter/ui/button';
-	import * as Dialog from '@epicenter/ui/dialog';
+	import { Badge } from '@tironian/ui/badge';
+	import { Button } from '@tironian/ui/button';
+	import * as Dialog from '@tironian/ui/dialog';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import MacosAccessibilityGuide from '$lib/components/MacosAccessibilityGuide.svelte';

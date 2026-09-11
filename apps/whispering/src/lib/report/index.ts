@@ -1,4 +1,4 @@
-import { toast as sonner } from '@epicenter/ui/sonner';
+import { toast as sonner } from '@tironian/ui/sonner';
 import { nanoid } from 'nanoid/non-secure';
 import type { AnyTaggedError } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';

@@ -19,7 +19,7 @@ const read = (name: string) => readFileSync(join(ROOT, name), 'utf8');
 
 describe('Epicenter-hosted Whispering identity', () => {
 	test('the canonical package is the independently hostable SPA', () => {
-		expect(JSON.parse(read('package.json')).name).toBe('@epicenter/whispering');
+		expect(JSON.parse(read('package.json')).name).toBe('@tironian/app');
 		expect(existsSync(join(ROOT, 'src-tauri'))).toBe(false);
 		expect(existsSync(join(REPO_ROOT, 'apps/epicenter/whispering'))).toBe(
 			false,

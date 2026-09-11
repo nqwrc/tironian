@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
-	import { Badge } from '@epicenter/ui/badge';
-	import { Button } from '@epicenter/ui/button';
-	import * as Card from '@epicenter/ui/card';
-	import { CopyButton } from '@epicenter/ui/copy-button';
-	import * as Field from '@epicenter/ui/field';
-	import { Input } from '@epicenter/ui/input';
-	import { Link } from '@epicenter/ui/link';
-	import * as Select from '@epicenter/ui/select';
-	import { Textarea } from '@epicenter/ui/textarea';
-	import { cn } from '@epicenter/ui/utils';
+	import { Badge } from '@tironian/ui/badge';
+	import { Button } from '@tironian/ui/button';
+	import * as Card from '@tironian/ui/card';
+	import { CopyButton } from '@tironian/ui/copy-button';
+	import * as Field from '@tironian/ui/field';
+	import { Input } from '@tironian/ui/input';
+	import { Link } from '@tironian/ui/link';
+	import * as Select from '@tironian/ui/select';
+	import { Textarea } from '@tironian/ui/textarea';
+	import { cn } from '@tironian/ui/utils';
 	import CopyablePre from '$lib/components/copyable/CopyablePre.svelte';
 	import {
 		SUPPORTED_LANGUAGES_OPTIONS,

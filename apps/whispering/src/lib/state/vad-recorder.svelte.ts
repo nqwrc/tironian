@@ -2,7 +2,7 @@ import {
 	asDeviceIdentifier,
 	createVadRecorder,
 	enumerateDevices,
-} from '@epicenter/recorder';
+} from '@tironian/recorder';
 import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import { defineKeys, resultQueryOptions } from 'wellcrafted/query';
 import { Ok } from 'wellcrafted/result';
@@ -22,7 +22,7 @@ const vadKeys = defineKeys({
 });
 
 /**
- * Thin reactive wrapper over `@epicenter/recorder`'s callback VAD core.
+ * Thin reactive wrapper over `@tironian/recorder`'s callback VAD core.
  *
  * The portable VAD lives in the package (`createVadRecorder`). This wrapper adds
  * the two pieces that are Whispering's, not the capability's:

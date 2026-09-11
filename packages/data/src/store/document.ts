@@ -1,5 +1,5 @@
-import type { JsonObject, JsonValue } from '@epicenter/data/definition';
-import { RESERVED_ATTRIBUTE_PREFIX } from '@epicenter/data/definition';
+import type { JsonObject, JsonValue } from '@tironian/data/definition';
+import { RESERVED_ATTRIBUTE_PREFIX } from '@tironian/data/definition';
 import * as Y from '@y/y';
 
 /**

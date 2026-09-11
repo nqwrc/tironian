@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/epicenter",
+	"name": "@tironian/desktop",
 	"description": "One desktop application host serving trusted Epicenter SPAs and local blob storage from Bun.",
 	"private": true,
 	"version": "0.0.1",
@@ -23,12 +23,12 @@
 		"typecheck:home": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
 	},
 	"dependencies": {
-		"@epicenter/blobs": "workspace:*",
-		"@epicenter/constants": "workspace:*",
-		"@epicenter/data": "workspace:*",
-		"@epicenter/field": "workspace:*",
-		"@epicenter/ui": "workspace:*",
-		"@epicenter/whispering": "workspace:*",
+		"@tironian/blobs": "workspace:*",
+		"@tironian/constants": "workspace:*",
+		"@tironian/data": "workspace:*",
+		"@tironian/field": "workspace:*",
+		"@tironian/ui": "workspace:*",
+		"@tironian/app": "workspace:*",
 		"@tauri-apps/api": "catalog:",
 		"hono": "catalog:",
 		"mime": "catalog:",

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '@epicenter/ui/utils';
+	import { cn } from '@tironian/ui/utils';
 
 	// The pill's live mic meter: a fixed bank of bars whose heights ride the
 	// smoothed `level`. The pill styles the bars (width, color) and the container

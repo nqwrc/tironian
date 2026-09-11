@@ -35,7 +35,7 @@ function neverAnswers(
 let completeImpl: (connection: unknown, args: never) => unknown = async () =>
 	Ok('completed');
 
-mock.module('@epicenter/client', () => ({
+mock.module('@tironian/client', () => ({
 	complete: (connection: unknown, args: never) =>
 		completeImpl(connection, args),
 	resolveConnection: () => ({}),

@@ -1,4 +1,4 @@
-import { field } from '@epicenter/data/definition';
+import { field } from '@tironian/data/definition';
 /**
  * Browser Store Address Tests
  *
@@ -17,7 +17,7 @@ import { field } from '@epicenter/data/definition';
  */
 import 'fake-indexeddb/auto';
 import { describe, expect, test } from 'bun:test';
-import { defineData } from '@epicenter/data/definition';
+import { defineData } from '@tironian/data/definition';
 import type { Result } from 'wellcrafted/result';
 import { expectErr, expectOk as expectOkResult } from 'wellcrafted/testing';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from '@epicenter/ui/button';
+	import { Button } from '@tironian/ui/button';
 	import { dictationCapability } from '$lib/state/dictation-capability.svelte';
 
 	// Dev-only affordance (rendered behind `import.meta.env.DEV` in GlobalDialogs):

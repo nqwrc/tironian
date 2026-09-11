@@ -1,7 +1,7 @@
 /*
  * Tironian's brand layer.
  *
- * Loaded after `@epicenter/ui/app.css`, which ships shadcn's default blue-slate
+ * Loaded after `@tironian/ui/app.css`, which ships shadcn's default blue-slate
  * theme for every Epicenter app. This file redefines the same variable names so
  * no component changes, and it lives here rather than in `packages/ui` for two
  * reasons: that package is MIT and shared with Honeycrisp, so repainting it

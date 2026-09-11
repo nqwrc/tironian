@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ConfirmationDialog } from '@epicenter/ui/confirmation-dialog';
+	import { ConfirmationDialog } from '@tironian/ui/confirmation-dialog';
 	import DevAccessibilityToggle from '$lib/components/DevAccessibilityToggle.svelte';
 	import MacosAccessibilityGuideDialog from '$lib/components/MacosAccessibilityGuideDialog.svelte';
 	import MoreDetailsDialog from '$lib/components/MoreDetailsDialog.svelte';

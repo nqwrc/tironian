@@ -13,7 +13,7 @@
  * signing/refresh auth (Bedrock SigV4, Vertex OAuth), never enters this shape: the
  * caller composes it into a {@link ResolvedConnection} and injects it. Hosted is
  * therefore not a member of this type; it is the registry's injected fallback
- * transport (see `@epicenter/app-shell` `createInferenceConnections`).
+ * transport (see `@tironian/app-shell` `createInferenceConnections`).
  *
  * The leak guard is structural (ADR-0053): the Epicenter bearer is attached only by
  * `auth.fetch`, and only to the origin it signed into. A connection here is always

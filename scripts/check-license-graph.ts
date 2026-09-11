@@ -17,15 +17,30 @@ const AGPL = /AGPL/i;
 
 type Pkg = { name: string; license: string; deps: string[] };
 
-const byName = new Map<string, Pkg>();
+// Two passes: collect every workspace package's name first, then keep only
+// the deps that resolve to another workspace package. Filtering by
+// membership instead of a hardcoded scope literal survives the next
+// package-scope rename; a `startsWith(scope)` filter would just go quiet
+// on it, the way the previous version of this check did.
+const manifests: { name: string; license: string; deps: string[] }[] = [];
 for (const rel of new Glob('{packages,apps}/*/package.json').scanSync('.')) {
 	const j = JSON.parse(readFileSync(rel, 'utf8'));
 	if (!j.name) continue;
 	const deps = [
 		...Object.keys(j.dependencies ?? {}),
 		...Object.keys(j.peerDependencies ?? {}),
-	].filter((d) => d.startsWith('@epicenter/'));
-	byName.set(j.name, { name: j.name, license: j.license ?? '(none)', deps });
+	];
+	manifests.push({ name: j.name, license: j.license ?? '(none)', deps });
+}
+
+const workspaceNames = new Set(manifests.map((m) => m.name));
+const byName = new Map<string, Pkg>();
+for (const m of manifests) {
+	byName.set(m.name, {
+		name: m.name,
+		license: m.license,
+		deps: m.deps.filter((d) => workspaceNames.has(d)),
+	});
 }
 
 function reaches(start: Pkg): { name: string; path: string[] } | null {

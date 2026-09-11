@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Input } from '@epicenter/ui/input';
-	import * as Table from '@epicenter/ui/table';
+	import { Input } from '@tironian/ui/input';
+	import * as Table from '@tironian/ui/table';
 	import Search from '@lucide/svelte/icons/search';
 	import type { Snippet } from 'svelte';
 	import { type Command, commands } from '$lib/commands';

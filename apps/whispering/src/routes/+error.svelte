@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { pageTitle } from '$lib/constants/brand';
-	import { Button } from '@epicenter/ui/button';
-	import * as Empty from '@epicenter/ui/empty';
+	import { Button } from '@tironian/ui/button';
+	import * as Empty from '@tironian/ui/empty';
 	import { page } from '$app/state';
 	import { whisperingPath } from '$lib/constants/urls';
 </script>

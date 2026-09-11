@@ -1,5 +1,5 @@
 /**
- * What a developer gets from `@epicenter/data`.
+ * What a developer gets from `@tironian/data`.
  *
  * The store and the vocabulary a data definition is declared in. Runtime
  * openers live at their own entry points, because a Bun opener imports

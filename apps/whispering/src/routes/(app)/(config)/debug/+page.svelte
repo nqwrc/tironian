@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import * as Card from '@epicenter/ui/card';
-	import * as SectionHeader from '@epicenter/ui/section-header';
+	import { Button } from '@tironian/ui/button';
+	import * as Card from '@tironian/ui/card';
+	import * as SectionHeader from '@tironian/ui/section-header';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import { getWhisperingApp } from '$lib/whispering/context';

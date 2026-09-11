@@ -16,7 +16,7 @@
  */
 import 'fake-indexeddb/auto';
 import { expect, test } from 'bun:test';
-import { InstantString } from '@epicenter/field';
+import { InstantString } from '@tironian/field';
 
 // The recipes domain IS reactive state, so the runes are shimmed to their
 // non-reactive meaning (the pattern the other runtime tests use). These
@@ -31,7 +31,7 @@ import { InstantString } from '@epicenter/field';
 	{ by: <TValue>(derive: () => TValue) => derive() },
 );
 
-import type { BlobStore } from '@epicenter/blobs';
+import type { BlobStore } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import { whisperingDefinition } from '../workspace';
 import { openWhisperingApp, type WhisperingAppDependencies } from './app';

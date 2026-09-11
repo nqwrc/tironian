@@ -5,7 +5,7 @@
  * the minted row id (ADR-0206), and matching is someone else's pure function
  * (`operations/match-app-rule.ts`).
  */
-import type { NonconformingRow } from '@epicenter/data';
+import type { NonconformingRow } from '@tironian/data';
 import type { AppRule, WhisperingData } from '../workspace';
 
 export function createWhisperingAppRules({

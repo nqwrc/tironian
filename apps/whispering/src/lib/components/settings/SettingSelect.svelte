@@ -1,6 +1,6 @@
 <script lang="ts" generics="V extends string | number, K extends string">
-	import * as Field from '@epicenter/ui/field';
-	import * as Select from '@epicenter/ui/select';
+	import * as Field from '@tironian/ui/field';
+	import * as Select from '@tironian/ui/select';
 
 	// Drives one typed dropdown over whatever store is passed: the synced
 	// workspace `settings` or the device-local `deviceConfig`. Both expose the

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { cn } from '@epicenter/ui/utils';
+	import { cn } from '@tironian/ui/utils';
 	import type { Snippet } from 'svelte';
 
 	let {

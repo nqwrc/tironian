@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
+	import { Button } from '@tironian/ui/button';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';

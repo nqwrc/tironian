@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Button } from '@epicenter/ui/button';
-	import * as Command from '@epicenter/ui/command';
-	import { useCombobox } from '@epicenter/ui/hooks';
-	import * as Popover from '@epicenter/ui/popover';
-	import { cn } from '@epicenter/ui/utils';
+	import { Button } from '@tironian/ui/button';
+	import * as Command from '@tironian/ui/command';
+	import { useCombobox } from '@tironian/ui/hooks';
+	import * as Popover from '@tironian/ui/popover';
+	import { cn } from '@tironian/ui/utils';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { CAPTURE_SURFACE_OPTIONS } from '$lib/constants/audio';

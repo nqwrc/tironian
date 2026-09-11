@@ -6,8 +6,8 @@ import {
 	type DataDefinitionParseError,
 	type ParsedDataDefinition,
 	parseData,
-} from '@epicenter/data/definition';
-import { createBunSqliteAdapter } from '@epicenter/sqlite/bun';
+} from '@tironian/data/definition';
+import { createBunSqliteAdapter } from '@tironian/sqlite/bun';
 import { Err, Ok, type Result, tryAsync } from 'wellcrafted/result';
 import { claimDocument, releaseDocument } from './claims.js';
 import { applyHistorySchema, createSqliteDurablePort } from './log.js';

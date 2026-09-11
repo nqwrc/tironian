@@ -5,7 +5,7 @@
  * ships in code, so every row is the person's own and identity is always the
  * minted row id (ADR-0206).
  */
-import type { NonconformingRow } from '@epicenter/data';
+import type { NonconformingRow } from '@tironian/data';
 import type { Snippet, WhisperingData } from '../workspace';
 
 export function createWhisperingSnippets({

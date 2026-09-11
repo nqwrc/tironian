@@ -2,9 +2,9 @@
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
 	import { pageTitle } from '$lib/constants/brand';
-	import { Button } from '@epicenter/ui/button';
-	import * as SectionHeader from '@epicenter/ui/section-header';
-	import { Separator } from '@epicenter/ui/separator';
+	import { Button } from '@tironian/ui/button';
+	import * as SectionHeader from '@tironian/ui/section-header';
+	import { Separator } from '@tironian/ui/separator';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { report } from '$lib/report';
 	import { createAppShortcuts } from '$lib/platform/shortcuts';

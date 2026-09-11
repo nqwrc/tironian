@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/data",
+	"name": "@tironian/data",
 	"version": "0.0.1",
 	"description": "The Epicenter store: one document per application, and a synchronous surface over it.",
 	"type": "module",
@@ -22,9 +22,9 @@
 		"test": "bun test"
 	},
 	"dependencies": {
-		"@epicenter/field": "workspace:*",
-		"@epicenter/identity": "workspace:*",
-		"@epicenter/sqlite": "workspace:*",
+		"@tironian/field": "workspace:*",
+		"@tironian/identity": "workspace:*",
+		"@tironian/sqlite": "workspace:*",
 		"@sqlite.org/sqlite-wasm": "catalog:",
 		"@y/y": "14.0.0-rc.24",
 		"idb": "^8.0.3",

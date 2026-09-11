@@ -1,4 +1,4 @@
-import type { BlobStore, BlobStoreFailed } from '@epicenter/blobs';
+import type { BlobStore, BlobStoreFailed } from '@tironian/blobs';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
 import { Err, Ok, type Result } from 'wellcrafted/result';
 import { m } from '../paraglide/messages';

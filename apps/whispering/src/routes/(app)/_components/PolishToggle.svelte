@@ -11,8 +11,8 @@
 -->
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
-	import { Link } from '@epicenter/ui/link';
+	import { Button } from '@tironian/ui/button';
+	import { Link } from '@tironian/ui/link';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import { whisperingPath } from '$lib/constants/urls';

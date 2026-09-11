@@ -6,7 +6,7 @@
  * before delivery, and only when it is both enabled and applicable.
  */
 import { afterEach, expect, mock, test } from 'bun:test';
-import { generateBlobId } from '@epicenter/blobs';
+import { generateBlobId } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
 import { expandSnippets } from './expand-snippets';

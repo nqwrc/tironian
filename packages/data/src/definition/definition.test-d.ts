@@ -2,7 +2,7 @@ import type {
 	CalendarDateString,
 	DateTimeString,
 	InstantString,
-} from '@epicenter/field';
+} from '@tironian/field';
 import type { Static } from 'typebox';
 import { defineData, field, type RowOf } from './index.js';
 

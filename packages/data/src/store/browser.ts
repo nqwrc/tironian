@@ -7,7 +7,7 @@
  * multi-store transaction per flush (ADR-0238). Every read a person makes
  * (`get`, `list`, `ids`, `document`) comes from the `Y.Doc` already in
  * memory; SQL, when an application wants it, is a follower it composes over
- * this surface (`@epicenter/data/projection`), so opening a store here loads
+ * this surface (`@tironian/data/projection`), so opening a store here loads
  * no SQLite at all.
  *
  * ## Why IndexedDB owns the facts directly
@@ -41,7 +41,7 @@ import {
 	type DataDefinitionParseError,
 	type ParsedDataDefinition,
 	parseData,
-} from '@epicenter/data/definition';
+} from '@tironian/data/definition';
 import * as Y from '@y/y';
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import { Err, Ok, type Result, tryAsync } from 'wellcrafted/result';

@@ -16,7 +16,7 @@
  * diagnostic, never as a row.
  */
 
-import type { BlobId } from '@epicenter/blobs';
+import type { BlobId } from '@tironian/blobs';
 import type { Recording as RecordingRow, WhisperingData } from '../workspace';
 
 export type Recording = Omit<RecordingRow, 'audioBlobId'> & {

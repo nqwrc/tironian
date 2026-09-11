@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@epicenter/ui/button';
+	import { Button } from '@tironian/ui/button';
 	import FileUpIcon from '@lucide/svelte/icons/file-up';
 	import { IMPORT_ACCEPT } from '$lib/constants/import-formats';
 	import { importFiles } from '$lib/operations/import';
