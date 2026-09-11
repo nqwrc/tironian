@@ -12,10 +12,10 @@ Every package here is **source-only `.ts`**: `exports` point at `./src/*.ts`,
 there is no build step, and consumers (Bun, Vite, Tauri, the Cloudflare Worker)
 operate on raw `.ts`. That single fact decides the whole config.
 
-**The exceptions are the audience, not the package.** `packages/workspace` and
-`packages/field` are published for toolchains we do not control, so shipping
-source would subject them to a stranger's compiler settings. They emit `.js` and
-`.d.ts`, and their `exports` point at `./dist`. Each leaf `tsconfig.json` is an
+**The exception is the audience, not the package.** `packages/field`
+is published for toolchains we do not control, so shipping
+source would subject it to a stranger's compiler settings. It emits `.js` and
+`.d.ts`, and its `exports` point at `./dist`. Its leaf `tsconfig.json` is an
 ordinary tier from the table below; the emit lives in a **sibling
 `tsconfig.build.json`** that extends the leaf and turns on exactly what emitting
 needs (`noEmit: false`, `outDir`, `rootDir`, `declaration`, `types: []`). Do not
@@ -71,7 +71,7 @@ its `lib`/`module` win where they must. Never hand-edit a generated config.
 The two canonical library shapes in full:
 
 ```jsonc
-// bun library: packages/data, workspace, field, sqlite, sync, identity, ...
+// bun library: packages/data, field, sqlite, identity, blobs, ...
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
@@ -133,4 +133,4 @@ without `@types/bun` installed would then fail with `Cannot find type definition
 ## Background
 
 The full rationale, the migration that established this layout, and the baseline
-typecheck state are in `specs/20260522T190000-modernize-monorepo-tsconfig.md`.
+typecheck state are in the git history for the tsconfig migration.

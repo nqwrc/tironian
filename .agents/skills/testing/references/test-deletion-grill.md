@@ -212,8 +212,8 @@ Deleted:
 - "returns the mocked user" (MOCK ECHO)
 
 Remaining coverage:
-- packages/workspace/src/workspace.integration.test.ts covers
-  workspace creation through the public factory.
+- the package's integration test covers
+  store creation through the public factory.
 ```
 
 ## Final Report

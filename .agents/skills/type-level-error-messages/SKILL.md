@@ -184,5 +184,5 @@ The error message is also rendered in CI logs. Keep it ASCII so the message read
 ## Reference
 
 - arktype's `ErrorMessage` definition: `node_modules/@ark/util/out/errors.d.ts:25`.
-- Our example use: `packages/workspace/src/shared/actions.ts` (`defineActions`, `IsSnakeCaseKey`, `InvalidActionKey`).
+- Our example use: a `defineActions` helper (`defineActions`, `IsSnakeCaseKey`, `InvalidActionKey`) that validated action-map keys at the type level, in a package since deleted; kept here for the pattern.
 - Background article: `docs/articles/<date>-type-level-error-messages.md`.

@@ -96,9 +96,9 @@ Net change across 44 files: about 1,000 lines deleted.
 ## Feature PR
 
 ````md
-The tab-manager extension needs to tell a browser extension to close tabs, open URLs, and list devices. The product already syncs shared state between devices through a Durable Object relay, but sync is one-way: you can read shared state, you cannot ask another device to do something. That gap is what this PR fills.
+The desktop companion needs to tell a browser extension to close tabs, open URLs, and list devices. The product already syncs shared state between devices through a Durable Object relay, but sync is one-way: you can read shared state, you cannot ask another device to do something. That gap is what this PR fills.
 
-Getting there required fixing a few things that were already slightly wrong, and the journey ends with the `sync-client` package collapsing into the workspace module.
+Getting there required fixing a few things that were already slightly wrong, and the journey ends with the sync-client logic collapsing into the workspace module.
 
 ---
 
