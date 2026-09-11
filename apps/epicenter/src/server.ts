@@ -1,57 +1,31 @@
 /**
- * The Bun-owned Epicenter origin: trusted SPA documents, Home APIs, and the
- * Home session WebSocket. The launch credential can only mint short-lived
+ * The Bun-owned Epicenter origin: trusted SPA documents, the account broker,
+ * and local blob storage. The launch credential can only mint short-lived
  * browser sessions at the bootstrap route; it never appears in a URL or
  * durable browser storage.
  */
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { AgentToolDefinition } from '@epicenter/agent';
 import { getProfileVia } from '@epicenter/auth';
 import { type BlobId, type BlobRemote, parseBlobId } from '@epicenter/blobs';
 import type { BunBlobStore } from '@epicenter/blobs/bun';
 import { type Context, Hono, type Next } from 'hono';
-import { createBunWebSocket } from 'hono/bun';
 import { getCookie, setCookie } from 'hono/cookie';
-import { type Application, COMPILED_APPLICATIONS } from './applications.ts';
 import type { DesktopAuthAuthority } from './desktop-auth-authority.ts';
 import { createDesktopAuthorityFetch } from './desktop-authority-fetch.ts';
-import {
-	type HomeHost,
-	type HomeSessionSnapshot,
-	parseHomeCommand,
-} from './host.ts';
 import {
 	ACCOUNT_INSTANCE_ROUTE,
 	ACCOUNT_PROFILE_ROUTE,
 	ACCOUNT_SIGN_IN_ROUTE,
 	ACCOUNT_SIGN_OUT_ROUTE,
-	APPLICATIONS_ROUTE,
 	BOOTSTRAP_ROUTE,
 	BUILT_IN_ROUTES,
 	LOCAL_BLOB_REMOTE_ROUTES,
 	LOCAL_BLOB_ROUTE,
-	SESSION_ROUTE,
-	SESSION_STREAM_ROUTE,
 } from './routes.ts';
 import type { EpicenterStaticAssets } from './static-assets.ts';
 
-export type HomeServerEvent = {
-	type: 'snapshot';
-	snapshot: HomeSessionSnapshot;
-};
-
-export type HomeSessionResponse = {
-	tools: AgentToolDefinition[];
-	snapshot: HomeSessionSnapshot;
-};
-
-export type ApplicationsResponse = {
-	apps: Application[];
-};
-
 export type HomeServerOptions = {
-	host: HomeHost;
 	/** Exact active origin, including the Rust-selected explicit port. */
 	origin: string;
 	/** Per-launch credential received from Rust over stdin. */
@@ -76,7 +50,6 @@ const MAX_BROWSER_SESSIONS = 32;
 const SESSION_SHELL = `<!doctype html><html><head><meta charset="utf-8"><title>Tironian</title><script>window.__EPICENTER_SESSION_READY__.then(() => window.location.reload())</script></head><body></body></html>`;
 
 export function createHomeServer({
-	host,
 	origin,
 	launchToken,
 	staticAssets,
@@ -105,7 +78,6 @@ export function createHomeServer({
 		[homePage, ...servedApps.map(({ page }) => page), SESSION_SHELL].join('\n'),
 	);
 	const deploymentFetch = createDesktopAuthorityFetch(desktopAuth);
-	const { upgradeWebSocket, websocket } = createBunWebSocket();
 	const app = new Hono();
 
 	app.use('*', async (c, next) => {
@@ -245,27 +217,7 @@ export function createHomeServer({
 	}
 	app.get('/apps/*', (c) => c.text('Not Found', 404));
 
-	app.use(APPLICATIONS_ROUTE.pattern, requireBrowserSession);
-	app.use('/api/home/*', requireBrowserSession);
 	app.use('/api/local-blobs/*', requireBrowserSession);
-	app.use(SESSION_STREAM_ROUTE.pattern, async (c, next) => {
-		if (c.req.header('origin') !== origin) return c.text('Forbidden', 403);
-		await next();
-	});
-
-	app.get(SESSION_ROUTE.pattern, (c) =>
-		c.json({
-			tools: host.toolDefinitions(),
-			snapshot: host.snapshot(),
-		} satisfies HomeSessionResponse),
-	);
-
-	// What Home lists as launchable (ADR-0189).
-	app.get(APPLICATIONS_ROUTE.pattern, (c) =>
-		c.json({
-			apps: COMPILED_APPLICATIONS as Application[],
-		} satisfies ApplicationsResponse),
-	);
 
 	app.put(LOCAL_BLOB_ROUTE.pattern, async (c) => {
 		const id = parseBlobId(c.req.param('blobId'));
@@ -415,36 +367,7 @@ export function createHomeServer({
 		requireBlobRemote((remote, id) => remote.purge(id)),
 	);
 
-	app.get(
-		SESSION_STREAM_ROUTE.pattern,
-		upgradeWebSocket(() => {
-			let unsubscribe: (() => void) | undefined;
-			const push = (ws: { send(data: string): void }) => {
-				const event: HomeServerEvent = {
-					type: 'snapshot',
-					snapshot: host.snapshot(),
-				};
-				ws.send(JSON.stringify(event));
-			};
-			return {
-				onOpen(_event, ws) {
-					unsubscribe = host.subscribe(() => push(ws));
-					push(ws);
-				},
-				onMessage(event, ws) {
-					const command = parseHomeCommand(parseFrame(event.data));
-					if (!command) return;
-					void host.handleCommand(command);
-					push(ws);
-				},
-				onClose() {
-					unsubscribe?.();
-				},
-			};
-		}),
-	);
-
-	return { app, websocket };
+	return app;
 }
 
 /**
@@ -595,14 +518,5 @@ async function readJsonObject(
 			: null;
 	} catch {
 		return null;
-	}
-}
-
-function parseFrame(data: unknown): unknown {
-	if (typeof data !== 'string') return undefined;
-	try {
-		return JSON.parse(data);
-	} catch {
-		return undefined;
 	}
 }

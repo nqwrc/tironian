@@ -266,30 +266,14 @@ export const commands = {
 	 *
 	 *  The app shell owns this navigation. The host reports that the route is
 	 *  unavailable, an application decides how to present it, and getting the user
-	 *  to Home is neither of their jobs: an application asks the shell to show a
-	 *  section of Home, and the shell decides how.
-	 *
-	 *  The intent is recorded *before* any window work, which is what makes this
-	 *  safe against the state Home happens to be in. Home may be absent, still
-	 *  booting, hidden, or already open; in every case the intent is waiting when
-	 *  Home next asks for it, and the event below is only an optimization for the
-	 *  already-running case. Emitting the section directly would lose it whenever
-	 *  no listener existed yet, which is exactly the recovery path that matters.
+	 *  to Home is neither of their jobs: an application asks the shell to open
+	 *  Home, and the shell does. Home is the model administration window and
+	 *  nothing else now (ADR-0180), so there is no section to name: opening the
+	 *  window is the whole act.
 	 *
 	 *  It mutates no transcription state: it opens a window, and the user chooses.
 	 */
-	openHome: (section: HomeSection) =>
-		__TAURI_INVOKE<void>('open_home', { section }),
-	/**
-	 *  Claim the pending section intent, if any. Home calls this on mount and
-	 *  whenever it is nudged; taking is destructive, so one intent opens one
-	 *  section exactly once however many nudges arrive.
-	 */
-	takePendingHomeSection: () =>
-		__TAURI_INVOKE<
-			/**  Local transcription model administration. */
-			'transcription' | null
-		>('take_pending_home_section'),
+	openHome: () => __TAURI_INVOKE<void>('open_home'),
 	/**  When the host drops the resident model. */
 	getUnloadPolicy: () => __TAURI_INVOKE<UnloadPolicy>('get_unload_policy'),
 	/**
@@ -412,7 +396,6 @@ export const events = {
 	globalShortcutTriggered: makeEvent<GlobalShortcutTriggered>(
 		'global-shortcut-triggered',
 	),
-	homeSectionPending: makeEvent<HomeSectionPending>('home-section-pending'),
 	recordingEndedEvent: makeEvent<RecordingEndedEvent>('recording-ended-event'),
 };
 
@@ -644,25 +627,6 @@ export type GlobalShortcutTriggered = {
 	commandId: string;
 	state: GlobalShortcutState;
 };
-
-/**
- *  A section of Epicenter Home an application can ask the shell to open.
- *
- *  A closed set, not a string-addressed destination: Home is a privileged
- *  built-in app, so what an application may name inside it is enumerated
- *  here rather than parsed.
- */
-export type HomeSection =
-	/**  Local transcription model administration. */
-	'transcription';
-
-/**
- *  A nudge telling an already-running Home to collect any pending section
- *  intent. It deliberately carries no section of its own: the intent lives in
- *  the host, and Home reads it with `take_pending_home_section`, so an event
- *  that arrives twice, late, or not at all cannot produce a different outcome.
- */
-export type HomeSectionPending = null;
 
 /**
  *  The recording a window holds: the id it will publish under, the microphone

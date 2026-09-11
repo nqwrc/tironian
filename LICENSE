@@ -25,19 +25,15 @@ entirely MIT; the boundary is enforced by 'bun run check:licenses'.
     - packages/sync             (@epicenter/sync)        Yjs sync protocol
     - packages/identity         (@epicenter/identity)    capability + identity
                                                          vocabulary
-    - packages/agent-protocol   (@epicenter/agent-protocol) agent wire contract
     - packages/encryption       (@epicenter/encryption)  toolkit-internal
                                                          HKDF + blob crypto
     - packages/field            (@epicenter/field)       toolkit-internal
                                                          field schema kinds
-    - packages/chat             (@epicenter/chat)        toolkit-internal
-                                                         chat primitives
     - packages/sqlite           (@epicenter/sqlite)      portable embedded
                                                          SQLite adapter contract
     - packages/data             (@epicenter/data)        typed local-first
                                                          Epicenter replica and sync
     - packages/document-sync    (@epicenter/document-sync) row-document sync plane
-    - packages/agent            (@epicenter/agent)       UI-free agent loop
     - packages/app              (@epicenter/app)         the public Epicenter
                                                          client an installed
                                                          app bundles

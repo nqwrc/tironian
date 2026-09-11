@@ -416,7 +416,7 @@ const transcription = {
 	 * which is not something this promise reports.
 	 */
 	openHomeTranscription: (): void => {
-		void commands.openHome('transcription').catch((cause) => {
+		void commands.openHome().catch((cause) => {
 			log.info('Opening Epicenter Home was refused', { cause });
 		});
 	},

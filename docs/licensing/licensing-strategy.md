@@ -21,7 +21,7 @@ This document is the canonical reference and the human-readable registry behind 
 Two rules classify every package, not one.
 
 1. **Product decision (roots):** is this a package we actively offer third-party developers to embed in their own software? If yes, it is a toolkit root and it is MIT. This is the only judgment call; everything else follows mechanically.
-2. **Mechanical rule (closure):** whatever a root's workspace dependency closure touches must also be MIT, or the root itself could not legally stay MIT. A package can be swept into MIT by rule 2 alone even though nobody embeds it standalone. `@epicenter/agent-protocol` is that case: no third party embeds `agent-protocol` on its own, but it sits inside the dependency closure of the MIT toolkit roots, so rule 2 forces it to MIT regardless.
+2. **Mechanical rule (closure):** whatever a root's workspace dependency closure touches must also be MIT, or the root itself could not legally stay MIT. A package can be swept into MIT by rule 2 alone even though nobody embeds it standalone. `@epicenter/identity` is that case: no third party embeds `identity` on its own, but it sits inside the dependency closure of the MIT toolkit roots, so rule 2 forces it to MIT regardless.
 
 A package that is neither a chosen root nor inside a root's closure is something we ship as a product or run as our own infrastructure, and it is AGPL-3.0. This is safe because the toolkit is not our competitive moat; the moat is the apps, the hosting, and the AGPL `server` engine, so giving the toolkit away permissively costs us nothing and buys adoption.
 
@@ -61,12 +61,12 @@ Scenario 4 (a hosted competitor) is the one where the license is most load-beari
 
 ### Tier 1: MIT
 
-**Applies to:** exactly nine packages, which is what `bun run check:licenses` reports. The embeddable toolkit libraries `packages/data`, `packages/ui`, `packages/sqlite`, `packages/sync`, and `packages/agent`, plus the toolkit-internal packages they carry: `packages/field`, `packages/identity`, `packages/chat`, and `packages/agent-protocol`.
+**Applies to:** exactly six packages, which is what `bun run check:licenses` reports. The embeddable toolkit libraries `packages/data`, `packages/ui`, `packages/sqlite`, and `packages/sync`, plus the toolkit-internal packages they carry: `packages/field` and `packages/identity`.
 
 **Rationale:**
 - Libraries: we want developers to embed `@epicenter/data` in their own projects with zero friction. AGPL would forbid that for closed-source consumers, killing adoption. The library is not what we sell.
-- Toolkit-internal packages (`field`, `identity`, `chat`, `agent-protocol`): these are dependencies bundled into the MIT toolkit libraries, so they must be MIT-compatible for the toolkit to stay distributable as MIT. `@epicenter/identity` owns the capability and identity vocabulary shared by the MIT toolkit and the AGPL auth layer; `@epicenter/agent-protocol` is the agent wire contract shared the same way. They are not separately marketed.
-- MIT-clean closure: the toolkit depends on no AGPL package. `PrincipalId` and `AuthState` live in `@epicenter/identity`; the store sync route and bearer subprotocol live in the MIT `@epicenter/sync`; the agent wire contract is the MIT `@epicenter/agent-protocol`. `bun run check:licenses` enforces this, on dependency edges only.
+- Toolkit-internal packages (`field`, `identity`): these are dependencies bundled into the MIT toolkit libraries, so they must be MIT-compatible for the toolkit to stay distributable as MIT. `@epicenter/identity` owns the capability and identity vocabulary shared by the MIT toolkit and the AGPL auth layer. It is not separately marketed.
+- MIT-clean closure: the toolkit depends on no AGPL package. `PrincipalId` and `AuthState` live in `@epicenter/identity`; the store sync route and bearer subprotocol live in the MIT `@epicenter/sync`. `bun run check:licenses` enforces this, on dependency edges only.
 
 ### Tier 2: AGPL-3.0
 
@@ -104,7 +104,7 @@ The boundary currently errs toward AGPL: some toolkit-shaped code is AGPL only b
 
 | Candidate | Today | Would become | Trigger to execute |
 |---|---|---|---|
-| `@epicenter/svelte` main barrel (`fromDisposableCache`, `createPersistedState`, `createPersistedMap`, `bindAgentConversation`) | AGPL | MIT; the auth wrapper (the `./auth` subpath) relocates to an AGPL `@epicenter/auth/svelte` | A third party embeds the MIT `@epicenter/data` in a Svelte app, or we publish the toolkit for external use. It got smaller rather than closer: the store's synchronous reads deleted the adapters (`fromTable`, `fromKv`) that were the barrel's reason to exist, so ask whether the remainder is worth a package before splitting it. |
+| `@epicenter/svelte` main barrel (`fromDisposableCache`, `createPersistedState`, `createPersistedMap`) | AGPL | MIT; the auth wrapper (the `./auth` subpath) relocates to an AGPL `@epicenter/auth/svelte` | A third party embeds the MIT `@epicenter/data` in a Svelte app, or we publish the toolkit for external use. It got smaller rather than closer: the store's synchronous reads deleted the adapters (`fromTable`, `fromKv`) that were the barrel's reason to exist, and Home's chat pane removal deleted `bindAgentConversation`, so ask whether the remainder is worth a package before splitting it. |
 | `@epicenter/client` | AGPL | MIT | We decide to offer a public client SDK. Requires closure surgery first: `AuthFetch` moves to `@epicenter/identity` and `API_ROUTES` to an MIT constants surface. |
 
 Recording these keeps the "nothing moves today" answer honest: the design is not frozen, it just has no live producer for any of these seams yet.
@@ -121,11 +121,8 @@ All apps are AGPL-3.0. MIT is reserved for the embeddable toolkit libraries.
 | `packages/ui` | MIT | shadcn-svelte components (toolkit) |
 | `packages/sqlite` | MIT | Domain-free synchronous SQLite adapter contract shared across embedded runtimes (toolkit) |
 | `packages/sync` | MIT | Store sync route contract plus the WebSocket bearer subprotocol (toolkit) |
-| `packages/agent` | MIT | UI-free agent loop (toolkit) |
 | `packages/field` | MIT | Field schema kinds (toolkit-internal) |
 | `packages/identity` | MIT | Capability and identity vocabulary shared by the MIT toolkit and AGPL auth layer (toolkit-internal) |
-| `packages/chat` | MIT | Chat message primitives (toolkit-internal) |
-| `packages/agent-protocol` | MIT | Agent wire contract: prompt messages, streamed chunks, engine shape (toolkit-internal) |
 | `packages/auth` | AGPL-3.0 | Framework-agnostic auth core (private, internal) |
 | `packages/blobs` | AGPL-3.0 | Content-addressed blob store |
 | `packages/svelte-utils` (`@epicenter/svelte`) | AGPL-3.0 | Svelte 5 reactive helpers and auth wrapper |
@@ -135,7 +132,7 @@ All apps are AGPL-3.0. MIT is reserved for the embeddable toolkit libraries.
 | `packages/recorder` | AGPL-3.0 | Audio recording |
 | `packages/vite-config` | AGPL-3.0 | Shared Vite config |
 
-> **MIT-clean closure:** the MIT toolkit's entire dependency closure is MIT. `@epicenter/data` imports from no AGPL package: shared capability state lives in `@epicenter/identity`, the store sync route plus bearer subprotocol live in `@epicenter/sync`, and the agent wire contract is `@epicenter/agent-protocol`. `bun run check:licenses` walks every package's dependency closure and fails if an MIT package can reach an AGPL one. It reports the same nine packages this table marks MIT; if the two disagree, one of them is wrong and the script is not the one that can be edited into agreement.
+> **MIT-clean closure:** the MIT toolkit's entire dependency closure is MIT. `@epicenter/data` imports from no AGPL package: shared capability state lives in `@epicenter/identity`, and the store sync route plus bearer subprotocol live in `@epicenter/sync`. `bun run check:licenses` walks every package's dependency closure and fails if an MIT package can reach an AGPL one. It reports the same six packages this table marks MIT; if the two disagree, one of them is wrong and the script is not the one that can be edited into agreement.
 
 ## Decision procedure for new packages
 

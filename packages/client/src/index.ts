@@ -31,15 +31,7 @@ import {
 } from 'wellcrafted/error';
 import { Err, Ok, type Result, tryAsync } from 'wellcrafted/result';
 
-export type {
-	AgentEngine,
-	AgentEngineRequest,
-	AgentEngineToolDefinition,
-	EngineChunk,
-	EngineFetch,
-	ModelMessage,
-	ModelToolCall,
-} from './agent-engine.js';
+export type { EngineFetch } from './agent-engine.js';
 export { CompleteError, complete } from './complete.js';
 export {
 	CONNECTION_PRESETS,
@@ -51,10 +43,6 @@ export {
 	type ResolvedConnection,
 	resolveConnection,
 } from './connection.js';
-export {
-	createOpenAiAgentEngine,
-	type OpenAiTurnContext,
-} from './openai-provider.js';
 export { TranscribeError, transcribe } from './transcribe.js';
 
 export type EpicenterClientOptions = {

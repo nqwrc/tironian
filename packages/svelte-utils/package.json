@@ -18,7 +18,6 @@
 		"./auth/tauri": "./src/auth-tauri.svelte.ts"
 	},
 	"dependencies": {
-		"@epicenter/agent": "workspace:*",
 		"@epicenter/auth": "workspace:*",
 		"arktype": "catalog:",
 		"wellcrafted": "catalog:"

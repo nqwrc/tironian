@@ -1,26 +1,21 @@
 /**
  * Home Server Tests
  *
- * Verifies the loopback shell around one host session (ADR-0084): the
- * exact Host and Origin checks protect the loopback boundary, Tauri bootstraps
- * HttpOnly browser sessions without a URL token, Home is served at its final
- * route, and the WebSocket drives the single shared chat session.
+ * Verifies the loopback shell every trusted document and API sits behind
+ * (ADR-0084): the exact Host and Origin checks protect the loopback boundary,
+ * Tauri bootstraps HttpOnly browser sessions without a URL token, and Home and
+ * Whispering are served at their final routes.
  *
  * Key behaviors:
  * - The launch token is accepted only by the bootstrap route
- * - Home APIs and WebSockets require an HttpOnly browser session
+ * - Domain APIs (local blobs, the account broker) require an HttpOnly browser
+ *   session
  * - Home and Whispering serve their builds
  * - Unknown, non-canonical, and traversal-shaped app paths stay closed
  * - Host, Origin, CSP, frame, and referrer policies are enforced
- * - Malformed WebSocket frames drop silently without killing the socket
  * - The real vite build emits one document with no external asset references
- * - The spawned `main.ts` sidecar announces versioned readiness, serves the
- *   built SPA, and drives a tool-calling turn against an OpenAI-compatible endpoint
- *
- * See also:
- * - `host.test.ts` for tool catalog composition and turn execution
- * - `packages/client/src/openai-provider.test.ts` for the SSE frame shapes
- *   the fake inference endpoint below reuses
+ * - The spawned `main.ts` sidecar announces versioned readiness and serves
+ *   the built SPA
  */
 
 import { describe, expect, test } from 'bun:test';
@@ -34,7 +29,6 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { AgentEngine, EngineChunk } from '@epicenter/agent';
 import {
 	type BlobRemote,
 	BlobRemoteError,
@@ -44,7 +38,6 @@ import { createBunBlobStore } from '@epicenter/blobs/bun';
 import { desktopBlobUrl } from '@epicenter/blobs/webview';
 import { Ok } from 'wellcrafted/result';
 import { COMPILED_APPLICATIONS } from './applications.ts';
-import { createHomeHost, type HomeHost, type HomeHostInputs } from './host.ts';
 import {
 	ACCOUNT_INSTANCE_ROUTE,
 	ACCOUNT_PROFILE_ROUTE,
@@ -52,15 +45,9 @@ import {
 	BOOTSTRAP_ROUTE,
 	BUILT_IN_ROUTES,
 	HOME_ROUTE,
-	SESSION_ROUTE,
-	SESSION_STREAM_ROUTE,
 	WHISPERING_ROUTE,
 } from './routes.ts';
-import {
-	createHomeServer,
-	type HomeServerEvent,
-	type HomeSessionResponse,
-} from './server.ts';
+import { createHomeServer } from './server.ts';
 import type { ReadyFrame } from './sidecar-runtime.ts';
 import {
 	type EpicenterStaticAssets,
@@ -70,15 +57,6 @@ import { writeAppsDist } from './test-apps-dist.ts';
 import { createTestDesktopAuth } from './test-home-host.ts';
 
 const TOKEN = 'per-launch-secret';
-
-/**
- * The stdio MCP fixture, which is the whole tool surface a test host has: the
- * in-process app catalogs went with the data plane they read (ADR-0226).
- */
-const MCP_FIXTURE = new URL(
-	'../test-fixtures/mini-mcp-server.ts',
-	import.meta.url,
-).pathname;
 
 /** A stand-in for the built SPA document; `/` must return it byte-for-byte. */
 const PAGE = '<!doctype html><html><body>Home test page</body></html>';
@@ -106,22 +84,10 @@ function withoutAuthBootstrap(page: string): string {
 
 const queryDir = fileURLToPath(new URL('..', import.meta.url));
 type TestServer = ReturnType<typeof Bun.serve>;
-const BunWebSocket = WebSocket as unknown as {
-	new (url: string, options: { headers: Record<string, string> }): WebSocket;
-};
 const serverAuthentication = new WeakMap<
 	TestServer,
 	{ cookie: string; origin: string }
 >();
-
-function scriptedEngine(scripts: EngineChunk[][]): AgentEngine {
-	let step = 0;
-	return async function* () {
-		const script = scripts[Math.min(step, scripts.length - 1)] ?? [];
-		step += 1;
-		for (const chunk of script) yield chunk;
-	};
-}
 
 function testDataDir(): string {
 	return mkdtempSync(join(tmpdir(), 'query-server-test-'));
@@ -136,21 +102,7 @@ function boundPort(server: { port?: number }): number {
 	return server.port;
 }
 
-function createTestHost(
-	options: Pick<
-		HomeHostInputs,
-		'approval' | 'engine' | 'localBooks' | 'localSource'
-	>,
-) {
-	return createHomeHost({
-		model: 'test-model',
-		localBooks: { command: 'bun', args: [MCP_FIXTURE] },
-		...options,
-	});
-}
-
 async function serveHost(
-	host: HomeHost,
 	page: string = PAGE,
 	blobRemote: BlobRemote | null = null,
 ) {
@@ -162,8 +114,7 @@ async function serveHost(
 	const port = boundPort(portProbe);
 	await portProbe.stop(true);
 	const origin = `http://127.0.0.1:${port}`;
-	const { app, websocket } = createHomeServer({
-		host,
+	const app = createHomeServer({
 		origin,
 		launchToken: TOKEN,
 		staticAssets: await createAppsDistFixture(page),
@@ -175,7 +126,6 @@ async function serveHost(
 		hostname: '127.0.0.1',
 		port,
 		fetch: app.fetch,
-		websocket,
 	});
 	const bootstrap = await fetch(BOOTSTRAP_ROUTE.url(origin), {
 		method: 'POST',
@@ -234,10 +184,6 @@ function writeAppsDistFixture(homePage: string = PAGE): string {
 	return root;
 }
 
-function conversationOf(event: HomeServerEvent) {
-	return event.snapshot.conversation;
-}
-
 function authenticationFor(server: TestServer) {
 	const authentication = serverAuthentication.get(server);
 	if (authentication === undefined) throw new Error('unknown test server');
@@ -247,61 +193,6 @@ function authenticationFor(server: TestServer) {
 function authenticatedHeaders(server: TestServer) {
 	return { cookie: authenticationFor(server).cookie };
 }
-
-function streamUrl(server: TestServer): string {
-	return SESSION_STREAM_ROUTE.url(server.url.origin).replace('http:', 'ws:');
-}
-
-function openSocket(server: TestServer): WebSocket {
-	const { cookie, origin } = authenticationFor(server);
-	return new BunWebSocket(streamUrl(server), {
-		headers: { cookie, origin },
-	});
-}
-
-/**
- * Resolve on the first pushed frame matching `predicate`; reject on socket
- * error or timeout. The listener attaches synchronously at call time, so call
- * this before (or in the same task as) the send that should trigger it.
- */
-function nextSnapshot(
-	ws: WebSocket,
-	predicate: (event: HomeServerEvent) => boolean,
-	description: string,
-	timeoutMs = 5000,
-): Promise<HomeServerEvent> {
-	return new Promise((resolve, reject) => {
-		const timer = setTimeout(
-			() => reject(new Error(`timed out waiting for ${description}`)),
-			timeoutMs,
-		);
-		ws.addEventListener('message', (event) => {
-			const parsed = JSON.parse(String(event.data)) as HomeServerEvent;
-			if (!predicate(parsed)) return;
-			clearTimeout(timer);
-			resolve(parsed);
-		});
-		ws.addEventListener('error', () => {
-			clearTimeout(timer);
-			reject(new Error('socket error'));
-		});
-	});
-}
-
-/** The turn settled and the last assistant message contains `text`. */
-const settledWith =
-	(text: string) =>
-	(event: HomeServerEvent): boolean => {
-		const snapshot = conversationOf(event);
-		const last = snapshot.messages.at(-1);
-		return (
-			!snapshot.isGenerating &&
-			last?.role === 'assistant' &&
-			last.parts.some(
-				(part) => part.type === 'text' && part.text.includes(text),
-			)
-		);
-	};
 
 describe('loadStaticAssets', () => {
 	test('every declared compiled application must have built, and so must Home', async () => {
@@ -385,14 +276,10 @@ describe('loadStaticAssets', () => {
 
 describe('createHomeServer', () => {
 	test('refuses an empty launch token and non-loopback origins', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
 		const staticAssets = await createAppsDistFixture();
 		const desktopAuth = createTestDesktopAuth();
 		expect(() =>
 			createHomeServer({
-				host,
 				origin: 'http://127.0.0.1:39130',
 				launchToken: '',
 				staticAssets,
@@ -409,7 +296,6 @@ describe('createHomeServer', () => {
 		]) {
 			expect(() =>
 				createHomeServer({
-					host,
 					origin,
 					launchToken: TOKEN,
 					staticAssets,
@@ -422,10 +308,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('the launch token mints a browser session only at bootstrap', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const { origin } = authenticationFor(server);
 		try {
 			const minted = await fetch(BOOTSTRAP_ROUTE.url(origin), {
@@ -452,20 +335,13 @@ describe('createHomeServer', () => {
 				},
 			});
 			expect(wrongOrigin.status).toBe(403);
-			const queryToken = await fetch(
-				`${SESSION_ROUTE.url(origin)}?token=${TOKEN}`,
-			);
-			expect(queryToken.status).toBe(401);
 		} finally {
 			await server.stop(true);
 		}
 	});
 
 	test('serves only the session shell before bootstrap and gates domain APIs', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			const shell = await fetch(HOME_ROUTE.url(server.url.origin));
 			expect(shell.status).toBe(200);
@@ -476,20 +352,12 @@ describe('createHomeServer', () => {
 			});
 			expect(withoutAuthBootstrap(await page.text())).toBe(PAGE);
 
-			const bareSession = await fetch(SESSION_ROUTE.url(server.url.origin));
-			expect(bareSession.status).toBe(401);
-			const session = await fetch(SESSION_ROUTE.url(server.url.origin), {
-				headers: authenticatedHeaders(server),
-			});
-			expect(session.status).toBe(200);
-			const body = (await session.json()) as HomeSessionResponse;
-			const createTodos = body.tools.find(
-				(t) => t.name === 'localbooks__write_off',
-			);
-			expect(createTodos).toBeDefined();
-			expect(createTodos?.inputSchema).toBeDefined();
-			expect(body.snapshot.conversation.messages).toEqual([]);
-
+			// The host owns no chat session or app catalog any more (ADR-0226):
+			// the routes those used to answer at are simply gone, not just gated.
+			const oldSession = await fetch(`${server.url.origin}/api/home/session`);
+			expect(oldSession.status).toBe(404);
+			const oldApps = await fetch(`${server.url.origin}/api/apps`);
+			expect(oldApps.status).toBe(404);
 			const oldTools = await fetch(`${server.url.origin}/api/tools`);
 			expect(oldTools.status).toBe(404);
 			const oldWs = await fetch(`${server.url.origin}/ws`);
@@ -500,10 +368,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('serves Home and every compiled application', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			expect(
 				Object.values(BUILT_IN_ROUTES).map(({ id, pattern }) => ({
@@ -568,10 +433,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('rejects alternate app request targets without exposing filesystem paths', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			for (const path of [
 				'/apps/unknown/',
@@ -599,10 +461,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('rejects wrong Host and Origin and serves the browser security policy', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			const wrongHost = await fetch(
 				HOME_ROUTE.url(server.url.origin).replace('127.0.0.1', 'localhost'),
@@ -631,10 +490,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('admits first-party WebAssembly without restoring eval', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			const page = await fetch(HOME_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
@@ -680,8 +536,7 @@ describe('createHomeServer', () => {
 	});
 
 	test('the account broker requires the browser session and grants no bearer', async () => {
-		await using host = await createTestHost({ engine: scriptedEngine([[]]) });
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const { cookie, origin } = authenticationFor(server);
 		try {
 			const unauthorized = await fetch(ACCOUNT_SIGN_OUT_ROUTE.url(origin), {
@@ -726,263 +581,11 @@ describe('createHomeServer', () => {
 			await server.stop(true);
 		}
 	});
-
-	test('a WebSocket session drives a chat turn and streams snapshots', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([
-				[{ type: 'text-delta', delta: 'Hello from the host.' }],
-			]),
-		});
-		const server = await serveHost(host);
-		try {
-			const ws = openSocket(server);
-			const answered = nextSnapshot(
-				ws,
-				settledWith('Hello from the host.'),
-				'the settled turn',
-			);
-			ws.addEventListener('open', () => {
-				ws.send(JSON.stringify({ type: 'send', content: 'hi' }));
-			});
-
-			const final = await answered;
-			expect(conversationOf(final).error).toBeNull();
-			expect(conversationOf(final).messages.map((m) => m.role)).toEqual([
-				'user',
-				'assistant',
-			]);
-			ws.close();
-		} finally {
-			await server.stop(true);
-		}
-	});
-
-	test('a pending approval reappears after reconnect and approval resumes the turn', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([
-				[
-					{
-						type: 'tool-call',
-						toolCallId: 'call-approve',
-						toolName: 'localbooks__write_off',
-						input: { name: 'Approve over WebSocket' },
-					},
-				],
-				[{ type: 'text-delta', delta: 'Created over WebSocket.' }],
-			]),
-		});
-		const server = await serveHost(host);
-		try {
-			const firstSocket = openSocket(server);
-			const pending = nextSnapshot(
-				firstSocket,
-				(event) => event.snapshot.pendingApprovals.length === 1,
-				'a pending approval',
-			);
-			firstSocket.addEventListener('open', () => {
-				firstSocket.send(
-					JSON.stringify({ type: 'send', content: 'create a folder' }),
-				);
-			});
-
-			const pendingEvent = await pending;
-			const [approval] = pendingEvent.snapshot.pendingApprovals;
-			if (!approval) throw new Error('pending snapshot had no approval');
-			expect(approval).toEqual(
-				expect.objectContaining({
-					toolCallId: 'call-approve',
-					toolName: 'localbooks__write_off',
-					input: { name: 'Approve over WebSocket' },
-				}),
-			);
-			firstSocket.close();
-
-			// A fresh socket re-renders the same pending approval from host state
-			// (ADR-0113): the prompt outlives the transport that first saw it.
-			const secondSocket = openSocket(server);
-			await nextSnapshot(
-				secondSocket,
-				(event) =>
-					event.snapshot.pendingApprovals.some(
-						(candidate) => candidate.id === approval.id,
-					),
-				'the rehydrated approval',
-			);
-			secondSocket.send(
-				JSON.stringify({
-					type: 'approve',
-					requestId: approval.id,
-					approved: true,
-				}),
-			);
-
-			const final = await nextSnapshot(
-				secondSocket,
-				settledWith('Created over WebSocket.'),
-				'the final answer',
-			);
-			expect(final.snapshot.pendingApprovals).toEqual([]);
-			expect(conversationOf(final).error).toBeNull();
-			secondSocket.close();
-		} finally {
-			await server.stop(true);
-		}
-	});
-
-	test('two sockets share the one host session (the remote-session proof)', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[{ type: 'text-delta', delta: 'Shared.' }]]),
-		});
-		const server = await serveHost(host);
-		try {
-			const watcher = openSocket(server);
-			const driver = openSocket(server);
-			const watcherSettled = nextSnapshot(
-				watcher,
-				settledWith('Shared.'),
-				'the watcher settling',
-			);
-			const driverSettled = nextSnapshot(
-				driver,
-				settledWith('Shared.'),
-				'the driver settling',
-			);
-			await Promise.all(
-				[watcher, driver].map(
-					(ws) =>
-						new Promise<void>((resolve) =>
-							ws.addEventListener('open', () => resolve()),
-						),
-				),
-			);
-			driver.send(
-				JSON.stringify({ type: 'send', content: 'hi from device 2' }),
-			);
-
-			// The watcher never sent anything, yet sees the same finished turn: one
-			// conversation per host process, devices attach to the session
-			// (ADR-0080), not to their own thread.
-			const [watched, drove] = await Promise.all([
-				watcherSettled,
-				driverSettled,
-			]);
-			expect(conversationOf(watched).messages).toEqual(
-				conversationOf(drove).messages,
-			);
-			expect(conversationOf(watched).messages.map((m) => m.role)).toEqual([
-				'user',
-				'assistant',
-			]);
-			watcher.close();
-			driver.close();
-		} finally {
-			await server.stop(true);
-		}
-	});
-
-	test('an invoke frame settles as an invocation record on the same session channel', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
-		try {
-			const ws = openSocket(server);
-			const settled = nextSnapshot(
-				ws,
-				(event) =>
-					event.snapshot.invocations.some(
-						(invocation) => invocation.status === 'succeeded',
-					),
-				'the settled invocation',
-			);
-			ws.addEventListener('open', () => {
-				ws.send(
-					JSON.stringify({
-						type: 'invoke',
-						toolName: 'localbooks__customers',
-						input: {},
-					}),
-				);
-			});
-
-			const final = await settled;
-			expect(final.snapshot.invocations[0]).toEqual(
-				expect.objectContaining({
-					toolName: 'localbooks__customers',
-					status: 'succeeded',
-				}),
-			);
-			// A direct run rides the session channel but never the transcript.
-			expect(conversationOf(final).messages).toEqual([]);
-			ws.close();
-		} finally {
-			await server.stop(true);
-		}
-	});
-
-	test('malformed frames drop silently without killing the session socket', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[{ type: 'text-delta', delta: 'Still alive.' }]]),
-		});
-		const server = await serveHost(host);
-		try {
-			const ws = openSocket(server);
-			const settled = nextSnapshot(
-				ws,
-				settledWith('Still alive.'),
-				'the turn after garbage frames',
-			);
-			ws.addEventListener('open', () => {
-				// Deliberate until commands carry client-minted ids: an error outcome
-				// would have nothing to name, so bad frames drop instead of erroring.
-				ws.send('not json');
-				ws.send(JSON.stringify({ type: 'launch-missiles' }));
-				ws.send(JSON.stringify({ type: 'send', content: 'hi' }));
-			});
-			const final = await settled;
-			expect(conversationOf(final).error).toBeNull();
-			expect(conversationOf(final).messages.map((m) => m.role)).toEqual([
-				'user',
-				'assistant',
-			]);
-			ws.close();
-		} finally {
-			await server.stop(true);
-		}
-	});
-
-	test('WebSocket upgrades require both a browser session and exact Origin', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
-		try {
-			const { cookie, origin } = authenticationFor(server);
-			const rejectedHeaders: Record<string, string>[] = [
-				{ origin },
-				{ cookie, origin: 'http://localhost:39130' },
-			];
-			for (const headers of rejectedHeaders) {
-				const ws = new BunWebSocket(streamUrl(server), { headers });
-				const outcome = await new Promise<'open' | 'refused'>((resolve) => {
-					ws.addEventListener('open', () => resolve('open'));
-					ws.addEventListener('error', () => resolve('refused'));
-					ws.addEventListener('close', () => resolve('refused'));
-				});
-				expect(outcome).toBe('refused');
-			}
-		} finally {
-			await server.stop(true);
-		}
-	});
 });
 
 describe('local blob routes', () => {
 	test('session authentication protects every local blob operation', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const id = generateBlobId();
 		try {
 			for (const method of ['GET', 'HEAD', 'PUT', 'DELETE']) {
@@ -998,9 +601,6 @@ describe('local blob routes', () => {
 	});
 
 	test('remote copy routes take only the blob id and map typed results', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
 		const calls: { operation: string; id: string }[] = [];
 		const stubRemote: BlobRemote = {
 			async upload(id) {
@@ -1019,7 +619,7 @@ describe('local blob routes', () => {
 				});
 			},
 		};
-		const server = await serveHost(host, PAGE, stubRemote);
+		const server = await serveHost(PAGE, stubRemote);
 		const id = generateBlobId();
 		const { cookie, origin } = authenticationFor(server);
 		const session = { headers: { cookie, origin } };
@@ -1072,10 +672,7 @@ describe('local blob routes', () => {
 	});
 
 	test('a signed-out generation answers 503 for every remote copy operation', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const id = generateBlobId();
 		const { cookie, origin } = authenticationFor(server);
 		try {
@@ -1092,10 +689,7 @@ describe('local blob routes', () => {
 	});
 
 	test('put, head, byte-range forms, collision, and idempotent delete share one id', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const id = generateBlobId();
 		const url = `${server.url.origin}${desktopBlobUrl(id)}`;
 		const { cookie, origin } = authenticationFor(server);
@@ -1209,10 +803,7 @@ describe('local blob routes', () => {
 	});
 
 	test('hostile blob content is downloadable but cannot become same-origin code', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		const id = generateBlobId();
 		const url = `${server.url.origin}${desktopBlobUrl(id)}`;
 		const { cookie, origin } = authenticationFor(server);
@@ -1244,10 +835,7 @@ describe('local blob routes', () => {
 	});
 
 	test('path-hostile and foreign ids are rejected before filesystem access', async () => {
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host);
+		const server = await serveHost();
 		try {
 			const response = await fetch(
 				`${server.url.origin}/api/local-blobs/not-a-blob-id`,
@@ -1311,10 +899,7 @@ describe('the built SPA', () => {
 		expect(page).not.toMatch(/<link\b[^>]*\brel\s*=\s*["']?stylesheet/i);
 		expect(page).not.toMatch(/<link\b[^>]*\bhref\s*=/i);
 
-		await using host = await createTestHost({
-			engine: scriptedEngine([[]]),
-		});
-		const server = await serveHost(host, page);
+		const server = await serveHost(page);
 		try {
 			const response = await fetch(HOME_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
@@ -1338,37 +923,6 @@ describe('the built SPA', () => {
 // ============================================================================
 // Sidecar End-to-End Smoke (the real main.ts entrypoint)
 // ============================================================================
-
-/** Build an OpenAI SSE response: one `data:` frame per chunk, then `[DONE]`. */
-function openAiSse(chunks: object[]): Response {
-	const encoder = new TextEncoder();
-	const body = new ReadableStream<Uint8Array>({
-		start(controller) {
-			for (const chunk of chunks) {
-				controller.enqueue(
-					encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
-				);
-			}
-			controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-			controller.close();
-		},
-	});
-	return new Response(body, {
-		status: 200,
-		headers: { 'content-type': 'text/event-stream' },
-	});
-}
-
-const FINAL_TEXT = 'Your folder list is empty.';
-
-/** Second model call: the final assistant sentence as text deltas. */
-const FINAL_TEXT_TURN = [
-	{
-		choices: [{ delta: { content: 'Your folder list' }, finish_reason: null }],
-	},
-	{ choices: [{ delta: { content: ' is empty.' }, finish_reason: null }] },
-	{ choices: [{ delta: {}, finish_reason: 'stop' }] },
-];
 
 /**
  * Read the sidecar's stdout until the one-line versioned ready announcement.
@@ -1438,26 +992,9 @@ async function exitWithin(
 }
 
 describe('sidecar end-to-end smoke', () => {
-	test('the spawned entrypoint serves the built SPA and drives a turn', async () => {
+	test('the spawned entrypoint announces readiness and serves the built SPA', async () => {
 		const page = await buildSpaOnce();
 		const appsDist = writeAppsDistFixture(page);
-
-		// The fake OpenAI-compatible backend. One request and one text answer:
-		// the spawned host has no tool catalog to call into, so what this proves
-		// end to end is the sidecar, the SPA, the session, and the socket.
-		let inferenceRequests = 0;
-		const inference = Bun.serve({
-			hostname: '127.0.0.1',
-			port: 0,
-			fetch(request) {
-				const { pathname } = new URL(request.url);
-				if (request.method !== 'POST' || pathname !== '/v1/chat/completions') {
-					return new Response('Not found', { status: 404 });
-				}
-				inferenceRequests += 1;
-				return openAiSse(FINAL_TEXT_TURN);
-			},
-		});
 
 		const portProbe = Bun.serve({
 			hostname: '127.0.0.1',
@@ -1473,10 +1010,6 @@ describe('sidecar end-to-end smoke', () => {
 				env: {
 					...process.env,
 					EPICENTER_APPS_DIST: appsDist,
-					// The engine POSTs `${baseURL}/chat/completions`, so the base
-					// carries the `/v1` prefix.
-					EPICENTER_INFERENCE_URL: `${inference.url.origin}/v1`,
-					EPICENTER_INFERENCE_MODEL: 'fake-model',
 					// Keep the host's replicas out of the real user data directory.
 					EPICENTER_DATA_DIR: testDataDir(),
 				},
@@ -1513,50 +1046,11 @@ describe('sidecar end-to-end smoke', () => {
 				headers: { cookie: cookie ?? '' },
 			});
 			expect(withoutAuthBootstrap(await served.text())).toBe(page);
-
-			const session = await fetch(SESSION_ROUTE.url(origin), {
-				headers: { cookie: cookie ?? '' },
-			});
-			expect(session.status).toBe(200);
-			const catalog = (await session.json()) as HomeSessionResponse;
-			// No tools: the host owns no application data and composes no
-			// in-process catalog over it (ADR-0226).
-			expect(catalog.tools).toEqual([]);
-			expect(catalog.snapshot.conversation.messages).toEqual([]);
-
-			// One WebSocket turn: send, then await the settled snapshot.
-			const ws = new BunWebSocket(
-				SESSION_STREAM_ROUTE.url(origin).replace('http:', 'ws:'),
-				{ headers: { cookie: cookie ?? '', origin } },
-			);
-			const settled = nextSnapshot(
-				ws,
-				settledWith(FINAL_TEXT),
-				'the settled turn',
-				20_000,
-			);
-			ws.addEventListener('open', () => {
-				ws.send(JSON.stringify({ type: 'send', content: 'say something' }));
-			});
-			let final: HomeServerEvent;
-			try {
-				final = await settled;
-			} finally {
-				ws.close();
-			}
-
-			expect(conversationOf(final).error).toBeNull();
-			const parts = conversationOf(final).messages.flatMap((m) => m.parts);
-			expect(parts).toContainEqual(
-				expect.objectContaining({ type: 'text', text: FINAL_TEXT }),
-			);
-			expect(inferenceRequests).toBe(1);
 		} finally {
 			sidecar.kill('SIGTERM');
 			expect(await sidecar.exited).toBe(0);
-			await inference.stop(true);
 		}
-	}, 120_000);
+	}, 60_000);
 
 	test('a port collision exits without announcing readiness or falling back', async () => {
 		const appsDist = writeAppsDistFixture(await buildSpaOnce());
@@ -1573,8 +1067,6 @@ describe('sidecar end-to-end smoke', () => {
 				env: {
 					...process.env,
 					EPICENTER_APPS_DIST: appsDist,
-					EPICENTER_INFERENCE_URL: 'http://127.0.0.1:1/v1',
-					EPICENTER_INFERENCE_MODEL: 'unused-model',
 					EPICENTER_DATA_DIR: testDataDir(),
 				},
 				stdin: 'pipe',
@@ -1614,8 +1106,6 @@ describe('sidecar end-to-end smoke', () => {
 				env: {
 					...process.env,
 					EPICENTER_APPS_DIST: appsDist,
-					EPICENTER_INFERENCE_URL: 'http://127.0.0.1:1/v1',
-					EPICENTER_INFERENCE_MODEL: 'unused-model',
 					EPICENTER_DATA_DIR: testDataDir(),
 				},
 				stdin: 'pipe',

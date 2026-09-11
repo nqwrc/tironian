@@ -277,7 +277,8 @@ jobs:
       # off a green build:
       #   1. the bundled executable is still running 45 s after launch;
       #   2. the loopback host answers HTTP on 127.0.0.1:39130;
-      #   3. at least one on-screen window is owned by the app;
+      #   3. the dictation window (titled "Tironian") is on screen: launch opens
+      #      it by default now, not Home;
       #   4. no crash report for it appeared while it ran.
       # Known limits of a runner, not failures: no microphone grant (TCC), no
       # local model downloaded, so no dictation round trip is attempted.
@@ -305,27 +306,31 @@ jobs:
           if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then echo "PASS 2: loopback host answered HTTP $CODE" | tee -a "$OUT/summary.txt"
           else echo "::error::FAIL 2: nothing answered on 127.0.0.1:39130"; fail=1; fi
 
-          # Window owner names need no screen-recording grant; titles might.
+          # Window owner names need no screen-recording grant; titles might, so a
+          # window with no readable title still counts (owner and size alone),
+          # and one with a readable title must actually say "Tironian".
           cat > "$RUNNER_TEMP/windows.swift" <<'SWIFT'
           import CoreGraphics
           import Foundation
           let owner = CommandLine.arguments[1]
+          let expectedTitle = CommandLine.arguments[2]
           let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
           var count = 0
           for w in list where (w[kCGWindowOwnerName as String] as? String) == owner {
             let b = w[kCGWindowBounds as String] as? [String: Any] ?? [:]
             let width = (b["Width"] as? Double) ?? 0
             let height = (b["Height"] as? Double) ?? 0
-            print("window owner=\(owner) name=\(w[kCGWindowName as String] ?? "?") size=\(Int(width))x\(Int(height))")
-            if width > 200 && height > 200 { count += 1 }
+            let name = (w[kCGWindowName as String] as? String) ?? ""
+            print("window owner=\(owner) name=\(name.isEmpty ? "?" : name) size=\(Int(width))x\(Int(height))")
+            if width > 200 && height > 200 && (name.isEmpty || name == expectedTitle) { count += 1 }
           }
           print("windows=\(count)")
           SWIFT
-          WINDOWS="$(swift "$RUNNER_TEMP/windows.swift" "$APP_NAME" 2>&1 | tee "$OUT/windows.txt" | awk -F= '/^windows=/{print $2}')"
-          if [ "${WINDOWS:-0}" -ge 1 ]; then echo "PASS 3: $WINDOWS on-screen window(s) owned by $APP_NAME" | tee -a "$OUT/summary.txt"
-          else echo "::error::FAIL 3: no on-screen window owned by $APP_NAME"; fail=1; fi
+          WINDOWS="$(swift "$RUNNER_TEMP/windows.swift" "$APP_NAME" "Tironian" 2>&1 | tee "$OUT/windows.txt" | awk -F= '/^windows=/{print $2}')"
+          if [ "${WINDOWS:-0}" -ge 1 ]; then echo "PASS 3: $WINDOWS on-screen dictation window(s) (Tironian) owned by $APP_NAME" | tee -a "$OUT/summary.txt"
+          else echo "::error::FAIL 3: no on-screen Tironian window owned by $APP_NAME"; fail=1; fi
 
-          screencapture -x "$OUT/screen-home.png" || echo "::warning::screencapture failed (screen recording not granted on this image)"
+          screencapture -x "$OUT/screen-launch.png" || echo "::warning::screencapture failed (screen recording not granted on this image)"
           # Open the dictation window through the app's own deep link, then
           # capture it. Informational: a runner may not route the scheme.
           open "epicenter://app/whispering" || true

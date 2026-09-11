@@ -21,7 +21,6 @@ use tauri_plugin_dialog::{
     DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult,
 };
 use tauri_plugin_opener::OpenerExt;
-use tauri_specta::Event as _;
 
 /// The command list, shared with `build.rs` through `include!`. Only the tests
 /// read it from the crate, which is where the drift checks live.
@@ -95,6 +94,19 @@ const PROTOCOL_VERSION: u8 = 2;
 const HOSTED_AUTH_ORIGIN: &str = "https://api.epicenter.so";
 const READY_TIMEOUT: Duration = Duration::from_secs(15);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
+/// The argument the autostart login item is registered with. Its presence
+/// means this launch came from the OS starting Tironian at login rather than
+/// a person opening it, so the default window stays suppressed: autostart
+/// puts the tray up, not a window nobody asked to see.
+const AUTOSTART_HIDDEN_ARG: &str = "--hidden";
+
+/// Whether this process launched from the OS-registered autostart entry
+/// rather than a person opening the app.
+fn launched_from_autostart(arguments: &[String]) -> bool {
+    arguments
+        .iter()
+        .any(|argument| argument == AUTOSTART_HIDDEN_ARG)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum BuiltInApp {
@@ -129,7 +141,7 @@ impl BuiltInApp {
 
     const fn title(self) -> &'static str {
         match self {
-            Self::Home => "Tironian: Home",
+            Self::Home => "Tironian: Model settings",
             Self::Whispering => "Tironian",
         }
     }
@@ -203,10 +215,6 @@ struct HostState {
     active_token: Mutex<Option<String>>,
     pending_apps: Mutex<Vec<BuiltInApp>>,
     pending_oauth_callback: Mutex<Option<String>>,
-    /// A section of Home an application asked the shell to open, held until Home
-    /// is able to claim it. Only the latest survives: two recovery nudges in a
-    /// row should land the user somewhere once, not queue a backlog.
-    pending_home_section: Mutex<Option<HomeSection>>,
     shutting_down: AtomicBool,
     starting: AtomicBool,
 }
@@ -220,7 +228,6 @@ impl HostState {
             active_token: Mutex::new(None),
             pending_apps: Mutex::new(Vec::new()),
             pending_oauth_callback: Mutex::new(None),
-            pending_home_section: Mutex::new(None),
             shutting_down: AtomicBool::new(false),
             starting: AtomicBool::new(false),
         }
@@ -242,20 +249,6 @@ impl HostState {
 
     fn take_pending_apps(&self) -> Vec<BuiltInApp> {
         std::mem::take(&mut *self.pending_apps.lock().expect("pending app lock poisoned"))
-    }
-
-    fn queue_home_section(&self, section: HomeSection) {
-        *self
-            .pending_home_section
-            .lock()
-            .expect("pending home section lock poisoned") = Some(section);
-    }
-
-    fn take_home_section(&self) -> Option<HomeSection> {
-        self.pending_home_section
-            .lock()
-            .expect("pending home section lock poisoned")
-            .take()
     }
 
     fn queue_oauth_callback(&self, url: String) {
@@ -340,7 +333,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_active_model,
             get_local_transcription_readiness,
             open_home,
-            take_pending_home_section,
             get_unload_policy,
             set_unload_policy,
             list_models,
@@ -359,7 +351,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .events(tauri_specta::collect_events![
             keyboard::DictationCapabilityEvent,
             GlobalShortcutTriggered,
-            HomeSectionPending,
             recorder::ended::RecordingEndedEvent,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
@@ -391,56 +382,21 @@ mod export_bindings {
     }
 }
 
-/// A section of Epicenter Home an application can ask the shell to open.
-///
-/// A closed set, not a string-addressed destination: Home is a privileged
-/// built-in app, so what an application may name inside it is enumerated
-/// here rather than parsed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "kebab-case")]
-pub enum HomeSection {
-    /// Local transcription model administration.
-    Transcription,
-}
-
-/// A nudge telling an already-running Home to collect any pending section
-/// intent. It deliberately carries no section of its own: the intent lives in
-/// the host, and Home reads it with `take_pending_home_section`, so an event
-/// that arrives twice, late, or not at all cannot produce a different outcome.
-#[derive(Clone, Debug, serde::Serialize, specta::Type, tauri_specta::Event)]
-pub struct HomeSectionPending;
-
 /// Take the user to the app that can fix an unavailable local transcription
 /// route.
 ///
 /// The app shell owns this navigation. The host reports that the route is
 /// unavailable, an application decides how to present it, and getting the user
-/// to Home is neither of their jobs: an application asks the shell to show a
-/// section of Home, and the shell decides how.
-///
-/// The intent is recorded *before* any window work, which is what makes this
-/// safe against the state Home happens to be in. Home may be absent, still
-/// booting, hidden, or already open; in every case the intent is waiting when
-/// Home next asks for it, and the event below is only an optimization for the
-/// already-running case. Emitting the section directly would lose it whenever
-/// no listener existed yet, which is exactly the recovery path that matters.
+/// to Home is neither of their jobs: an application asks the shell to open
+/// Home, and the shell does. Home is the model administration window and
+/// nothing else now (ADR-0180), so there is no section to name: opening the
+/// window is the whole act.
 ///
 /// It mutates no transcription state: it opens a window, and the user chooses.
 #[tauri::command]
 #[specta::specta]
-fn open_home(section: HomeSection, app: DesktopAppHandle) {
-    app.state::<HostState>().queue_home_section(section);
+fn open_home(app: DesktopAppHandle) {
     request_window(&app, BuiltInApp::Home);
-    let _ = HomeSectionPending.emit_to(&app, BuiltInApp::Home.id());
-}
-
-/// Claim the pending section intent, if any. Home calls this on mount and
-/// whenever it is nudged; taking is destructive, so one intent opens one
-/// section exactly once however many nudges arrive.
-#[tauri::command]
-#[specta::specta]
-fn take_pending_home_section(app: DesktopAppHandle) -> Option<HomeSection> {
-    app.state::<HostState>().take_home_section()
 }
 
 /// Launch one application Home lists: reveal and focus its window, creating it
@@ -592,7 +548,11 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(
+            tauri_plugin_autostart::Builder::new()
+                .args([AUTOSTART_HIDDEN_ARG])
+                .build(),
+        )
         .manage(HostState::new(port))
         .manage(GlobalShortcutRegistry::default())
         .manage(Mutex::new(Recorder::new()))
@@ -660,8 +620,13 @@ pub fn run() {
                     }
                 }
             }
-            if !opened_window {
-                request_window(app.handle(), BuiltInApp::Home);
+            // Autostart registers this launch with `AUTOSTART_HIDDEN_ARG`
+            // (ADR-0189): the OS starting Tironian at login is not a person
+            // asking for a window, so the tray comes up and nothing else.
+            if !opened_window
+                && !launched_from_autostart(&std::env::args().collect::<Vec<_>>())
+            {
+                request_window(app.handle(), BuiltInApp::Whispering);
             }
             request_start(app.handle().clone(), None);
             Ok(())
@@ -674,7 +639,7 @@ pub fn run() {
             // on every other platform, so matching on it unconditionally fails
             // to compile off macOS; gate the arm rather than the whole match.
             #[cfg(target_os = "macos")]
-            RunEvent::Reopen { .. } => request_window(app, BuiltInApp::Home),
+            RunEvent::Reopen { .. } => request_window(app, BuiltInApp::Whispering),
             RunEvent::Exit => shutdown_host(app),
             _ => {}
         });
@@ -691,7 +656,9 @@ fn open_forwarded_deep_links(app: &DesktopAppHandle, arguments: &[String]) {
         }
     }
     if built_ins.is_empty() {
-        request_window(app, BuiltInApp::Home);
+        if !launched_from_autostart(arguments) {
+            request_window(app, BuiltInApp::Whispering);
+        }
     } else {
         for built_in in built_ins {
             request_window(app, built_in);
@@ -910,8 +877,8 @@ fn start_once(app: &DesktopAppHandle) -> Result<()> {
 
     state.activate(&token);
     let mut built_ins = state.take_pending_apps();
-    if built_ins.is_empty() {
-        built_ins.push(BuiltInApp::Home);
+    if built_ins.is_empty() && !launched_from_autostart(&std::env::args().collect::<Vec<_>>()) {
+        built_ins.push(BuiltInApp::Whispering);
     }
     if let Err(error) = create_windows_on_main_thread(app, port, &token, built_ins) {
         state.deactivate();
@@ -1600,6 +1567,20 @@ mod tests {
     }
 
     #[test]
+    fn launched_from_autostart_detects_only_its_own_argument() {
+        assert!(launched_from_autostart(&["--hidden".to_string()]));
+        assert!(launched_from_autostart(&[
+            "epicenter.exe".to_string(),
+            "--hidden".to_string(),
+        ]));
+        assert!(!launched_from_autostart(&[]));
+        assert!(!launched_from_autostart(&["epicenter.exe".to_string()]));
+        assert!(!launched_from_autostart(&[
+            "epicenter://app/whispering".to_string()
+        ]));
+    }
+
+    #[test]
     fn production_port_is_stable() {
         assert_eq!(PRODUCTION_PORT, 39_130);
     }
@@ -1655,7 +1636,7 @@ mod tests {
         assert_eq!(
             actual,
             [
-                ("home", "/apps/home/", "Tironian: Home"),
+                ("home", "/apps/home/", "Tironian: Model settings"),
                 ("whispering", "/apps/whispering/", "Tironian"),
             ]
         );
@@ -1790,53 +1771,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    /// The recovery path an application offers must survive Home not being
-    /// there yet. The intent is host state, so "Home is absent", "Home is still
-    /// booting", and "Home is open behind another window" are the same code
-    /// path: the intent waits until Home claims it.
-    #[test]
-    fn a_pending_home_section_waits_for_home_to_claim_it() {
-        let state = HostState::new(Ok(1));
-        assert_eq!(
-            state.take_home_section(),
-            None,
-            "nothing pending before anyone asks"
-        );
-
-        // Home absent or mid-boot: nobody is listening, and the intent survives.
-        state.queue_home_section(HomeSection::Transcription);
-        assert_eq!(
-            state.take_home_section(),
-            Some(HomeSection::Transcription),
-            "the intent is still there whenever Home gets around to asking"
-        );
-    }
-
-    /// Taking is destructive, so however many nudges arrive, one request opens
-    /// one section once. Without this a stale intent would reopen the panel on
-    /// some later unrelated mount.
-    #[test]
-    fn a_claimed_home_section_is_not_replayed() {
-        let state = HostState::new(Ok(1));
-        state.queue_home_section(HomeSection::Transcription);
-        assert!(state.take_home_section().is_some());
-        assert_eq!(
-            state.take_home_section(),
-            None,
-            "a claimed intent must not fire again"
-        );
-    }
-
-    /// Two recovery attempts in a row should land the user somewhere once.
-    #[test]
-    fn repeated_requests_collapse_to_one_pending_section() {
-        let state = HostState::new(Ok(1));
-        state.queue_home_section(HomeSection::Transcription);
-        state.queue_home_section(HomeSection::Transcription);
-        assert!(state.take_home_section().is_some());
-        assert_eq!(state.take_home_section(), None);
     }
 
     /// Every command a capability grants must exist, and every command the crate

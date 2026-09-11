@@ -1,10 +1,10 @@
 /**
  * `complete`: the one OpenAI-compatible non-streaming chat-completion client
- * (ADR-0050/0060). The single-shot sibling of `transcribe` and of the streaming
- * `createOpenAiAgentEngine`: one `POST {baseURL}/chat/completions` with a system
- * and a user message, returning the assistant's text.
+ * (ADR-0050/0060). The single-shot sibling of `transcribe`: one
+ * `POST {baseURL}/chat/completions` with a system and a user message,
+ * returning the assistant's text.
  *
- * Like `transcribe`, `listModels`, and the agent engine, this consumes the
+ * Like `transcribe` and `listModels`, this consumes the
  * *resolved* transport (`{ fetch, baseURL }`, see {@link ResolvedConnection}), not
  * a static `Connection`. `resolveConnection` is the single boundary the caller
  * crosses, so OpenAI, Groq, OpenRouter, and a custom OpenAI-compatible server are
