@@ -1,0 +1,26 @@
+# Where the upstream names Epicenter, Whispering and Honeycrisp may still appear.
+# Read by scripts/check-brand-residue.ts. Only what a license requires belongs
+# here: copyright lines, license texts, and the notices that say Tironian is a
+# modified version of upstream (AGPL-3.0 sections 4 and 5, MIT).
+#
+# `glob` allows every line of matching files; `glob::substring` allows only
+# lines containing the substring.
+
+NOTICE
+LICENSE
+licenses/**
+**/LICENSE
+**/LICENSE-*
+**/LICENSE.md
+
+# The front-door attribution blocks.
+README.md::Whispering, part of the
+README.md::[Epicenter](https://github.com/EpicenterHQ/epicenter)
+docs/brand/tironian.md::is a modified version of Whispering
+
+# Installer metadata carries the same notice.
+**/tauri.conf.json::Based on Epicenter (AGPL-3.0)
+
+# This file and its checker name the words they look for.
+scripts/brand-residue-allowlist.txt
+scripts/check-brand-residue.ts::const PATTERN
