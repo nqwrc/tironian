@@ -87,10 +87,6 @@ pub mod overlay;
 #[cfg(target_os = "macos")]
 pub mod clipboard;
 
-/// Reserved label prefix for derived-catalog app windows (ADR-0153). One
-/// capability glob (`app-*`) grants every such window the first trusted-app
-/// authority slice, so no host-internal window label may ever start with it.
-const APP_WINDOW_PREFIX: &str = "app-";
 #[cfg(any(not(debug_assertions), test))]
 const PRODUCTION_PORT: u16 = 39_130;
 #[cfg(any(debug_assertions, test))]
@@ -104,39 +100,23 @@ const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 enum BuiltInApp {
     Home,
     Whispering,
-    Honeycrisp,
-    Mail,
-    Books,
 }
 
 impl BuiltInApp {
-    const ALL: [Self; 5] = [
-        Self::Home,
-        Self::Whispering,
-        Self::Honeycrisp,
-        Self::Mail,
-        Self::Books,
-    ];
+    const ALL: [Self; 2] = [Self::Home, Self::Whispering];
 
     /// Whether Home lists this app as one a person can open (ADR-0189).
     ///
-    /// Every variant here is an app in the product model; this says only which
-    /// ones Home offers. Home is absent because you are already looking at it,
-    /// not because it is above the others (ADR-0209). Mail and Books are
-    /// release-bundled placeholder documents with nothing behind them to open.
-    /// All stay reserved IDs the catalog refuses to admit, so "not launchable"
-    /// never means "free for someone else to claim".
+    /// Home is absent because you are already looking at it, not because it is
+    /// above the others (ADR-0209).
     const fn is_launchable(self) -> bool {
-        matches!(self, Self::Whispering | Self::Honeycrisp)
+        matches!(self, Self::Whispering)
     }
 
     const fn id(self) -> &'static str {
         match self {
             Self::Home => "home",
             Self::Whispering => "whispering",
-            Self::Honeycrisp => "honeycrisp",
-            Self::Mail => "mail",
-            Self::Books => "books",
         }
     }
 
@@ -144,9 +124,6 @@ impl BuiltInApp {
         match self {
             Self::Home => "/apps/home/",
             Self::Whispering => "/apps/whispering/",
-            Self::Honeycrisp => "/apps/honeycrisp/",
-            Self::Mail => "/apps/mail/",
-            Self::Books => "/apps/books/",
         }
     }
 
@@ -154,9 +131,6 @@ impl BuiltInApp {
         match self {
             Self::Home => "Tironian: Home",
             Self::Whispering => "Tironian",
-            Self::Honeycrisp => "Tironian: Honeycrisp",
-            Self::Mail => "Tironian: Mail",
-            Self::Books => "Tironian: Books",
         }
     }
 
@@ -469,22 +443,6 @@ fn take_pending_home_section(app: DesktopAppHandle) -> Option<HomeSection> {
     app.state::<HostState>().take_home_section()
 }
 
-/// How Home's window for one application is created. The two arms differ in
-/// window label, capability file, and how Bun serves the document, and none of
-/// that is a distinction a person makes, so it is resolved here from the ID
-/// rather than by the caller (ADR-0189).
-///
-/// `Admitted` says how the window is built, not that the ID is admitted. Rust
-/// keeps no catalog: the immutable generation and its membership are Bun's
-/// alone (ADR-0179), and nothing here can or should re-derive them.
-enum Application {
-    /// A compiled application with its own stable window label and enumerated
-    /// capabilities.
-    Compiled(BuiltInApp),
-    /// Anything else: opened in an `app-` window pointed at `/apps/<id>/`.
-    Admitted(String),
-}
-
 /// Launch one application Home lists: reveal and focus its window, creating it
 /// the first time. Calling again focuses rather than duplicating, and Home is
 /// never hidden to do it.
@@ -492,26 +450,12 @@ enum Application {
 /// Windows are deliberate (ADR-0209). One window that switched between
 /// applications would union every capability file onto one label, because a
 /// label is what native authority is granted to; separate windows are what keep
-/// `home`, `whispering`, and `app-*` meaning different things. From here the OS
-/// is the switcher.
+/// `home` and `whispering` meaning different things. From here the OS is the
+/// switcher.
 ///
-/// This is Home's verb, not an app-facing one. It deliberately does not reuse
-/// the `openApp(appId)` name ADR-0181 reserves for the portable handle, because
-/// that operation targets a catalog member only and must not become a way for
-/// one application to reveal another.
-///
-/// # Who decides an ID is real
-///
-/// Not this function. Rust validates the ID's *shape* and resolves it against
-/// its own compiled app table; it never asks whether a folder was admitted,
-/// because the catalog is one immutable generation owned by Bun (ADR-0179) and
-/// a second copy in Rust would be a second answer. What keeps a made-up ID from
-/// arriving is that Home only offers IDs from the authenticated list Bun serves.
-///
-/// An ID that shape-checks but names no member still cannot reach anything: it
-/// opens an `app-` window at `/apps/<id>/`, which is a URL Rust derived itself
-/// (the frontend never supplies one), and Bun answers it 404. That is a
-/// contained dead end, not a privilege.
+/// This is Home's verb, not an app-facing one. Home only ever lists the
+/// compiled built-in apps it is allowed to launch (ADR-0189); there is no
+/// second, admitted source of application IDs to resolve.
 ///
 /// # Why it waits
 ///
@@ -527,9 +471,9 @@ fn launch_application(
     state: State<'_, HostState>,
     app_id: String,
 ) -> std::result::Result<(), String> {
-    let Some(application) = parse_application_id(&app_id) else {
+    let Some(built_in) = parse_application_id(&app_id) else {
         return Err(format!(
-            "app id must match [a-z0-9-]+ and must not name a built-in app Home does not offer: {app_id}"
+            "app id must name a built-in app Home offers: {app_id}"
         ));
     };
     // Unlike the tray, deep links, and startup, a user-invoked launch does not
@@ -540,7 +484,7 @@ fn launch_application(
     };
     let port = state.port().map_err(|error| format!("{error:#}"))?;
 
-    launch_on_main_thread(&app, application, port, &token).map_err(|error| format!("{error:#}"))
+    launch_on_main_thread(&app, built_in, port, &token).map_err(|error| format!("{error:#}"))
 }
 
 /// Create or reveal the window on the main thread and report what happened.
@@ -551,7 +495,7 @@ fn launch_application(
 /// than waiting forever.
 fn launch_on_main_thread(
     app: &DesktopAppHandle,
-    application: Application,
+    built_in: BuiltInApp,
     port: u16,
     token: &str,
 ) -> Result<()> {
@@ -560,12 +504,7 @@ fn launch_on_main_thread(
     let token = token.to_string();
     app.run_on_main_thread(move || {
         let result = if window_app.state::<HostState>().token_is_active(&token) {
-            match application {
-                Application::Compiled(built_in) => {
-                    ensure_window(&window_app, built_in, port, &token, true)
-                }
-                Application::Admitted(id) => ensure_app_window(&window_app, &id, port, &token),
-            }
+            ensure_window(&window_app, built_in, port, &token, true)
         } else {
             // The host restarted between the click and the main thread reaching
             // this: every window from the old generation is being torn down, so
@@ -582,79 +521,14 @@ fn launch_on_main_thread(
         .context("the main thread stopped before opening the window")?
 }
 
-/// Accept the ID shapes this command can act on, resolved against the compiled
-/// app table.
+/// Resolve the one ID shape this command can act on: a compiled built-in app
+/// Home is allowed to launch.
 ///
-/// The grammar mirrors `APP_ID_PATTERN` in `@epicenter/constants`: lowercase
-/// alphanumerics, `-`, and `.`, beginning and ending alphanumeric. Dots are here
-/// because an admitted app's ID is the reverse-domain workspace ID it declares
-/// (ADR-0210); bare labels stay legal for the compiled apps. The
-/// first and last character are constrained for the same reason the TypeScript
-/// side constrains them: an ID names a directory, and `.` or `..` would name one
-/// outside it.
-///
-/// This is a shape check, not a membership check. A reserved built-in app Home
-/// does not offer (Home itself, a placeholder) and an ID with characters no ID
-/// may contain are the same refusal, because Home offers neither.
-fn parse_application_id(id: &str) -> Option<Application> {
-    let is_inner = |byte: u8| {
-        byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'.'
-    };
-    let is_edge = |byte: u8| byte.is_ascii_lowercase() || byte.is_ascii_digit();
-    let bytes = id.as_bytes();
-    let matches_pattern = match (bytes.first(), bytes.last()) {
-        (Some(&first), Some(&last)) => {
-            is_edge(first) && is_edge(last) && bytes.iter().all(|&byte| is_inner(byte))
-        }
-        _ => false,
-    };
-    if !matches_pattern {
-        return None;
-    }
-    match BuiltInApp::from_id(id) {
-        Some(built_in) if built_in.is_launchable() => Some(Application::Compiled(built_in)),
-        Some(_) => None,
-        None => Some(Application::Admitted(id.to_string())),
-    }
-}
-
-/// The Tauri handle for one application's window.
-///
-/// A window label admits alphanumerics, `-`, `/`, `:`, and `_`, and no `.`, and
-/// Tauri enforces that with an assertion rather than an error, so a workspace
-/// ID with dots would panic the host. Mapping `.` to `_` is a bijection and not
-/// an escape: an app ID's whole alphabet is `[a-z0-9-.]`, so `_` cannot occur in
-/// one and no two IDs can produce one label.
-///
-/// This is the only place Tauri's label grammar reaches. A window label is
-/// Tauri's handle for a window, not Epicenter's name for an application
-/// (ADR-0210).
-fn app_window_label(id: &str) -> String {
-    format!("{APP_WINDOW_PREFIX}{}", id.replace('.', "_"))
-}
-
-fn ensure_app_window(app: &DesktopAppHandle, id: &str, port: u16, token: &str) -> Result<()> {
-    let label = app_window_label(id);
-    if let Some(window) = app.get_webview_window(&label) {
-        focus(window);
-        return Ok(());
-    }
-
-    let origin = origin(port);
-    let url: tauri::Url = format!("{origin}/apps/{id}/").parse()?;
-    let initialization_script = initialization_script(&origin, token)?;
-    let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(url))
-        .title(format!("Tironian: {id}"))
-        .inner_size(1100.0, 760.0)
-        .min_inner_size(680.0, 480.0)
-        .initialization_script(initialization_script)
-        .on_navigation(move |url| is_allowed_navigation(url, port))
-        .on_new_window(|_, _| NewWindowResponse::Deny)
-        .build()
-        .with_context(|| format!("create the {id} app WebView"))?;
-    release_host_resources_on_destroy(&window);
-    focus(window);
-    Ok(())
+/// This is a single-app product now: there is no admitted catalog and no
+/// second `app-` window class, so an ID that names anything else (Home
+/// itself, or nothing this build knows) is refused rather than opened.
+fn parse_application_id(id: &str) -> Option<BuiltInApp> {
+    BuiltInApp::from_id(id).filter(|built_in| built_in.is_launchable())
 }
 
 /// Release the host resources a window owns once it is destroyed.
@@ -1512,13 +1386,6 @@ fn invalidate_windows(app: &DesktopAppHandle) {
                 }
             }
         }
-        // Derived-catalog app windows carry the dead host's launch token in
-        // their initialization script, so a restart must tear them down too.
-        for (label, window) in app.webview_windows() {
-            if label.starts_with(APP_WINDOW_PREFIX) && window.destroy().is_err() {
-                let _ = window.hide();
-            }
-        }
         #[cfg(any(target_os = "macos", target_os = "windows"))]
         if let Some(window) = app.get_webview_window(overlay::WINDOW_LABEL) {
             if window.destroy().is_err() {
@@ -1790,9 +1657,6 @@ mod tests {
             [
                 ("home", "/apps/home/", "Tironian: Home"),
                 ("whispering", "/apps/whispering/", "Tironian"),
-                ("honeycrisp", "/apps/honeycrisp/", "Tironian: Honeycrisp"),
-                ("mail", "/apps/mail/", "Tironian: Mail"),
-                ("books", "/apps/books/", "Tironian: Books"),
             ]
         );
     }
@@ -1808,40 +1672,16 @@ mod tests {
             .filter(|window| window.is_launchable())
             .map(BuiltInApp::id)
             .collect();
-        assert_eq!(launchable, ["whispering", "honeycrisp"]);
+        assert_eq!(launchable, ["whispering"]);
     }
 
+    /// A single-app product admits no other apps: the only ID that resolves
+    /// through the launch verb is the one compiled built-in app Home lists.
+    /// Everything else is refused outright rather than opening a window at all,
+    /// which is the tightening that came with dropping the admitted catalog.
     #[test]
-    fn one_verb_opens_compiled_and_admitted_applications_alike() {
-        assert!(matches!(
-            parse_application_id("whispering"),
-            Some(Application::Compiled(BuiltInApp::Whispering))
-        ));
-        assert!(matches!(
-            parse_application_id("honeycrisp"),
-            Some(Application::Compiled(BuiltInApp::Honeycrisp))
-        ));
-
-        // Every well-formed non-reserved ID resolves to the app-window path,
-        // including ones no generation ever admitted. That is the ownership
-        // boundary, not an oversight: the catalog is Bun's (ADR-0179), Home
-        // only offers IDs from the list Bun served it, and an ID that names no
-        // member opens a window Bun answers with 404. Re-deriving membership
-        // here would be a second catalog with a second answer.
-        for accepted in [
-            "hello-http",
-            "a",
-            "notes2",
-            "x-y-z",
-            "0",
-            "so.epicenter.hello",
-            "never-admitted",
-        ] {
-            assert!(
-                matches!(parse_application_id(accepted), Some(Application::Admitted(id)) if id == accepted),
-                "expected {accepted:?} to resolve to the app-window path"
-            );
-        }
+    fn only_whispering_resolves_through_the_launch_verb() {
+        assert_eq!(parse_application_id("whispering"), Some(BuiltInApp::Whispering));
 
         for denied in [
             "",
@@ -1853,29 +1693,15 @@ mod tests {
             "-a",
             "hello http",
             "héllo",
-            // Reserved windows Home does not list: the shell itself, and
-            // placeholder documents with nothing behind them to open.
+            "hello-http",
+            "so.epicenter.hello",
+            "never-admitted",
+            // Reserved windows Home does not list: the shell itself.
             "home",
-            "mail",
-            "books",
         ] {
             assert!(
                 parse_application_id(denied).is_none(),
                 "expected {denied:?} rejected"
-            );
-        }
-    }
-
-    #[test]
-    fn app_window_labels_are_reserved_and_never_collide_with_host_windows() {
-        assert_eq!(app_window_label("hello-http"), "app-hello-http");
-
-        let mut host_labels: Vec<&str> = BuiltInApp::ALL.map(BuiltInApp::id).to_vec();
-        host_labels.push("recording-overlay");
-        for label in host_labels {
-            assert!(
-                !label.starts_with(APP_WINDOW_PREFIX),
-                "host window label {label:?} must not match the app-* capability glob"
             );
         }
     }
@@ -1889,8 +1715,8 @@ mod tests {
             let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
             assert_eq!(
                 capability["windows"],
-                serde_json::json!(["app-*", "whispering"]),
-                "the trusted-app HTTP slice must cover catalog apps and transitional Whispering"
+                serde_json::json!(["whispering"]),
+                "the trusted-app HTTP slice belongs to Whispering alone now that no catalog admits other apps"
             );
 
             let http = capability["permissions"]
@@ -2360,9 +2186,6 @@ mod tests {
         for (url, expected) in [
             ("epicenter://app/home", BuiltInApp::Home),
             ("epicenter://app/whispering", BuiltInApp::Whispering),
-            ("epicenter://app/honeycrisp", BuiltInApp::Honeycrisp),
-            ("epicenter://app/mail", BuiltInApp::Mail),
-            ("epicenter://app/books", BuiltInApp::Books),
         ] {
             assert_eq!(parse_app_deep_link(&url.parse().unwrap()), Some(expected));
         }
@@ -2372,6 +2195,11 @@ mod tests {
             "epicenter://surface/home",
             "epicenter://window/home",
             "epicenter://app/unknown",
+            // Honeycrisp, Mail, and Books are gone: a single-app product admits
+            // no other apps, so these no longer resolve to anything.
+            "epicenter://app/honeycrisp",
+            "epicenter://app/mail",
+            "epicenter://app/books",
             "epicenter://app/home/",
             "epicenter://app/home/extra",
             "epicenter://app/home?mode=other",
@@ -2454,15 +2282,15 @@ mod tests {
     fn forwarded_arguments_extract_valid_unique_app_links() {
         let arguments = [
             "/Applications/Epicenter.app/Contents/MacOS/Epicenter",
-            "epicenter://app/mail",
+            "epicenter://app/whispering",
             "epicenter://app/unknown",
-            "epicenter://app/mail",
-            "epicenter://app/books",
+            "epicenter://app/whispering",
+            "epicenter://app/home",
         ]
         .map(String::from);
         assert_eq!(
             apps_from_arguments(&arguments),
-            vec![BuiltInApp::Mail, BuiltInApp::Books]
+            vec![BuiltInApp::Whispering, BuiltInApp::Home]
         );
     }
 

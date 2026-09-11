@@ -63,7 +63,6 @@ who forks and distributes a modified binary shares the changes back.
 
   Apps:
     - apps/whispering            (@epicenter/whispering) desktop transcription
-    - apps/honeycrisp            (@epicenter/honeycrisp) notes app
     - apps/tab-manager           (@epicenter/tab-manager) browser extension
     - apps/wiki                  (@epicenter/wiki)       wiki app
 

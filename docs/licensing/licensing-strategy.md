@@ -55,7 +55,7 @@ We sort this into four scenarios:
 
 Scenarios 3 and 4 are the threat. AGPL handles both. We default to AGPL rather than proprietary for these scenarios because AGPL preserves the right to read and fork the code (consistent with the local-first ethos), still forces a hosted fork to publish its (modified) source via §13, and avoids the operational overhead of running a proprietary tier.
 
-Scenario 4 (a hosted competitor) is the one where the license is most load-bearing, because hosting a fork is a low-effort, high-leverage attack on revenue. We extend AGPL to the consumer apps too (Whispering, Honeycrisp, etc.): on a locally-run app AGPL reduces to GPL conveyance copyleft, which is not "little protection" but exactly what blocks scenario 3, a competitor forking a shipped app into a closed-source rebrand. Brand, distribution, and update cadence remain the real moats for end-user apps; the license is the backstop that keeps a fork from being closed.
+Scenario 4 (a hosted competitor) is the one where the license is most load-bearing, because hosting a fork is a low-effort, high-leverage attack on revenue. We extend AGPL to the consumer apps too (Whispering, etc.): on a locally-run app AGPL reduces to GPL conveyance copyleft, which is not "little protection" but exactly what blocks scenario 3, a competitor forking a shipped app into a closed-source rebrand. Brand, distribution, and update cadence remain the real moats for end-user apps; the license is the backstop that keeps a fork from being closed.
 
 ## Three-tier split
 
@@ -70,7 +70,7 @@ Scenario 4 (a hosted competitor) is the one where the license is most load-beari
 
 ### Tier 2: AGPL-3.0
 
-**Applies to:** everything else. All apps (`apps/epicenter`, `apps/whispering`, `apps/honeycrisp`), and the internal packages `packages/auth`, `packages/blobs`, `packages/svelte-utils`, `packages/app-shell`, `packages/constants`, `packages/client`, `packages/recorder`, `packages/vite-config`.
+**Applies to:** everything else. All apps (`apps/epicenter`, `apps/whispering`), and the internal packages `packages/auth`, `packages/blobs`, `packages/svelte-utils`, `packages/app-shell`, `packages/constants`, `packages/client`, `packages/recorder`, `packages/vite-config`.
 
 **Rationale:**
 - Consumer apps: on a locally-run app AGPL reduces to GPL conveyance copyleft, which is exactly what blocks a competitor from forking a shipped app into a closed-source rebrand (scenario 3). That is real protection, not brand consistency. The toolkit libraries are the only MIT surface.
@@ -117,7 +117,6 @@ All apps are AGPL-3.0. MIT is reserved for the embeddable toolkit libraries.
 |---|---|---|
 | `apps/epicenter` | AGPL-3.0 | Desktop host: serves bundles, brokers credentials |
 | `apps/whispering` | AGPL-3.0 | Desktop transcription |
-| `apps/honeycrisp` | AGPL-3.0 | Notes app |
 | `packages/data` | MIT | The store: one document per application, its SQLite log and projection, and its transport (toolkit) |
 | `packages/ui` | MIT | shadcn-svelte components (toolkit) |
 | `packages/sqlite` | MIT | Domain-free synchronous SQLite adapter contract shared across embedded runtimes (toolkit) |

@@ -20,9 +20,7 @@ import { defineConfig, js, repository } from 'jsrepo';
  * (ADR-0112).
  */
 
-const BLOCKS = {
-	honeycrisp: ['workspace', 'daemon-route'],
-} as const;
+const BLOCKS = {} as const;
 
 export default defineConfig({
 	languages: [js()],

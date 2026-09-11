@@ -6,9 +6,8 @@ Local-first personal data platform. Monorepo with Yjs CRDTs and Svelte UI.
 
 ```
 apps/
-  honeycrisp   notes. the one app on the store today, and the
+  whispering   transcription SPA, the one app on the store, and the
                reference for how an app is built
-  whispering   transcription SPA
   epicenter    Tauri host for trusted app windows
 packages/
   data         the store, data definitions, openers, sync, and projection
@@ -113,7 +112,7 @@ Audience decides vocabulary: what a person reads uses the word they already have
 | UI copy, errors shown to them, deep links, README front doors | types, functions, library error messages |
 
 - Do not soften `authority`, `replica`, `projection`, or `principal` in code to sound friendlier, and do not let one of them reach a person.
-- A library states a failure precisely; the app decides what a person is told about it. Worked example: `apps/honeycrisp/src/lib/boot-failure.ts`. Vocabulary decision: ADR-0244.
+- A library states a failure precisely; the app decides what a person is told about it. Vocabulary decision: ADR-0244.
 - Keep user-facing text direct and concrete.
 
 **Punctuation.** Avoid en dash characters (`U+2013`). Prefer colon, comma, semicolon, or sentence break over em dash characters (`U+2014`), especially in UI strings, docs, comments, JSDoc, and commit messages.

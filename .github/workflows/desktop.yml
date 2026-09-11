@@ -42,8 +42,8 @@
 name: Tironian desktop build
 
 # No `paths:` filter: `beforeBuildCommand` runs `bun run build:desktop`, which
-# builds the Home frontend plus the Whispering and Honeycrisp bundles and
-# compiles the Bun sidecar, so almost any workspace package can break it.
+# builds the Home frontend plus the Whispering bundle and compiles the Bun
+# sidecar, so almost any workspace package can break it.
 on:
   pull_request:
   push:
@@ -185,8 +185,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       # tauri.conf.json's `beforeBuildCommand` is `bun run build:desktop`, which
-      # builds Home, Whispering, and Honeycrisp, then compiles the Bun sidecar
-      # that `externalBin` requires.
+      # builds Home and Whispering, then compiles the Bun sidecar that
+      # `externalBin` requires.
       - name: Build the desktop app
         run: bun run --cwd apps/epicenter desktop:build
 
@@ -262,7 +262,7 @@ jobs:
           # every macOS bundle before this check shipped without apps-dist and
           # could not start. Assert the files the host needs at launch.
           missing=0
-          for f in apps-dist/home/index.html apps-dist/whispering/index.html apps-dist/honeycrisp/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
+          for f in apps-dist/home/index.html apps-dist/whispering/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
             test -f "$APP/Contents/Resources/$f" || { echo "::error::bundle is missing Contents/Resources/$f"; missing=1; }
           done
           ls -R "$APP/Contents/Resources" | head -40

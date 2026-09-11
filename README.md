@@ -58,7 +58,6 @@ opus builds.
 | `apps/epicenter/src-tauri` | The native desktop host that bundles and runs it: recorder, local transcription, tray, shortcuts. |
 | `packages/data`, `packages/ui` | The local store and the component library the app is built on. |
 | `docs/brand/` | Name, mark, palette, type, voice, and the claims ledger. |
-| `apps/honeycrisp` | Notes app kept alongside the dictation app in the desktop host. |
 
 Code keeps upstream's `whispering` and `@epicenter/*` identifiers so upstream
 fixes can still be merged. The reasoning is in the brand document under

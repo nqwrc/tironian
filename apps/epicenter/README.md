@@ -1,12 +1,11 @@
 # Epicenter desktop host
 
-Epicenter is the repository's native application host. It owns one Tauri runtime, one native command API, and the trusted app catalog. Product SPAs keep their source in their own `apps/*` folders; Epicenter builds and serves their desktop variants without copying that source into this folder.
+Epicenter is the repository's native application host. It owns one Tauri runtime and one native command API. Product SPAs keep their source in their own `apps/*` folders; Epicenter builds and serves their desktop variants without copying that source into this folder.
 
 ```text
 trusted SPA source                 Epicenter build output
 
 apps/whispering/src  -----------> dist/whispering
-apps/honeycrisp/src  -----------> dist/honeycrisp
 apps/epicenter/ui     -----------> dist/home
                                           |
                                           v
@@ -17,9 +16,9 @@ apps/epicenter/ui     -----------> dist/home
 ```
 
 A compiled application is a `dist/<id>` build this release declares, served
-below `/apps/<id>/`. Whispering and Honeycrisp are the two. Each keeps its
-independently deployable browser build, and the variant Epicenter serves is
-selected at build time by the `epicenter-host` resolve condition.
+below `/apps/<id>/`. Whispering is the one. It keeps its independently
+deployable browser build, and the variant Epicenter serves is selected at
+build time by the `epicenter-host` resolve condition.
 
 That condition does not decide where the data lives. Every build opens its own
 store, with no platform seam, and reaches one authority per signed-in account
@@ -68,9 +67,8 @@ that, keeping it near a drive root. It needs `VULKAN_SDK` set, and warns when it
 is not.
 
 Epicenter opens Home, which is an application beside the others rather than a
-shell above them (ADR-0209). Its Apps pane lists what this build can launch, the
-compiled applications plus the selected catalog generation's members, and
-launching one opens its own window; the OS is the switcher from there, and
+shell above them (ADR-0209). Its Apps pane lists what this build can launch,
+and launching one opens its own window; the OS is the switcher from there, and
 closing Home leaves everything it launched running. Its Data pane is Epicenter's
 own job: every workspace id as real read-only tables, where picking one makes
 `SELECT * FROM notes` mean something and "Everything raw" shows the storage as it
@@ -81,35 +79,8 @@ windows:
 
 ```bash
 open 'epicenter://app/whispering'
-open 'epicenter://app/honeycrisp'
 open 'epicenter://app/home'
 ```
-
-## Publish an app catalog
-
-The promotion command accepts already-built static outputs. It does not install
-dependencies, run build scripts, or read application source (ADR-0179). How the
-folders were produced, and by whom, is outside the contract. The candidate
-directory contains one built result per app:
-
-```text
-candidate/
-|-- notes/
-|   `-- index.html
-`-- timeline/
-    `-- index.html
-```
-
-Publish it from the repository root:
-
-```bash
-bun run --cwd apps/epicenter catalog:publish -- ./candidate --data-dir ./tmp/epicenter-data
-```
-
-Epicenter copies and validates the complete candidate, stores it as an
-immutable generation, and atomically selects it for the next launch. A running
-process keeps serving the generation it selected at startup. Restart Epicenter
-to activate the new catalog.
 
 ## Build and verify
 

@@ -55,14 +55,14 @@ apps/<app>/
 └── package.json                 "exports": { ".": "./src/lib/workspace/index.ts" }
 ```
 
-`honeycrisp` uses that nesting. Follow the existing package shape.
+`whispering` uses that nesting. Follow the existing package shape.
 
 Where a build genuinely differs, put the difference behind a `#platform/*`
-build-time subpath import rather than a runtime branch. Honeycrisp's
-`#platform/auth` resolves to `auth.epicenter-host.ts`, `auth.tauri.ts`, or
-`auth.browser.ts` under the `epicenter-host`, `tauri`, and default conditions.
-Auth keeps a seam because the host really does broker a credential its windows
-cannot obtain; storage does not, because it does not differ.
+build-time subpath import rather than a runtime branch. Whispering's
+`#platform/auth` resolves to `auth.epicenter-host.ts` or `auth.browser.ts`
+under the `epicenter-host` and default conditions. Auth keeps a seam because
+the host really does broker a credential its windows cannot obtain; storage
+does not, because it does not differ.
 
 ## Adding an app
 
@@ -81,10 +81,8 @@ cannot obtain; storage does not, because it does not differ.
 
 ## Where each surface stands
 
-`honeycrisp` is the surface built on the store, and its
-[README](honeycrisp/README.md) is the worked example.
-
-`whispering` is also built on the store: it declares a real workspace with
-`defineData` (`src/lib/workspace/index.ts`), opens the device and account
-stores, and attaches sync (`src/lib/whispering/app.ts`). `epicenter` is the
-Tauri host, not a data surface; it compiles, bundles, and serves both apps.
+`whispering` is the surface built on the store: it declares a real workspace
+with `defineData` (`src/lib/workspace/index.ts`), opens the device and account
+stores, and attaches sync (`src/lib/whispering/app.ts`), and its
+[README](whispering/README.md) is the worked example. `epicenter` is the
+Tauri host, not a data surface; it compiles, bundles, and serves the app.
