@@ -8,7 +8,7 @@
 	import { toggleMode } from 'mode-watcher';
 	import { page } from '$app/state';
 	import { GithubIcon } from '$lib/components/icons';
-	import studioMicrophone from '$lib/assets/studio-microphone.png';
+	import tironianMark from '$lib/assets/tironian-mark.png';
 	import { NAV_ITEMS } from './nav-items';
 	import { auth } from '#platform/auth';
 	import { instanceSetting } from '#platform/instance';
@@ -31,7 +31,7 @@
 							<div
 								class="bg-sidebar-accent flex size-8 items-center justify-center rounded-lg"
 							>
-								<img src={studioMicrophone} alt="" class="size-4" />
+								<img src={tironianMark} alt="" class="size-4" />
 							</div>
 							<div
 								class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"

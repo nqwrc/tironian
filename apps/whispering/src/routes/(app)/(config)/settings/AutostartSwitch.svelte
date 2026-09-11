@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import * as Field from '@epicenter/ui/field';
 	import { Switch } from '@epicenter/ui/switch';
 	import {
@@ -38,7 +39,7 @@
 	<Field.Content>
 		<Field.Label for="autostart">{m.autostart_switch_launch_on_startup()}</Field.Label>
 		<Field.Description>
-			{m.autostart_switch_automatically_open_epicenter_when()}
+			{m.autostart_switch_automatically_open_epicenter_when({ productName: PRODUCT_NAME })}
 		</Field.Description>
 	</Field.Content>
 	<Switch

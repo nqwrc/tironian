@@ -23,6 +23,7 @@ import { extractErrorMessage } from 'wellcrafted/error';
 import { Err, Ok, type Result } from 'wellcrafted/result';
 import type { LocalTranscriptionReadiness } from '$lib/tauri/commands.types';
 import { m } from '../../paraglide/messages';
+import { PRODUCT_NAME } from '../../constants/brand';
 
 /** What the route accepts when it is usable. */
 export type TranscriptionCapabilities = {
@@ -59,7 +60,9 @@ export async function readLocalCapabilities(
 	if (!read) {
 		return Err({
 			reason: 'host-unavailable',
-			message: m.local_capabilities_local_transcription_needs_the(),
+			message: m.local_capabilities_local_transcription_needs_the({
+				productName: PRODUCT_NAME,
+			}),
 		});
 	}
 	try {

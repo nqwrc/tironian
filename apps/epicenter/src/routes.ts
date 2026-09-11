@@ -30,7 +30,7 @@ function builtInRoute<const TId extends string>(id: TId, title: string) {
 
 export const BUILT_IN_ROUTES = {
 	home: builtInRoute('home', 'Home'),
-	whispering: builtInRoute('whispering', 'Whispering'),
+	whispering: builtInRoute('whispering', 'Tironian'),
 	honeycrisp: builtInRoute('honeycrisp', 'Honeycrisp'),
 	mail: builtInRoute('mail', 'Mail'),
 	books: builtInRoute('books', 'Books'),

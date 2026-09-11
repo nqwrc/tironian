@@ -1,5 +1,6 @@
 <script module lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { toast } from '@epicenter/ui/sonner';
 	import { tauri } from '#platform/tauri';
 
@@ -62,7 +63,7 @@
 			return;
 		}
 		toast.info('System Settings opened', {
-			description: m.macos_accessibility_guide_dialog_turn_on_epicenter_in(),
+			description: m.macos_accessibility_guide_dialog_turn_on_epicenter_in({ productName: PRODUCT_NAME }),
 			duration: 8000,
 		});
 	}

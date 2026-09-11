@@ -402,7 +402,7 @@ describe('home server catalog routes', () => {
 			// these Epicenter compiled and which it admitted as a folder.
 			expect(await listed.json()).toEqual({
 				apps: [
-					{ id: 'whispering', title: 'Whispering' },
+					{ id: 'whispering', title: 'Tironian' },
 					{ id: 'honeycrisp', title: 'Honeycrisp' },
 					{ id: 'so.epicenter.hello-http', title: 'Hello HTTP' },
 				],

@@ -41,7 +41,7 @@
 	import { getRecordingShortcutLabel } from '$lib/utils/recording-shortcut';
 	import { viewTransition } from '$lib/utils/viewTransitions';
 	import { getWhisperingApp } from '$lib/whispering/context';
-	import studioMicrophone from '$lib/assets/studio-microphone.png';
+	import tironianMark from '$lib/assets/tironian-mark.png';
 	import { tauri } from '#platform/tauri';
 	import CaptureBehaviorPopover from './_components/CaptureBehaviorPopover.svelte';
 	import CapturePipeline from './_components/CapturePipeline.svelte';
@@ -170,7 +170,7 @@
 >
 	<SectionHeader.Root class="flex flex-col items-center gap-2 text-center">
 		<div class="flex items-center gap-2.5">
-			<img src={studioMicrophone} alt="" class="size-8" />
+			<img src={tironianMark} alt="" class="size-8" />
 			<SectionHeader.Title level={1} class="text-3xl">{PRODUCT_NAME}</SectionHeader.Title>
 		</div>
 		<SectionHeader.Description class="text-base">
@@ -202,7 +202,7 @@
 					class="w-full"
 					onclick={() => localRoute.openHomeTranscription()}
 				>
-					{m.app_set_up_in_epicenter_home()}
+					{m.app_set_up_in_epicenter_home({ productName: PRODUCT_NAME })}
 				</Button>
 				<p class="text-muted-foreground text-sm">
 					{m.app_or()} <Link href={whisperingPath('/settings/processing')}>

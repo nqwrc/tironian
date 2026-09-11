@@ -34,7 +34,7 @@ function catalogOf(...members: { id: string; title: string }[]): AppCatalog {
 describe('listApplications', () => {
 	test('an empty catalog still offers the compiled applications', () => {
 		expect(listApplications({ apps: [] })).toEqual([
-			{ id: 'whispering', title: 'Whispering' },
+			{ id: 'whispering', title: 'Tironian' },
 			{ id: 'honeycrisp', title: 'Honeycrisp' },
 		]);
 	});
@@ -48,7 +48,7 @@ describe('listApplications', () => {
 				),
 			),
 		).toEqual([
-			{ id: 'whispering', title: 'Whispering' },
+			{ id: 'whispering', title: 'Tironian' },
 			{ id: 'honeycrisp', title: 'Honeycrisp' },
 			{ id: 'notes', title: 'Notes' },
 			{ id: 'timeline', title: 'Timeline' },
