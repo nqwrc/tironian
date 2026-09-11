@@ -3,8 +3,8 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Allow Tironian to access your microphone so Whispering can record and transcribe your speech.</string>
+	<string>Allow Tironian to access your microphone so it can record and transcribe your speech.</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Allow Tironian to pause and resume Music or Spotify while Whispering records.</string>
+	<string>Allow Tironian to pause and resume Music or Spotify while it records.</string>
 </dict>
 </plist>

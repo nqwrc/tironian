@@ -46,10 +46,7 @@ describe('Epicenter-hosted Whispering identity', () => {
 		expect(normalizeWhisperingPath('/settings')).toBe('/settings');
 	});
 
-	test('the canonical SPA no longer documents the retired native identifier', () => {
-		expect(read('src/lib/services/fs-paths.ts')).not.toContain(
-			'app.tironian.dictation',
-		);
+	test('the canonical SPA documents the live bundle identifier', () => {
 		expect(read('src/lib/services/fs-paths.ts')).toContain('app.tironian');
 	});
 

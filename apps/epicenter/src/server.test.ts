@@ -510,16 +510,24 @@ describe('createHomeServer', () => {
 		const server = await serveHost();
 		const { cookie, origin } = authenticationFor(server);
 		try {
-			// The account broker used to live under one prefix. Build it from parts
-			// so this file itself has no reachable-looking mention of the retired
-			// route surface.
-			const prefix = ['', '_epicenter', 'account'].join('/');
-			for (const path of ['sign-in', 'sign-out', 'instance', 'profile']) {
-				const response = await fetch(`${origin}${prefix}/${path}`, {
-					method: 'POST',
-					headers: { cookie, origin },
-				});
-				expect(response.status).toBe(404);
+			// The account broker used to live under one prefix and the host
+			// infrastructure prefix has since been renamed. Probe both: the
+			// historical path (built from parts so this file has no
+			// reachable-looking mention of the retired route surface) and the
+			// live host prefix, derived from BOOTSTRAP_ROUTE so a future rename
+			// of that prefix cannot leave this test probing a path the server
+			// no longer serves anything under.
+			const historicalPrefix = ['', '_epicenter', 'account'].join('/');
+			const [, liveSegment] = BOOTSTRAP_ROUTE.pattern.split('/');
+			const livePrefix = ['', liveSegment, 'account'].join('/');
+			for (const prefix of [historicalPrefix, livePrefix]) {
+				for (const path of ['sign-in', 'sign-out', 'instance', 'profile']) {
+					const response = await fetch(`${origin}${prefix}/${path}`, {
+						method: 'POST',
+						headers: { cookie, origin },
+					});
+					expect(response.status).toBe(404);
+				}
 			}
 		} finally {
 			await server.stop(true);

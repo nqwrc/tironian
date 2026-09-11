@@ -12,7 +12,7 @@ import { type BlobStat, type BlobStore, BlobStoreError } from './blob-store.js';
 const DATABASE_VERSION = 1;
 const DATA_STORE = 'blob-data';
 const METADATA_STORE = 'blob-metadata';
-const DEFAULT_DATABASE_NAME = 'epicenter-blobs';
+const DEFAULT_DATABASE_NAME = 'tironian-blobs';
 
 type StoredBlob = {
 	id: BlobId;

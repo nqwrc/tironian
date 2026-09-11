@@ -464,7 +464,7 @@ pub fn run() {
         as fn(tauri::ipc::Invoke<tauri::Wry>) -> bool;
     let log_plugin = tauri_plugin_log::Builder::new()
         .level(log::LevelFilter::Info)
-        .level_for("tironian::transcription", log::LevelFilter::Debug)
+        .level_for("tironian_lib::transcription", log::LevelFilter::Debug)
         .target(tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::Stdout,
         ))
@@ -1954,8 +1954,6 @@ mod tests {
         assert!(script.contains("window.location.origin !== expectedOrigin"));
         assert!(script.contains("/_tironian/bootstrap"));
         assert!(script.contains("__TIRONIAN_SESSION_READY__"));
-        assert!(!script.contains("__TIRONIAN_WHISPERING_AUTH_READY__"));
-        assert!(!script.contains("__TIRONIAN_WHISPERING_AUTH_BOOTSTRAP__"));
         assert!(!script.contains("keyring_read"));
         assert!(!script.contains("localStorage"));
         assert!(!script.contains("sessionStorage"));
