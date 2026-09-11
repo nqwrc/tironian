@@ -8,6 +8,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { parseBlobId } from '@tironian/blobs';
 import type { BunBlobStore } from '@tironian/blobs/bun';
+import { LOCAL_BLOB_PATH } from '@tironian/blobs/webview';
 import { type Context, Hono, type Next } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import {
@@ -134,7 +135,7 @@ export function createHomeServer({
 	}
 	app.get('/apps/*', (c) => c.text('Not Found', 404));
 
-	app.use('/api/local-blobs/*', requireBrowserSession);
+	app.use(`${LOCAL_BLOB_PATH}/*`, requireBrowserSession);
 
 	app.put(LOCAL_BLOB_ROUTE.pattern, async (c) => {
 		const id = parseBlobId(c.req.param('blobId'));

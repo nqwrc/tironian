@@ -42,12 +42,16 @@ function runCheck(dir: string): { status: number | null; output: string } {
 test('flags a hardcoded API path literal with file and line', () => {
 	const dir = makeRepo();
 	try {
-		write(dir, 'packages/thing/src/client.ts', "const url = '/api/session';\n");
+		write(
+			dir,
+			'packages/thing/src/client.ts',
+			"const url = '/api/local-blobs';\n",
+		);
 		const { status, output } = runCheck(dir);
 		expect(status).toBe(1);
 		expect(output).toContain('packages/thing/src/client.ts:1:');
 		expect(output).toContain('::error::Hardcoded API path literal found');
-		expect(output).toContain('API_ROUTES');
+		expect(output).toContain('BUILT_IN_ROUTES');
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
 	}
@@ -56,36 +60,40 @@ test('flags a hardcoded API path literal with file and line', () => {
 test('passes allowlisted mirrors, comments, tests, and excluded dirs', () => {
 	const dir = makeRepo();
 	try {
-		// Source-of-truth and vendored mirror files are allowed verbatim.
+		// Source-of-truth files are allowed verbatim.
 		write(
 			dir,
-			'packages/constants/src/api-routes.ts',
-			"export const SESSION = '/api/session';\n",
+			'packages/blobs/src/webview.ts',
+			"export const LOCAL_BLOB_PATH = '/api/local-blobs';\n",
 		);
 		write(
 			dir,
 			'apps/desktop/src/routes.ts',
-			"export const SESSION = '/api/session';\n",
+			"export const BOOTSTRAP_ROUTE = route('/_tironian/bootstrap');\n",
 		);
 		// Comment lines are prose, not constructions.
 		write(
 			dir,
 			'apps/web/src/notes.ts',
-			" * hits '/api/blobs' eventually\n// see '/api/ai' for details\n",
+			" * hits '/api/local-blobs' eventually\n// see '/_tironian/bootstrap' for details\n",
 		);
 		// Test files may reference paths verbatim.
-		write(dir, 'packages/thing/src/client.test.ts', "mock('/api/session');\n");
+		write(
+			dir,
+			'packages/thing/src/client.test.ts',
+			"mock('/api/local-blobs');\n",
+		);
 		// Build output and dependencies are never scanned.
 		write(
 			dir,
 			'packages/thing/node_modules/dep/index.ts',
-			"fetch('/api/session');\n",
+			"fetch('/api/local-blobs');\n",
 		);
 		// A longer lowercase segment is a different route, not a match.
 		write(
 			dir,
 			'apps/web/src/other.ts',
-			"const fine = '/api/sessions-of-mine';\n",
+			"const fine = '/api/local-blobsomething';\n",
 		);
 		const { status, output } = runCheck(dir);
 		expect(output).toContain('no hardcoded API path literals');
@@ -95,13 +103,13 @@ test('passes allowlisted mirrors, comments, tests, and excluded dirs', () => {
 	}
 });
 
-test('flags the oauth callback family', () => {
+test('flags the bootstrap route literal', () => {
 	const dir = makeRepo();
 	try {
 		write(
 			dir,
 			'apps/web/src/login.ts',
-			"window.location.href = '/auth/oauth2/google';\n",
+			"window.fetch('/_tironian/bootstrap');\n",
 		);
 		const { status, output } = runCheck(dir);
 		expect(status).toBe(1);

@@ -92,7 +92,7 @@
 				<Sidebar.MenuButton>
 					{#snippet child({ props })}
 						<a
-							href="https://github.com/TironianHQ/tironian"
+							href="https://github.com/nqwrc/tironian"
 							target="_blank"
 							rel="noopener noreferrer"
 							{...props}

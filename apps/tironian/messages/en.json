@@ -294,7 +294,6 @@
 	"settings_how_a_capture_starts_and_what_it_does": "How a capture starts and what it does to the rest of your machine.",
 	"settings_voice_activated_not_supported_on_linux": "Voice Activated not supported on Linux",
 	"settings_voice_activated_detection_vad_requires_the": "Voice Activated Detection (VAD) requires the browser's Navigator API, which is not fully supported in Tauri on Linux. Device enumeration and recording will fail. Please use Manual recording instead.",
-	"settings_learn_more": "Learn more →",
 	"settings_global_shortcuts_may_be_unreliable": "Global Shortcuts May Be Unreliable",
 	"settings_vad_uses_browser_owned_capture_macos_app_nap": "VAD uses browser-owned capture. macOS App Nap may delay browser recording logic when {productName} is not in focus.",
 	"settings_voice_activated_detection": "Voice Activated Detection",

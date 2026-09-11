@@ -339,7 +339,7 @@
 				{m.app_tired_of_switching_tabs()}
 				<Link
 					tooltip={m.app_get_tironian_for_desktop({ productName: PRODUCT_NAME })}
-					href="https://tironian.so/tironian"
+					href="https://github.com/nqwrc/tironian/releases"
 					target="_blank"
 					rel="noopener noreferrer"
 				>

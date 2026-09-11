@@ -104,6 +104,19 @@ fn launched_from_autostart(arguments: &[String]) -> bool {
         .any(|argument| argument == AUTOSTART_HIDDEN_ARG)
 }
 
+/// Whether the default dictation window should stay suppressed for this host
+/// generation.
+///
+/// `--hidden` stays in `std::env::args()` for the whole life of the process,
+/// but it only describes how the process itself was launched, not every host
+/// generation that runs inside it. A restart after `fail_generation` (for
+/// example the person clicking Retry on the error dialog) is not the OS
+/// starting Tironian at login, so it must not suppress the window a second
+/// time: only the first generation may honor it.
+const fn suppress_default_window(is_first_generation: bool, launched_from_autostart: bool) -> bool {
+    is_first_generation && launched_from_autostart
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum BuiltInApp {
     Home,
@@ -180,6 +193,10 @@ struct HostState {
     pending_apps: Mutex<Vec<BuiltInApp>>,
     shutting_down: AtomicBool,
     starting: AtomicBool,
+    /// Set the first time a host generation reaches window creation. Guards
+    /// `suppress_default_window`: only that first generation may still be the
+    /// one the OS launched with `--hidden` at login.
+    first_generation_started: AtomicBool,
 }
 
 impl HostState {
@@ -192,6 +209,7 @@ impl HostState {
             pending_apps: Mutex::new(Vec::new()),
             shutting_down: AtomicBool::new(false),
             starting: AtomicBool::new(false),
+            first_generation_started: AtomicBool::new(false),
         }
     }
 
@@ -764,7 +782,13 @@ fn start_once(app: &DesktopAppHandle) -> Result<()> {
 
     state.activate(&token);
     let mut built_ins = state.take_pending_apps();
-    if built_ins.is_empty() && !launched_from_autostart(&std::env::args().collect::<Vec<_>>()) {
+    let is_first_generation = !state.first_generation_started.swap(true, Ordering::AcqRel);
+    if built_ins.is_empty()
+        && !suppress_default_window(
+            is_first_generation,
+            launched_from_autostart(&std::env::args().collect::<Vec<_>>()),
+        )
+    {
         built_ins.push(BuiltInApp::Dictation);
     }
     if let Err(error) = create_windows_on_main_thread(app, port, &token, built_ins) {
@@ -1352,6 +1376,14 @@ mod tests {
         assert!(!launched_from_autostart(&[
             "tironian://app/dictation".to_string()
         ]));
+    }
+
+    #[test]
+    fn suppress_default_window_only_honors_autostart_on_the_first_generation() {
+        assert!(suppress_default_window(true, true));
+        assert!(!suppress_default_window(false, true));
+        assert!(!suppress_default_window(true, false));
+        assert!(!suppress_default_window(false, false));
     }
 
     #[test]

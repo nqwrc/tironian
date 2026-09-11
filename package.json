@@ -117,7 +117,7 @@
 		"check:doc-hygiene": "bun run scripts/check-doc-hygiene.ts",
 		"check:catalog-pins": "bun run scripts/check-catalog-pins.ts",
 		"check:api-paths": "bun run scripts/check-api-paths.ts",
-		"check:structure": "bun run check:doc-paths && bun run check:catalog-pins && bun run check:api-paths && bun run check:licenses && bun run check:ui-boundary && bun run check:boot-purity",
+		"check:structure": "bun run check:doc-paths && bun run check:catalog-pins && bun run check:api-paths && bun run check:licenses && bun run check:ui-boundary && bun run check:boot-purity && bun run check:brand-residue",
 		"bump-version": "bun run scripts/bump-version.ts",
 		"clean": "bun run scripts/clean.ts",
 		"nuke": "bun run scripts/clean.ts --nuke",

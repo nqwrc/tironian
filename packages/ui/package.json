@@ -15,10 +15,10 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/TironianHQ/tironian.git",
+		"url": "https://github.com/nqwrc/tironian.git",
 		"directory": "packages/ui"
 	},
-	"homepage": "https://tironian.so",
+	"homepage": "https://github.com/nqwrc/tironian",
 	"type": "module",
 	"exports": {
 		"./*": "./src/*/index.ts",

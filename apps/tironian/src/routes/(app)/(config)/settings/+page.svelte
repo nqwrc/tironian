@@ -15,7 +15,6 @@
 	import * as Alert from '@tironian/ui/alert';
 	import { Button } from '@tironian/ui/button';
 	import * as Field from '@tironian/ui/field';
-	import { Link } from '@tironian/ui/link';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import OutputDeliveryControls from '$lib/components/OutputDeliveryControls.svelte';
 	import { SettingSelect, SettingSwitch } from '$lib/components/settings';
@@ -123,12 +122,6 @@
 							<Alert.Title>{m.settings_voice_activated_not_supported_on_linux()}</Alert.Title>
 							<Alert.Description>
 								{m.settings_voice_activated_detection_vad_requires_the()}
-								<Link
-									href="https://github.com/TironianHQ/tironian/issues/839"
-									target="_blank"
-								>
-									{m.settings_learn_more()}
-								</Link>
 							</Alert.Description>
 						</Alert.Root>
 					{:else}

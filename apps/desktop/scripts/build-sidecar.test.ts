@@ -123,7 +123,9 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 
 		const home = await fetch(`${origin}/apps/home/`, session);
 		expect(home.status).toBe(200);
-		expect(await home.text()).toContain('<title>Home</title>');
+		expect(await home.text()).toContain(
+			'<title>Tironian: Model settings</title>',
+		);
 		const dictation = await fetch(`${origin}/apps/dictation/`, session);
 		expect(dictation.status).toBe(200);
 		const dictationPage = await dictation.text();

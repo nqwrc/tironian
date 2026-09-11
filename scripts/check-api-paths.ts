@@ -1,18 +1,16 @@
 /**
- * Fail when a wire URL path Tironian serves or calls is hardcoded outside
- * packages/constants.
+ * Fail when a wire URL path the Bun-owned host serves is hardcoded outside
+ * the module that owns it.
  *
- * Every wire URL path lives in one place:
- * packages/constants/src/{api,oauth}-routes.ts. Consumers import patterns and
- * URL builders from there. See
- * specs/20260524T153612-centralize-route-paths.md.
+ * Every wire URL path lives in one place: apps/desktop/src/routes.ts
+ * (BOOTSTRAP_ROUTE, BUILT_IN_ROUTES, LOCAL_BLOB_ROUTE), which composes the
+ * local blob path from its own source of truth, packages/blobs/src/webview.ts
+ * (LOCAL_BLOB_PATH). Consumers import from there instead of writing the
+ * string again.
  *
- * Excluded (per spec § Decisions Log):
- *   - The constants files themselves (they ARE the source of truth).
- *   - Vendored mirrors that intentionally re-declare these paths to avoid a
- *     runtime dependency on @tironian/constants (apps/desktop/src/routes.ts,
- *     whose /api/session is the shell's own loopback contract, not the cloud
- *     session endpoint).
+ * Excluded:
+ *   - The modules that own these paths (they ARE the source of truth):
+ *     apps/desktop/src/routes.ts and packages/blobs/src/webview.ts.
  *   - *.test.ts / *.test.tsx (mock URL matchers may reference paths verbatim).
  *   - JSDoc/comment lines (descriptive prose, not constructions).
  *
@@ -39,16 +37,16 @@ const EXCLUDED_DIRS = new Set([
 	'.svelte-kit',
 ]);
 
-// A quoted route literal for a path @tironian/constants owns. `([^a-z]|$)`
-// keeps `/api/sessions-of-mine` style prefixes from matching.
+// A quoted route literal for a path apps/desktop/src/routes.ts owns.
+// `([^a-z]|$)` keeps `/api/local-blobsomething` style prefixes from matching.
 const HARDCODED_PATH =
-	/['"`]\/api\/(session|rooms|blobs|ai)([^a-z]|$)|['"`]\/auth\/oauth2\/[a-z]+/;
+	/['"`]\/api\/local-blobs([^a-z]|$)|['"`]\/_tironian\/bootstrap([^a-z]|$)/;
 
 // The next two regexes test the full `path:line:content` record, exactly as
 // the workflow's `grep -v` filters did. The record is built with forward
 // slashes on every platform (see below), so these stay POSIX.
 const ALLOWED_RECORD =
-	/packages\/constants\/src\/(api|oauth)-routes\.ts|apps\/desktop\/src\/routes\.ts/;
+	/packages\/blobs\/src\/webview\.ts|apps\/desktop\/src\/routes\.ts/;
 const COMMENT_RECORD = /^[^:]+:[0-9]+:[ \t\v\f\r]*(\*|\/\/|\/\*)/;
 
 const isScannedFile = (name: string): boolean =>
@@ -103,8 +101,8 @@ for (const record of violations) {
 	console.error(`  ${record}`);
 }
 console.error(
-	'\n::error::Hardcoded API path literal found. Use API_ROUTES.* from\n' +
-		'@tironian/constants/api-routes or OAUTH_ROUTES.* from\n' +
-		'@tironian/constants/oauth-routes instead.',
+	'\n::error::Hardcoded API path literal found. Import BOOTSTRAP_ROUTE,\n' +
+		'BUILT_IN_ROUTES or LOCAL_BLOB_ROUTE from apps/desktop/src/routes.ts\n' +
+		'(or LOCAL_BLOB_PATH from @tironian/blobs/webview) instead.',
 );
 process.exit(1);
