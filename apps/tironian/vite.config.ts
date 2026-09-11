@@ -73,7 +73,7 @@ export default defineConfig(
 			// the leaves that call native commands. Tironian has no build where
 			// they come apart, so the seam could collapse to one leaf, but the
 			// shared vite-config names the two conditions apart on purpose rather
-			// than collapsing them per app (ADR-0190). The web build uses `default`
+			// than collapsing them per app. The web build uses `default`
 			// (browser) for every seam, so a desktop-only file imported by shared
 			// code is unresolvable there and fails at vite build time rather than
 			// at user runtime. The `...defaultClientConditions` spread is

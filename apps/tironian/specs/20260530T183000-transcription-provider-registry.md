@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, implementing. Answers the brief in `20260527T003910-transcription-providers-from-first-principles.md`. Supersedes the narrow adapter collapse in `20260527T002843-cloud-transcription-collapse.md`.
+Accepted, implementing. Collapses the two parallel per-provider descriptions into one `PROVIDERS` record, replacing an earlier narrower adapter collapse that only covered cloud providers.
 
 ## Decision in one paragraph
 

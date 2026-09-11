@@ -18,7 +18,7 @@ import { field } from '@tironian/data/definition';
  * **Transcripts stay in the row.** They are machine-produced, replaced
  * wholesale, and rendered in the recordings list, so nothing about them wants
  * per-character merging. That is the opposite of a prose editor's call for
- * per-character merging (ADR-0207) and it is deliberate: a note is written by
+ * per-character merging, and it is deliberate: a note is written by
  * a person a character at a time, a transcript arrives finished.
  *
  * **There are no optional fields.** A field has to be one type through the CRDT

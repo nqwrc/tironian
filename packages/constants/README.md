@@ -16,7 +16,7 @@ import { APPS } from '@tironian/constants/apps';
 
 ### `@tironian/constants/app-data`
 
-Where Tironian stores things on a machine: the application-data root and the naming grammar below it (ADR-0201). Pure functions over strings; no store, handle, or lifecycle.
+Where Tironian stores things on a machine: the application-data root and the naming grammar below it. Pure functions over strings; no store, handle, or lifecycle.
 
 ### `@tironian/constants/ai-providers`
 

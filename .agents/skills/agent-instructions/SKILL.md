@@ -27,7 +27,7 @@ Use other skills for their owned domains:
 - `page-writing` and `journal-writing`: authored Vault prose. Loading one inside
   a skill run is execution, not skill design; this skill's discovery pass does
   not apply there.
-- Domain skills such as `yjs`, `svelte`, or `auth`: package conventions the new skill must encode.
+- Domain skills such as `svelte`, `tauri`, or `query-layer`: package conventions the new skill must encode.
 - `git`: staging, commits, branch work, and commit messages.
 - `plugin-creator`: Codex plugins, not agent skills.
 - `skill-installer`: installing third-party skills.

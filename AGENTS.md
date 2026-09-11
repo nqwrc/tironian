@@ -18,7 +18,7 @@ packages/
 
 One runtime: a desktop SPA in a WebView over a client-owned store (ADR-0227). The host serves bundles and brokers credentials and owns no application data (ADR-0226).
 
-This is a single-app dictation product: the Home chat pane, `packages/chat`, and app-shell's agent chat are gone, not broken-on-purpose. `apps/tironian` declares a real workspace with `defineData` (`src/lib/workspace/index.ts:283`), opens the device and account stores and attaches sync (`src/lib/app/app.ts`), and its suite runs green. `apps/desktop` compiles, bundles, and serves.
+This is a single-app dictation product: the Home chat pane, `packages/chat`, and app-shell's agent chat are gone, not broken-on-purpose. `apps/tironian` declares a real workspace with `defineData` (`src/lib/workspace/index.ts:283`) and opens its one device document through `openDevice`, composing settings, recordings, recipes, snippets, and app rules over it (`src/lib/app/app.ts`); there is no account store and no sync attach. Its suite runs green. `apps/desktop` compiles, bundles, and serves.
 
 This fork carries no hosted cloud or self-host deployable: `apps/api`, `apps/self-host`, `packages/server`, and `ops/` (upstream's Cloudflare DNS and redirect tooling) were pruned because nothing in the kept apps imports them.
 

@@ -120,6 +120,6 @@ Tironian stores settings and recording metadata locally first. Audio leaves the 
 
 ## There is no hosted browser deploy
 
-Tironian ships desktop only. `wrangler.jsonc`, which used to publish the static SPA to a hosted subdomain, is gone (ADR-0227 refused that runtime: a browser tab is not a target). `static/_headers`, the Cloudflare Workers Static Assets header rules that survived that first cut, is gone too, along with sign-in, sync, and every hosted-inference call. Nothing in this repo publishes the browser build anywhere; whatever Cloudflare last served before these cuts keeps answering until somebody deletes the Worker, because removing repo config only stops republishing.
+Tironian ships desktop only. `wrangler.jsonc`, which used to publish the static SPA to a hosted subdomain, is gone: a browser tab is not a target. `static/_headers`, the Cloudflare Workers Static Assets header rules that survived that first cut, is gone too, along with sign-in, sync, and every hosted-inference call. Nothing in this repo publishes the browser build anywhere; whatever Cloudflare last served before these cuts keeps answering until somebody deletes the Worker, because removing repo config only stops republishing.
 
-ADR-0227 says what would reopen this, which is trying-before-installing turning out to matter more than the capability seams cost.
+What would reopen this is trying-before-installing turning out to matter more than the capability seams cost.

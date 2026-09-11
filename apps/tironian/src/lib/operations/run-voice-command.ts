@@ -1,8 +1,6 @@
 /**
  * The effect half of Command Mode. `match-command` stays pure and app-free;
  * everything that touches live state lives here.
- *
- * See `specs/20260829T120000-command-mode.md`.
  */
 // Relative rather than `$lib` for these two alone. Every other `$lib` import in
 // this file is faked by the suite, which is the repo's convention because `$lib`

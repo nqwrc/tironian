@@ -67,7 +67,7 @@ drive, because the ggml-vulkan shader build otherwise runs past Windows'
 that, keeping it near a drive root. It needs `VULKAN_SDK` set, and warns when it
 is not.
 
-Tironian Home is the model administration window and nothing else (ADR-0180):
+Tironian Home is the model administration window and nothing else:
 the one place a local transcription model is chosen, downloaded, or deleted. A
 single-app product has no launcher and no chat pane to hold beside it, so Home
 renders Settings directly rather than switching between panes. Tironian, the

@@ -6,8 +6,6 @@
  *
  * Consumed once. A second "scratch that" must find nothing held rather than
  * deleting another paste's worth of characters.
- *
- * See `specs/20260829T120000-command-mode.md`.
  */
 import type { DeliveryReach } from '$lib/operations/delivery-reach';
 import type { SinkKind } from '$lib/operations/sink';

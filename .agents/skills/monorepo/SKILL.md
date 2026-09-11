@@ -33,7 +33,7 @@ The monorepo uses consistent script naming conventions.
 ## The declaration build gate
 
 `@tironian/field` exports `./dist` only, because its declarations are published
-and then typechecked inside a stranger's project (ADR-0186). Every in-repo
+and then typechecked inside a stranger's project. Every in-repo
 consumer therefore resolves it through `node_modules` to build output, so a
 test that reaches it is testing the last build rather than the working tree.
 

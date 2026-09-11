@@ -12,7 +12,7 @@ These appear in on-disk paths or schemas another module validates against. They 
 "tironian/{definitionId}/device"
 ```
 
-The durable address of one browser document (`packages/data/src/store/browser.ts`), holding the three relations that have to survive a reload: `updates`, `outbox`, and `cursor`. It reads as ownership (ADR-0261, amending ADR-0233): the application, then the device document. A definition id is dot-separated lowercase labels, so it holds no `/`: the segment after `tironian/` is always exactly the application, and no address can be read as another one. Changing the shape detaches every existing store from its consumer, and what is lost is not the work (the authority still owes it to the device) but the guarantee that a reload sees it.
+The durable address of one browser document (`packages/data/src/store/browser.ts`), holding the three relations that have to survive a reload: `updates`, `outbox`, and `cursor`. It reads as ownership: the application, then the device document. A definition id is dot-separated lowercase labels, so it holds no `/`: the segment after `tironian/` is always exactly the application, and no address can be read as another one. Changing the shape detaches every existing store from its consumer, and what is lost is not the work (the authority still owes it to the device) but the guarantee that a reload sees it.
 
 `tironian-store-{definitionId}` and `tironian-store-{definitionId}#{private,database}` are the superseded shapes, from before an application had a dedicated device document. They are deletion targets at every open, never read.
 

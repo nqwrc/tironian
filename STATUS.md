@@ -16,7 +16,7 @@ stale-after-days: 30
 - Code quality stays red on failures inherited from the fork (18 on the pre-rebrand feature branch, run 34218177933) plus a local-books test timeout. Every failure the rename caused is fixed.
 
 ## next
-- Nicola's decisions: sign-in and sync go to the hosted API domain; Apple Developer ID and Windows signing purchases; accent `#D97757`; the deleted reference app still listed in Home; KPIs and M0 evidence for this repo.
+- Nicola's decisions: Apple Developer ID and Windows signing purchases; accent `#D97757`; KPIs and M0 evidence for this repo.
 - Host TypeScript suite: 79/98 on macOS, 47/98 on Windows; the gap is Windows-only path and port handling.
 
 ## blockers

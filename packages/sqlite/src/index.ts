@@ -1,12 +1,11 @@
 /**
  * Values shared by SQLite bindings in browsers and Bun.
- * BLOB values bind as `Uint8Array`; the browser's WASM build may surface a
- * read back as `ArrayBuffer`.
+ * BLOB values bind and read back as `Uint8Array` on both adapters.
  */
 export type SqliteValue = string | number | null | Uint8Array;
 
-/** SQLite result rows may surface BLOBs as either view or backing buffer. */
-export type SqliteRow = Record<string, SqliteValue | ArrayBuffer>;
+/** SQLite result rows: each column is one shared value. */
+export type SqliteRow = Record<string, SqliteValue>;
 
 /**
  * Opening existing durable storage requires a newer or explicit converter.

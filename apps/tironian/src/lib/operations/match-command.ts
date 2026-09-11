@@ -9,8 +9,6 @@
  * "scratch that" into prose, so a matcher downstream of it would only ever see
  * the phrase destroyed. Its failure mode is a phrase that does not match, which
  * delivers as ordinary text: visible and recoverable.
- *
- * See `specs/20260829T120000-command-mode.md`.
  */
 
 export type VoiceCommandId = 'scratchThat' | 'stopListening';

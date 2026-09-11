@@ -260,13 +260,13 @@ reproducible.
 Should trigger `agent-instructions`:
 
 - "Write a skill for reviewing Svelte accessibility in this repo."
-- "Improve the yjs skill description so it triggers less often."
+- "Improve the tauri skill description so it triggers less often."
 - "Should this AGENTS.md rule become a skill or stay global?"
 
 Should not trigger `agent-instructions`:
 
 - "Install the TypeScript skill globally."
-- "Write a README for the auth package."
+- "Write a README for the data package."
 - "Commit the current staged changes."
 
 Imported-skill audit prompt:

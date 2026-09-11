@@ -6,7 +6,7 @@ Browser-hostable Svelte 5 speech-to-text SPA. The desktop host owns its only nat
 
 - Three-layer architecture: Service -> Query -> UI
 - Services are pure functions returning `Result<T, E>`
-- Build-time platform seams use `#platform/*` imports: `tironian-host` when the Bun host owns the thing (credential, deployment choice, asset base), `tauri` when the leaf calls a native command (ADR-0190). The replica is NOT one of those things any more: ADR-0226 refused a host-owned data plane, so every build opens its own store and a storage seam is the thing to delete rather than to route. Tironian has no build where `tironian-host` and `tauri` come apart, so the whole seam collapses to one leaf when it is rebuilt.
+- Build-time platform seams use `#platform/*` imports: `tironian-host` when the Bun host owns the thing (credential, deployment choice, asset base), `tauri` when the leaf calls a native command. The replica is NOT one of those things any more: there is no host-owned data plane, so every build opens its own store and a storage seam is the thing to delete rather than to route. Tironian has no build where `tironian-host` and `tauri` come apart, so the whole seam collapses to one leaf when it is rebuilt.
 - Tauri-only capabilities live in `$lib/tauri.tauri.ts`; shared consumers go through `#platform/*`.
 - Query layer handles reactivity, caching, and error transformation
 - See `ARCHITECTURE.md` for detailed patterns

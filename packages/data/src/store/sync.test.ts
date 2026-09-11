@@ -44,7 +44,7 @@ function open() {
 		/** The raw queue, so a test can see what a merge was given to work with. */
 		outbox: () =>
 			sqlite
-				.all<{ id: number; bytes: Uint8Array | ArrayBuffer }>(
+				.all<{ id: number; bytes: Uint8Array }>(
 					'SELECT id, bytes FROM _outbox ORDER BY id',
 				)
 				.map((row) => ({ id: row.id, bytes: copyBytes(row.bytes) })),
