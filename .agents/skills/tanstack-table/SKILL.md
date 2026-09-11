@@ -1,8 +1,8 @@
 ---
 name: tanstack-table
-description: Apply TanStack Table UI-state patterns for Svelte data tables, including columns, rendering, sorting, filtering, pagination, and row identity. Use when building or reviewing data-table UI, not Epicenter workspace storage tables.
+description: Apply TanStack Table UI-state patterns for Svelte data tables, including columns, rendering, sorting, filtering, pagination, and row identity. Use when building or reviewing data-table UI, not Tironian workspace storage tables.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -17,11 +17,11 @@ metadata:
 
 When TanStack Table adapter APIs, row models, controlled state, sorting, filtering, pagination, or Svelte rendering helpers affect correctness, ask DeepWiki a narrow question against `TanStack/table`. Verify against the installed `@tanstack/svelte-table` and `@tanstack/table-core` versions.
 
-This skill is for UI table state. Use `yjs` for Epicenter store table storage, and `svelte` for reading rows into a component.
+This skill is for UI table state. Use the store for Tironian table storage, and `svelte` for reading rows into a component.
 
 ## Local API Baseline
 
-Epicenter currently uses `@tanstack/svelte-table` with:
+Tironian currently uses `@tanstack/svelte-table` with:
 
 ```typescript
 import {
@@ -43,13 +43,13 @@ import type { ColumnDef } from '@tanstack/table-core';
 
 ## Controlled State
 
-- Control only state Epicenter owns externally, such as sorting, global filter, column visibility, row selection, or pagination.
+- Control only state Tironian owns externally, such as sorting, global filter, column visibility, row selection, or pagination.
 - If an `onXChange` handler is present, the matching `state.get x()` must also be present.
 - Keep state ownership in one component or handle. Do not split sorting, filters, and pagination across unrelated stores without a reason.
 
 ## Rendering
 
-- TanStack Table owns row, column, and cell state. `@epicenter/ui/table` owns semantic table markup and styling.
+- TanStack Table owns row, column, and cell state. `@tironian/ui/table` owns semantic table markup and styling.
 - Render headers and cells with `FlexRender`.
 - Key rows by `row.id` and cells by `cell.id`.
 - Empty states stay in `ui-design`: when row count is zero, render `Empty.Root` in the table body or surrounding panel.

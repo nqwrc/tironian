@@ -272,7 +272,7 @@ Should not trigger `agent-instructions`:
 Imported-skill audit prompt:
 
 ```txt
-Audit this third-party skill before adapting it to Epicenter. Check frontmatter,
+Audit this third-party skill before adapting it to Tironian. Check frontmatter,
 scripts, network assumptions, npx commands, unsupported metadata, and conflicts
 with AGENTS.md.
 ```
@@ -282,12 +282,12 @@ Small good skill shape:
 ```md
 ---
 name: svelte-accessibility-review
-description: Review Epicenter Svelte UI for accessibility and interaction issues. Use when reviewing `.svelte` UI, keyboard behavior, focus states, labels, or @epicenter/ui composition.
+description: Review Tironian Svelte UI for accessibility and interaction issues. Use when reviewing `.svelte` UI, keyboard behavior, focus states, labels, or @tironian/ui composition.
 ---
 
 # Svelte Accessibility Review
 
-Use `@epicenter/ui` components before custom controls.
+Use `@tironian/ui` components before custom controls.
 
 Workflow:
 1. Read the changed `.svelte` files.

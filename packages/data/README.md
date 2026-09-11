@@ -1,6 +1,6 @@
-# @epicenter/data
+# @tironian/data
 
-The Epicenter store: one scalar Yjs document per application, independently
+The Tironian store: one scalar Yjs document per application, independently
 loaded row documents for rich content, and a synchronous surface over the
 scalar state. MIT.
 
@@ -8,22 +8,22 @@ The package has one definition entrypoint and three runtime entrypoints:
 
 | Import | What it gives you |
 | --- | --- |
-| `@epicenter/data` | the opened data surface |
-| `@epicenter/data/definition` | `defineData`, `parseData`, and the field descriptor vocabulary |
-| `@epicenter/data/bun` | `open(definition, { root })`, and `openMemory(definition)` for tests |
-| `@epicenter/data/browser` | `openDevice(definition)` |
-| `@epicenter/data/projection` | `createSqliteProjection`, a read-only SQL follower |
+| `@tironian/data` | the opened data surface |
+| `@tironian/data/definition` | `defineData`, `parseData`, and the field descriptor vocabulary |
+| `@tironian/data/bun` | `open(definition, { root })`, and `openMemory(definition)` for tests |
+| `@tironian/data/browser` | `openDevice(definition)` |
+| `@tironian/data/projection` | `createSqliteProjection`, a read-only SQL follower |
 
 A Bun opener imports `bun:sqlite` and a browser opener imports a WASM build, so
 neither belongs in a barrel the other has to load. That is the whole reason the
-openers live at their own entry points rather than on `@epicenter/data`.
+openers live at their own entry points rather than on `@tironian/data`.
 
 ## Opening is the only asynchronous thing
 
 ```ts
-import { openDevice } from '@epicenter/data/browser';
+import { openDevice } from '@tironian/data/browser';
 
-const { data, error } = await openDevice(honeycrispDefinition);
+const { data, error } = await openDevice(appDefinition);
 if (error !== null) return handle(error);
 
 await using opened = data;
@@ -46,7 +46,7 @@ In a browser the caller also names which durable document it means (ADR-0261).
 An application keeps one device document:
 
 ```text
-epicenter/<definitionId>/device
+tironian/<definitionId>/device
 ```
 
 That address is the IndexedDB database name, so a data discard or
@@ -88,7 +88,7 @@ Row document lifecycle is owned by the table that owns the row.
 accepted and durable transaction.
 
 SQL, when an application wants it, is a follower it composes over this
-surface: `createSqliteProjection` from `@epicenter/data/projection` hydrates
+surface: `createSqliteProjection` from `@tironian/data/projection` hydrates
 from `list()`, follows commits through `store.onCommitted`, and rebuilds
 whole at the next `query`, so SQL can never serve rows the live document has
 moved past (ADR-0241).
@@ -104,8 +104,8 @@ definition refuses, and that is because KV projects as a SQL relation of that
 name.
 The delivery machinery underneath sync (the outbox, cursors,
 acknowledgements) is internal; a transport drives it, and this package no
-longer bundles one (`@epicenter/data/bun`'s account opener is exported but
-unused in this repository; `@epicenter/data/browser` opens device documents
+longer bundles one (`@tironian/data/bun`'s account opener is exported but
+unused in this repository; `@tironian/data/browser` opens device documents
 only).
 
 ### Reading
@@ -212,7 +212,7 @@ handle?.[Symbol.dispose]();
 Because the row document is independently name-addressed, two devices
 first-opening the same named root converge with both writes retained. What
 comes back is a hydrated handle whose `get(name)` returns a `Y.Type` an editor
-binds to directly. Epicenter picks no rich-content format and never looks
+binds to directly. Tironian picks no rich-content format and never looks
 inside.
 
 ## What merges with what
@@ -251,7 +251,7 @@ domain: closed JSON field descriptors, with no storage or lifecycle
 ships a newer definition and reads the same durable data through it.
 
 ```ts
-import { defineData, field } from '@epicenter/data/definition';
+import { defineData, field } from '@tironian/data/definition';
 
 export const notesDefinition = defineData({
 	id: 'com.example.notes',
@@ -353,12 +353,12 @@ is visible in memory.
 
 ## Sync
 
-`@epicenter/data/sync` and its authority-side counterpart in
+`@tironian/data/sync` and its authority-side counterpart in
 `packages/server` are gone from this repository: nothing here opens a
 network connection for a store anymore, and the one product that used to
 (sign-in and cross-device sync) was removed. `createAccountStore` and
 `createAccountStoreOverPort` remain in the engine as a published surface
-(`@epicenter/data/bun` still exports an account opener) so a future consumer
+(`@tironian/data/bun` still exports an account opener) so a future consumer
 can build a transport against the `sync` capability without redesigning the
 store, but this package does not ship one today.
 
@@ -366,6 +366,6 @@ store, but this package does not ship one today.
 
 Blobs. They are content-addressed, write-once bytes logged against the server,
 they were never part of the row plane, and `packages/blobs` has no
-`@epicenter/*` import at all. The row layer only ever stored an opaque id. The
+`@tironian/*` import at all. The row layer only ever stored an opaque id. The
 asymmetry to know is that an un-uploaded blob exists on exactly one machine, so
 the blob plane does not have the row plane's guarantees.

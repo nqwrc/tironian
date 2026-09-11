@@ -1,51 +1,26 @@
 # Never-Touch and Pause List
 
-Codebase-specific facts that the collapse pass must respect. These strings, shapes, and packages outlive any individual session; changing them silently breaks on-disk data, sync, or downstream consumers.
+Codebase-specific facts that the collapse pass must respect. These strings, shapes, and packages outlive any individual session; changing them silently breaks on-disk data or downstream consumers.
 
 ## Durable strings: never change without explicit product decision
 
-These appear in on-disk paths, sync wire format, or schemas other apps validate against. They are part of the durable vocabulary of Epicenter.
+These appear in on-disk paths or schemas another module validates against. They are part of the durable vocabulary of Tironian.
 
 ### IndexedDB database name
 
 ```
-"epicenter/{namespace}/private"
-"epicenter/{namespace}/workspace/{principalId}"
+"tironian/{definitionId}/device"
 ```
 
-The durable address of one browser document (`packages/data/src/store/browser.ts`), holding the three relations that have to survive a reload: `updates`, `outbox`, and `cursor`. It reads as ownership (ADR-0233): the application, then the private document or the account whose replica this is. Changing the shape detaches every existing store from its consumer, and what is lost is not the work (the authority still owes it to the device) but the guarantee that a reload sees it.
+The durable address of one browser document (`packages/data/src/store/browser.ts`), holding the three relations that have to survive a reload: `updates`, `outbox`, and `cursor`. It reads as ownership (ADR-0261, amending ADR-0233): the application, then the device document. A definition id is dot-separated lowercase labels, so it holds no `/`: the segment after `tironian/` is always exactly the application, and no address can be read as another one. Changing the shape detaches every existing store from its consumer, and what is lost is not the work (the authority still owes it to the device) but the guarantee that a reload sees it.
 
-Three identities meet here and none may stand in for another: the namespace (which application), the principal id (whose replica), and the authority document id (which current Yjs document, kept inside the store because rebuild changes it).
-
-`epicenter-store-{namespace}` and `epicenter-store-{namespace}#{private,workspace}` are the superseded shapes. They are deletion targets at every open, never read.
-
-### Durable Object name format and URL shape
-
-```
-"principals/{principalId}/stores/{namespace}"
-```
-
-One store authority per principal and application (ADR-0225), named in `packages/server/src/store-sync/route.ts`. Changing the format detaches every authority from its data.
-
-The wire shape is not parallel to it, and that is deliberate: the connect URL is one path, `/api/store/v1/sync?namespace=...&cursor=...` (`packages/sync/src/store-route.ts`). Whose data it is never appears in the query, because it comes from the resolved bearer server-side, so no value a client puts there can reach another partition (ADR-0092). Do not "fix" the asymmetry by moving the principal into the URL.
-
-In the per-user topology `principalId` is the signed-in user's id; in the instance topology it is the literal `INSTANCE_PRINCIPAL_ID` (`'instance'`). The path is uniform across topologies.
+`tironian-store-{definitionId}` and `tironian-store-{definitionId}#{private,database}` are the superseded shapes, from before an application had a dedicated device document. They are deletion targets at every open, never read.
 
 ### Public arktype schemas
 
-Other apps validate inputs against these by name and shape. Renaming a field or changing a brand silently invalidates their parsers.
+Other modules import and rely on these by name and shape. Renaming a field or changing a brand silently invalidates their callers.
 
-- `PersistedAuth` (`packages/auth/src/auth-types.ts`)
-- `ApiSessionResponse` (`packages/auth/src/auth-types.ts`)
 - `PrincipalId`, `INSTANCE_PRINCIPAL_ID` (`packages/identity/src/identity.ts`)
-
-Per-user vs instance partitioning is intentionally NOT in this list: there is no
-`OwnershipRule` engine or discriminated union (the old `perUser` / `instance`
-constants and `packages/server/src/ownership.ts` are gone). The partition path
-is one unconditional `principals/<principalId>/` shape in
-`packages/server/src/principal.ts`; which principal a request resolves to is
-decided at the bearer resolver, carries no arktype validator, and never crosses
-the wire as config.
 
 ### Root names inside a document
 
@@ -58,7 +33,7 @@ A row's document roots (`db.notes.create({...}, { document: ['body'] })`) are na
 The collapse pass should stop and surface to the user (not silently proceed) when about to:
 
 - Change any string from the list above
-- Delete a public exported name that has zero in-repo callers but plausible external consumers (the published MIT packages, `@epicenter/workspace` and `@epicenter/field`, are the load-bearing example: they emit to `dist` for toolchains we do not control)
+- Delete a public exported name that has zero in-repo callers but plausible external consumers (the published MIT packages, `@tironian/data` and `@tironian/field`, are the load-bearing example: they emit to `dist` for toolchains we do not control)
 - Collapse two files where one's JSDoc documents a non-obvious invariant (the JSDoc is the documentation of a contract; losing it loses the contract)
 - Merge packages or move exports across package boundaries
 - Change a function signature that crosses a published package boundary
@@ -68,12 +43,11 @@ The collapse pass should stop and surface to the user (not silently proceed) whe
 
 Default collapse-pass targets, narrowest to widest:
 
-1. `packages/auth`
-2. `packages/data`
-3. `packages/svelte-utils`
-4. `apps/api`
+1. `packages/data`
+2. `packages/svelte-utils`
+3. `apps/tironian`
+4. `apps/desktop`
 
 Out of scope without an explicit pass declaration:
 
-- First-party apps: `apps/honeycrisp`, `apps/whispering`, `apps/vocab`, `apps/local-mail`. These are owned by separate waves and have their own architecture tests.
 - `specs/`, `docs/articles/`, migration history (`*-legacy-*.md`, archived decision docs)

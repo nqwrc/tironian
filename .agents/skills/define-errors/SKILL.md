@@ -2,7 +2,7 @@
 name: define-errors
 description: 'defineErrors from wellcrafted: variant factories, extractErrorMessage, InferErrors/InferError, call site patterns. Use when creating error types or reviewing error patterns.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '3.1'
 ---
 
@@ -11,7 +11,7 @@ metadata:
 > **Related Skills**: See `error-handling` for trySync/tryAsync usage and toast-on-error patterns. See `services-layer` for service architecture and namespace exports.
 
 Ground API claims in the official `wellcrafted-dev/wellcrafted` source and
-tests for Epicenter's installed version. This skill owns variant construction,
+tests for Tironian's installed version. This skill owns variant construction,
 naming, fields, and type extraction. `error-handling` owns catch adaptation and
 Result consumption; `logging` owns diagnostic severity and sinks.
 
@@ -265,11 +265,11 @@ Wellcrafted Result can serialize `{ data, error }` and the tagged
 universal HTTP envelope. External protocols and existing routes keep their own
 wire contracts; see `error-handling/references/http-boundaries.md`.
 
-## Whispering RPC Boundary
+## Tironian Query Boundary
 
-In Whispering, `$lib/rpc` preserves tagged errors. Do not convert service or operation errors into `{ title, description }` or another user-facing wrapper inside an RPC adapter. UI and operation code choose display copy with `$lib/report`, usually `report.error({ cause: error })`.
+In Tironian, `$lib/queries` preserves tagged errors. Do not convert service or operation errors into `{ title, description }` or another user-facing wrapper inside a query adapter. UI and operation code choose display copy with `$lib/report`, usually `report.error({ cause: error })`.
 
-Define an RPC-local `defineErrors` namespace only when the adapter itself owns a failure that no lower layer can own, such as a missing state lookup before calling an operation.
+Define a query-local `defineErrors` namespace only when the adapter itself owns a failure that no lower layer can own, such as a missing state lookup before calling an operation.
 
 **State machines are not Results**: discriminated unions like `{ state: 'in-use' | 'orphan' | 'clean' }` for a startup gate, or `{ outcome: 'graceful' | 'sigterm' }` for a shutdown, are genuine state enums and should stay as discriminated unions. The smell is *errors* dressed as `{ ok }` flags, not state enums.
 

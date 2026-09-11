@@ -2,7 +2,7 @@
 name: sveltekit
 description: Apply SvelteKit patterns for routing, server modules, form actions, hooks, cookies, adapters, and invalidation. Use when editing route files, hooks, `app.d.ts`, or SvelteKit behavior.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

@@ -36,7 +36,7 @@ Bad (changelog disguised as prose):
 Good (motivation, then the change):
 
 ```md
-Honeycrisp and opensidian both need the same auth: sign-in, sign-out, session, and key handling. Rather than duplicate it, this extracts a shared `createAuthState` factory that both apps consume with app-specific callbacks.
+Two apps in the workspace both need the same auth: sign-in, sign-out, session, and key handling. Rather than duplicate it, this extracts a shared `createAuthState` factory that both apps consume with app-specific callbacks.
 ```
 
 ## Choose A Body Shape

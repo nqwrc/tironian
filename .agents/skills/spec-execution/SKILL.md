@@ -2,7 +2,7 @@
 name: spec-execution
 description: Execute `specs/*.md` plans through working checkpoints. Use when the user says "execute this spec", "implement this plan", "run the spec", or points at a spec file.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

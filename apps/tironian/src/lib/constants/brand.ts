@@ -18,9 +18,9 @@
  *
  * Internal identifiers (`TironianApp`, `$lib/app/*`, `@tironian/app`) are
  * renamed too, as of the directory and identifier pass on `feature/debrand`.
- * See `docs/brand/tironian.md`, "Rename tiers": the fork-tracking constraint
- * that justified leaving them as `Whispering`/`Epicenter` no longer applies
- * once this branch stopped taking upstream merges.
+ * See `docs/brand/tironian.md`, "Naming": the fork-tracking constraint that
+ * once justified leaving them under the upstream names no longer applies now
+ * that this branch has stopped taking upstream merges.
  */
 
 /** The wordmark. Never abbreviated, never sub-branded. */

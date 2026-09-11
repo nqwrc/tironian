@@ -23,13 +23,13 @@ per pass.
 ### Proposal-Only Pass
 
 ```txt
-/goal Run a greenfield clean-break pass on Honeycrisp's browser/session/workspace boundary.
+/goal Run a greenfield clean-break pass on Tironian's app/workspace boundary.
 
   Load skill: greenfield-clean-breaks.
-  Target: apps/honeycrisp/src/lib/workspace/browser.ts, apps/honeycrisp/src/lib/session.ts
+  Target: apps/tironian/src/lib/workspace/index.ts, apps/tironian/src/lib/app/app.ts
   Compatibility stance: assume no users except durable workspace/storage shapes.
   Stop condition: proposal only; report before/after shape and wait for OK before editing.
-  Starting target: apps/honeycrisp/src/lib/workspace/browser.ts
+  Starting target: apps/tironian/src/lib/workspace/index.ts
 
   Begin.
 ```

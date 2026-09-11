@@ -2,7 +2,7 @@
 name: monorepo
 description: 'Monorepo scripts, package boilerplate, conventions. Use when: "how do I run", "bun run", "build this", "run tests", "typecheck", "create a new package", linting, scaffolding packages.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '2.0'
 ---
 
@@ -32,22 +32,19 @@ The monorepo uses consistent script naming conventions.
 
 ## The declaration build gate
 
-`@epicenter/field` and `@epicenter/workspace` export `./dist` only, because their
-declarations are published and then typechecked inside a stranger's project
-(ADR-0186). Every in-repo consumer therefore resolves them through
-`node_modules` to build output, so a test that reaches either one is testing
-the last build rather than the working tree.
+`@tironian/field` exports `./dist` only, because its declarations are published
+and then typechecked inside a stranger's project (ADR-0186). Every in-repo
+consumer therefore resolves it through `node_modules` to build output, so a
+test that reaches it is testing the last build rather than the working tree.
 
 Root `test` runs `build:declarations` first for exactly that reason. It is one
 gate rather than a `pretest` in each affected package, and it is not redundant
 with `postinstall`: `postinstall` makes `dist` fresh once, and an edit after
 that is invisible until something rebuilds.
 
-Two things follow. Running one package's tests directly (`bun test <path>`, or
-`bun run --cwd packages/workspace test`) does **not** rebuild, so build first when
-the change is in `field` or `workspace`. And a module both clients depend on for
-correctness earns a test inside its own package, where the import is source:
-`packages/workspace/src/workspace.test.ts` is the worked example.
+One thing follows: running `field`'s tests directly (`bun test <path>`, or
+`bun run --cwd packages/field test`) does **not** rebuild, so build first when
+the change is there.
 
 Do not fix this with a `development` or `bun` export condition. In-repo tests
 and published consumers would then run different code, which is the same
@@ -63,12 +60,12 @@ the package's `dev:web`.
 Inside a single package, the conventions are:
 
 Non-Tauri apps use a single `dev` script that runs the underlying tool
-directly (`vite dev`, `astro dev`, `wrangler dev`). Tauri desktop apps
-(honeycrisp, whispering) have two dev surfaces and name them
-explicitly: `dev` launches the desktop shell (aliasing `dev:desktop`), and
-`dev:web` runs Vite alone, which each app's `tauri.conf.json` invokes as its
-`beforeDevCommand`. The suffix convention applies primarily to database
-commands:
+directly (`vite dev`, `astro dev`, `wrangler dev`). A Tauri product split
+across a frontend app and a desktop host names two dev surfaces explicitly:
+the desktop app's `dev` launches the native shell (`tauri dev`), and the
+frontend app's `dev` runs Vite alone, which the desktop app's
+`tauri.conf.json` invokes as its `beforeDevCommand`. The suffix convention
+applies primarily to database commands:
 
 | Script | Meaning |
 | --- | --- |
@@ -99,7 +96,7 @@ When creating a new package in `packages/`, follow this exact structure.
 
 ```json
 {
-  "name": "@epicenter/<package-name>",
+  "name": "@tironian/<package-name>",
   "version": "0.0.1",
   "exports": {
     ".": "./src/index.ts"
@@ -119,10 +116,10 @@ When creating a new package in `packages/`, follow this exact structure.
 Key conventions:
 
 - `exports` only, no `main`/`types`: modern resolvers ignore `main`/`types` when `exports` is present. The entry point is `./src/index.ts`; there is no build step, consumers import the source directly.
-- Use `"workspace:*"` for internal deps (e.g., `"@epicenter/workspace": "workspace:*"`).
+- Use `"workspace:*"` for internal deps (e.g., `"@tironian/data": "workspace:*"`).
 - Use `"catalog:"` for shared versions managed in the root `package.json` catalogs.
-- `peerDependencies` for packages consumers must also install (e.g., `yjs`).
-- `license`: default `AGPL-3.0-or-later` (everything Epicenter ships or runs). Use `MIT` only if the package is meant for third-party developers to embed in their own software (the toolkit). See `docs/licensing/licensing-strategy.md`; `bun run check:licenses` fails if an MIT package can reach an AGPL one.
+- `peerDependencies` for packages consumers must also install.
+- `license`: default `AGPL-3.0-or-later` (everything Tironian ships or runs). Use `MIT` only if the package is meant for third-party developers to embed in their own software (the toolkit). See `docs/licensing/licensing-strategy.md`; `bun run check:licenses` fails if an MIT package can reach an AGPL one.
 
 ### `tsconfig.json`
 

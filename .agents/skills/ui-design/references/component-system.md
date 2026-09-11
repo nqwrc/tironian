@@ -1,4 +1,4 @@
-# Epicenter Component-System Collapse
+# Tironian Component-System Collapse
 
 This reference owns the smell and ownership decisions that collapse app-local
 UI into the shared product system. For the exact component catalog, import

@@ -1,7 +1,7 @@
-# Periodic Epicenter Monorepo Collapse Pass
+# Periodic Tironian Monorepo Collapse Pass
 
 Use this profile when the user wants a repeatable cleanup campaign across the
-Epicenter monorepo, not a one-off refactor in a single package.
+Tironian monorepo, not a one-off refactor in a single package.
 
 This file does not replace the collapse-pass ritual. It pins the standard scope,
 stop conditions, validation expectations, and report shape for periodic runs.
@@ -42,10 +42,8 @@ The pass is valuable when the likely wins are:
 Default in-scope targets:
 
 ```txt
-apps/honeycrisp
-apps/whispering
-apps/local-mail
-apps/api
+apps/tironian
+apps/desktop
 packages/data
 shared TypeScript utilities
 ```
@@ -180,5 +178,5 @@ pass.
 ## Copy-Paste Goal
 
 ```txt
-/goal Run the periodic Epicenter monorepo collapse pass from `.agents/skills/collapse-pass/references/periodic-monorepo-pass.md` until 12 meaningful cleanup checkpoints are committed, 3 consecutive inspected targets produce no actionable findings, or remaining findings require product/API/storage decisions. First read the required context listed in that profile. For each checkpoint, count callers with `rg`, mentally inline the target, run the one-sentence cohesion test, surface the finding before editing, apply only anti-cosmetic simplifications, re-read touched files, re-grep removed or privatized symbols, run the narrowest relevant `bun test` or `bun run typecheck`, and make one surgical conventional commit. Pause before behavior changes, public API breaks, storage or schema changes, durable string changes, UI copy changes, dependency changes, package boundary moves, externally plausible export deletions, or anything that cannot be validated locally. Stop with the profile's evidence report, including genuine deletion vs privatization vs inlining, and leave unrelated worktree changes unstaged.
+/goal Run the periodic Tironian monorepo collapse pass from `.agents/skills/collapse-pass/references/periodic-monorepo-pass.md` until 12 meaningful cleanup checkpoints are committed, 3 consecutive inspected targets produce no actionable findings, or remaining findings require product/API/storage decisions. First read the required context listed in that profile. For each checkpoint, count callers with `rg`, mentally inline the target, run the one-sentence cohesion test, surface the finding before editing, apply only anti-cosmetic simplifications, re-read touched files, re-grep removed or privatized symbols, run the narrowest relevant `bun test` or `bun run typecheck`, and make one surgical conventional commit. Pause before behavior changes, public API breaks, storage or schema changes, durable string changes, UI copy changes, dependency changes, package boundary moves, externally plausible export deletions, or anything that cannot be validated locally. Stop with the profile's evidence report, including genuine deletion vs privatization vs inlining, and leave unrelated worktree changes unstaged.
 ```

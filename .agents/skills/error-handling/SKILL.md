@@ -2,7 +2,7 @@
 name: error-handling
 description: Apply Wellcrafted Result patterns to fallible operations and preserve failures at boundaries. Use when replacing try/catch, adding trySync or tryAsync, choosing fallback or propagation, or mapping errors.
 metadata:
-  author: epicenter
+  author: tironian
   version: '3.1'
 ---
 
@@ -12,7 +12,7 @@ This skill owns the boundary between thrown exceptions and `Result` values, plus
 
 ## Source Of Truth
 
-Ground every Wellcrafted behavior claim in the official [wellcrafted-dev/wellcrafted](https://github.com/wellcrafted-dev/wellcrafted/) source and tests. When maintaining this guidance, confirm that Epicenter's installed version matches the source being read. If it does not, report the version drift; dependency freshness is handled outside this skill. Treat other skills, examples, generated documentation, and DeepWiki as leads, not authority.
+Ground every Wellcrafted behavior claim in the official [wellcrafted-dev/wellcrafted](https://github.com/wellcrafted-dev/wellcrafted/) source and tests. When maintaining this guidance, confirm that Tironian's installed version matches the source being read. If it does not, report the version drift; dependency freshness is handled outside this skill. Treat other skills, examples, generated documentation, and DeepWiki as leads, not authority.
 
 Read the scoped references only when needed:
 

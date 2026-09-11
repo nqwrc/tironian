@@ -2,7 +2,7 @@
 name: standalone-commits
 description: Split work into reviewable, auditable commits ordered by dependency. Use when planning commit waves, staging changes, or deciding whether a commit is too broad, tiny, incomplete, or hard to revert.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

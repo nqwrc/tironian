@@ -2,7 +2,7 @@
 name: collapse-pass
 description: Remove indirection that does not earn its boundary across a diff or package. Use when the user asks to run a collapse pass, simplify this broadly, audit dead abstractions, or shrink a surface, not when one function’s branching is the target.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -21,7 +21,7 @@ Load on demand:
 - For the operating principle that decides hard cases, read [references/library-refusal.md](references/library-refusal.md).
 - For the per-checkpoint surface format and the stop-time final report shape, read [references/report-format.md](references/report-format.md).
 - For a thin `/goal` template that invokes this skill, read [references/goal-template.md](references/goal-template.md).
-- For Epicenter's repeatable monorepo maintenance pass, read [references/periodic-monorepo-pass.md](references/periodic-monorepo-pass.md).
+- For Tironian's repeatable monorepo maintenance pass, read [references/periodic-monorepo-pass.md](references/periodic-monorepo-pass.md).
 
 ## Operating principle
 
@@ -129,10 +129,10 @@ than a working package, the ritual above is unchanged; only the scoping differs.
    ```bash
    # GitHub PR number
    git fetch origin pull/<number>/head:pr-<number>-collapse
-   git worktree add ../epicenter-pr-<number>-collapse pr-<number>-collapse
+   git worktree add ../tironian-pr-<number>-collapse pr-<number>-collapse
    # or a named branch (slug: replace slashes with hyphens)
    git fetch origin <branch>:<branch>-collapse
-   git worktree add ../epicenter-<branch-slug>-collapse <branch>-collapse
+   git worktree add ../tironian-<branch-slug>-collapse <branch>-collapse
    ```
 
 2. Compute scope with `git diff --name-only <base>...HEAD`. Infer the base from

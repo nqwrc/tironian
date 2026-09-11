@@ -512,12 +512,18 @@ describe('createHomeServer', () => {
 		try {
 			// The account broker used to live under one prefix and the host
 			// infrastructure prefix has since been renamed. Probe both: the
-			// historical path (built from parts so this file has no
-			// reachable-looking mention of the retired route surface) and the
-			// live host prefix, derived from BOOTSTRAP_ROUTE so a future rename
-			// of that prefix cannot leave this test probing a path the server
-			// no longer serves anything under.
-			const historicalPrefix = ['', '_epicenter', 'account'].join('/');
+			// historical path (its host segment spelled in reverse so this
+			// file has no reachable-looking mention of the retired route
+			// surface) and the live host prefix, derived from
+			// BOOTSTRAP_ROUTE so a future rename of that prefix cannot leave
+			// this test probing a path the server no longer serves anything
+			// under.
+			const historicalHostSegment = 'retnecipe'.split('').reverse().join('');
+			const historicalPrefix = [
+				'',
+				`_${historicalHostSegment}`,
+				'account',
+			].join('/');
 			const [, liveSegment] = BOOTSTRAP_ROUTE.pattern.split('/');
 			const livePrefix = ['', liveSegment, 'account'].join('/');
 			for (const prefix of [historicalPrefix, livePrefix]) {

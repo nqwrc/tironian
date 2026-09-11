@@ -2,7 +2,7 @@
 name: query-layer
 description: 'Query boundaries with TanStack Query and Wellcrafted Results. Use when editing createQuery, createMutation, resultQueryOptions, resultMutationOptions, defineQuery, defineMutation, defineKeys, shared cache identity, mutation lifecycle, or service-to-TanStack adapters.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '3.0'
 ---
 
@@ -60,9 +60,9 @@ Queries expose `.options`, `.fetch()`, and `.ensure()`. They are not callable.
 
 Mutations expose `.options` and are callable. They do not expose `.execute()`.
 
-## Canonical Whispering Query Module Shape
+## Canonical Tironian Query Module Shape
 
-For Whispering-style `$lib/queries` modules, keep source-of-truth declarations close to the work they describe. Factories receive the session-owned runtime explicitly:
+For Tironian-style `$lib/queries` modules, keep source-of-truth declarations close to the work they describe. Factories receive the session-owned runtime explicitly:
 
 ```typescript
 export const audioKeys = defineKeys({
@@ -70,7 +70,7 @@ export const audioKeys = defineKeys({
 		['audio', 'availability', id, blobId, uploadedAt] as const,
 });
 
-export function createAudioQueries({ defineQuery }: WhisperingQueryRuntime) {
+export function createAudioQueries({ defineQuery }: TironianQueryRuntime) {
 	return {
 		availability: (recording: Accessor<Recording>) =>
 			defineQuery({
@@ -110,7 +110,7 @@ Query modules receive the session-owned query runtime and import services, state
 
 ## Error Flow
 
-In Whispering, service and operation errors are already tagged errors. Query adapters pass them through. The UI/report boundary decides how to present them.
+In Tironian, service and operation errors are already tagged errors. Query adapters pass them through. The UI/report boundary decides how to present them.
 
 ```txt
 Service / Operation       ->  Query Adapter     ->  UI / Report
@@ -130,9 +130,9 @@ Shared query adapters expose `.options` as a static object. Svelte hooks read it
 ```svelte
 <script lang="ts">
 	import { createQuery, createMutation } from '@tanstack/svelte-query';
-	import { getWhisperingQueries } from '$lib/whispering/context';
+	import { getTironianQueries } from '$lib/app/context';
 
-	const queries = getWhisperingQueries();
+	const queries = getTironianQueries();
 	const availability = createQuery(() =>
 		queries.audio.availability(() => recording).options,
 	);
@@ -211,6 +211,6 @@ Load these on demand based on what you're working on:
 - If working with **runtime dependency injection and service selection**, read [references/runtime-dependency-injection.md](references/runtime-dependency-injection.md)
 - If working with **cache management, query definitions, RPC namespace, or notify coordination**, read [references/advanced-query-patterns.md](references/advanced-query-patterns.md)
 
-- See `apps/whispering/src/lib/queries/README.md` for detailed architecture
+- See `apps/tironian/src/lib/queries/README.md` for detailed architecture
 - See the `services-layer` skill for how services are implemented
 - See the `error-handling` skill for trySync/tryAsync patterns and toast-on-error conventions

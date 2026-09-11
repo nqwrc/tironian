@@ -2,7 +2,7 @@
 name: type-level-error-messages
 description: Make TypeScript errors readable with template-literal constraint messages. Use when constraining literal object keys or string shapes and the error should point to the offending value.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

@@ -1,8 +1,8 @@
 ---
 name: platform-seams
-description: Apply Epicenter’s `#platform/*` build-time seam across browser, Tauri, and host targets. Use when adding or changing a seam, build condition, typecheck leaf, or deciding whether code belongs behind one.
+description: Apply Tironian’s `#platform/*` build-time seam across browser, Tauri, and host targets. Use when adding or changing a seam, build condition, typecheck leaf, or deciding whether code belongs behind one.
 metadata:
-  author: epicenter
+  author: tironian
   version: '7.0'
 ---
 
@@ -17,13 +17,12 @@ workspace plane. The seam below is the part that survived.
 **Every build opens its own store.** A host serves bundles and brokers
 credentials and owns no application data (ADR-0226), so there is no build where
 data lives somewhere else, and a `#platform/*` seam for storage is the thing to
-delete rather than to route. Honeycrisp calls `openBrowserStore` in every build
-including the Tauri one, and `apps/honeycrisp/src/lib/application-platform.ts`
-states that as a refusal with its reasons.
+delete rather than to route. Tironian calls `openDevice` directly in every
+build including the Tauri one; there is no `#platform/store` seam, on purpose.
 
-What is left behind a seam is how a build gets a bearer and which deployment it
-talks to, plus native capability. Honeycrisp declares exactly two:
-`#platform/auth` and `#platform/instance`.
+What is left behind a seam is native capability and how a build reaches the
+host. Tironian declares two: `#platform/blobs` and `#platform/base-path`, both
+selecting between the browser leaf and the desktop host.
 
 ## Declaring one
 
@@ -84,7 +83,7 @@ concrete type and breaks the lockstep that keeps every leaf the same shape.
 ## The two conditions answer different questions (ADR-0190)
 
 `tauri` means **this build runs in a Tauri WebView**, so a leaf may call a native
-command. `tironian-host` means **the desktop Epicenter host serves this build**,
+command. `tironian-host` means **the Tironian desktop host serves this build**,
 so a leaf may reach the host for a credential, a deployment choice, or an asset
 base.
 
@@ -100,10 +99,9 @@ other (ADR-0177). Every build owns its own storage, so this is now always true.
 
 This is the one hazard worth remembering. Removing a `tironian-host` key from
 a seam breaks no build: resolution falls back silently to `default`, and the
-hosted build quietly runs the browser leaf. `apps/honeycrisp/src/lib/platform-selection.test.ts`
-reads the declarations and names the broken seam, and
-`apps/epicenter/scripts/build-applications.test.ts` runs the real build and reads
-the emitted bytes.
+hosted build quietly runs the browser leaf. `apps/desktop/scripts/build-applications.test.ts`
+runs the real build and reads the emitted bytes, so a dropped leaf shows up
+there even with no test that reads the declarations directly.
 
 ## Why not suffixes
 

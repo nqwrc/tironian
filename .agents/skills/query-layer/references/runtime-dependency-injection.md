@@ -10,7 +10,7 @@ settings and platform capability, chooses the implementation, and passes the
 service explicit inputs. `$lib/queries` only selects a service when the adapter
 directly owns the whole use case.
 
-Whispering's transcription operation owns the current provider dispatch:
+Tironian's transcription operation owns the current provider dispatch:
 
 ```typescript
 export async function transcribeAudio(

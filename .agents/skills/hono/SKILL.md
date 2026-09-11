@@ -2,7 +2,7 @@
 name: hono
 description: Hono patterns for TypeScript API routes, middleware, request and response typing, streaming, WebSockets, and Cloudflare Workers deployment. Use when users mention Hono, honojs, Cloudflare Worker handlers, Hono middleware, or Hono route typing.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

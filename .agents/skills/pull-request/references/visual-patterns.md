@@ -56,7 +56,7 @@ Use `` `-- `` for a single child and `` |-- `` when siblings exist. The before a
 When files move between directories and the move itself is the architectural statement, show the move. This is not "listing changed files," which the skill forbids; it is showing the reorganization.
 
 ```txt
-packages/epicenter/src/
+packages/data/src/
   shared/
     y-cell-store.ts   ->  dynamic/tables/y-cell-store.ts
     y-row-store.ts    ->  dynamic/tables/y-row-store.ts

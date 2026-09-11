@@ -15,7 +15,7 @@ Archiving is not deletion. The task remains searchable and recoverable.
 ## Establish scope and authority
 
 Inspect repository instructions and planning conventions before creating or
-editing a backlog. In Epicenter, do not use `specs/` as a backlog: specs are
+editing a backlog. In Tironian, do not use `specs/` as a backlog: specs are
 active design scaffolding with their own lifecycle.
 
 Use the Codex desktop thread tools to list and read Codex tasks. Treat titles

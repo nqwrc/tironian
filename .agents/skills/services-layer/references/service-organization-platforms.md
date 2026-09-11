@@ -1,6 +1,6 @@
 # Service Organization And Platform Variants
 
-This reference covers Whispering's build-time service seam and the shared
+This reference covers Tironian's build-time service seam and the shared
 service barrel.
 
 ## One Stable Import
@@ -15,7 +15,7 @@ services/text/
 `-- index.tauri.ts
 ```
 
-Map one bare specifier in `apps/whispering/package.json`:
+Map one bare specifier in `apps/tironian/package.json`:
 
 ```jsonc
 "#platform/text": {
@@ -30,7 +30,7 @@ Shared consumers import one name:
 import { TextServiceLive } from '#platform/text';
 ```
 
-The web bundle resolves `default`; the Epicenter/Tauri surface activates the
+The web bundle resolves `default`; the Tironian/Tauri surface activates the
 `tauri` condition. Do not add a runtime `window.__TAURI_INTERNALS__` branch or a
 second platform registry.
 
@@ -69,7 +69,7 @@ Inside an already gated `.tauri.ts` file, import `tauriOnly` directly from
 
 ## Shared Service Barrel
 
-`apps/whispering/src/lib/services/index.ts` aggregates cross-platform
+`apps/tironian/src/lib/services/index.ts` aggregates cross-platform
 capabilities after their platform imports resolve:
 
 ```typescript

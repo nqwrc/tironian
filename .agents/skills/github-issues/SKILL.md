@@ -2,7 +2,7 @@
 name: github-issues
 description: 'GitHub issue comment guidelines for community interaction. Use when: "respond to this issue", "reply to this bug report", "close this issue", or any GitHub discussion.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -88,7 +88,7 @@ For complex issues, offer direct help:
 
 - "If you have time, I would love to hop on a call with you, and we can debug this together"
 - "Let's hop on a call sometime in the coming days, and I'll debug it with you"
-- When offering a call, include the cal.com link: "https://cal.com/epicenter/whispering"
+- When offering a call, include your scheduling link
 - Do not claim specific availability ("I'm free as early as tomorrow") you cannot verify
 
 ### 4. Discord Promotion
@@ -96,7 +96,7 @@ For complex issues, offer direct help:
 Occasionally, when the reporter seems invested in the project, invite them to Discord:
 
 - "PS: I've also recently created a Discord group, and I'd love for you to join! You can ping me directly for more features."
-- Include link: "https://go.epicenter.so/discord"
+- Include your Discord invite link
 
 ### 5. Follow-up Questions
 
@@ -125,7 +125,7 @@ Hey @username, thank you for the issue, and good news! [The latest release](link
 
 PS: I've also recently created a Discord group, and I'd love for you to join! You can ping me directly for more features.
 
-https://go.epicenter.so/discord
+[your Discord invite link]
 ```
 
 ### Debugging Response
@@ -135,9 +135,9 @@ Hey @username, so sorry to hear this! I apologize for the delayed response; I wa
 
 To clarify, could you confirm that this issue persists even with the latest installer?
 
-If you have time, I would love to hop on a call with you, and we can debug this together. You can book a meeting with me using my cal.com link right here:
+If you have time, I would love to hop on a call with you, and we can debug this together. You can book a meeting with me using my scheduling link right here:
 
-https://cal.com/epicenter/whispering
+[your scheduling link]
 
 Thank you!
 ```

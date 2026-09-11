@@ -241,7 +241,7 @@ When a `$derived` expression maps a finite union to output values, use a `satisf
 
 <!-- Good: $derived with satisfies Record -->
 <script lang="ts">
-	import type { SyncStatus } from '@epicenter/sync-client';
+	import type { SyncStatus } from './types';
 
 	const tooltip = $derived(
 		({
@@ -278,7 +278,7 @@ value with `set(id, next)`.
 
 | Data Shape | Use | Example |
 |---|---|---|
-| Epicenter store table rows | `fromWorkspace` reactive tables | notes, folders |
+| Tironian store table rows | `fromData` reactive tables | recordings, recipes |
 | Browser API keyed data | `new SvelteMap()` + listeners | media devices, windows |
 | Primitive value | `$state(value)` | `$state(false)`, `$state('')`, `$state(0)` |
 | Replace-only sequential data without IDs | `$state.raw<T[]>([])` | terminal history, command history |
@@ -293,9 +293,9 @@ TanStack Table into an infinite loop. See
 # Reactive Table State Pattern
 
 Store reads are synchronous and return plain JSON, so the source of truth is a
-re-read, not a long-lived reactive collection. `fromWorkspace` from
-`@epicenter/svelte` packages that re-read once: it mirrors an opened
-workspace's declared `tables`/`kv` and makes every read verb reactive
+re-read, not a long-lived reactive collection. `fromData` from
+`@tironian/svelte` packages that re-read once: it mirrors an opened data
+document's declared `tables`/`kv` and makes every read verb reactive
 (`rows`, `nonconforming`, `list`, `get`, `ids`, `document`), while `create`,
 `update`, and `delete` pass through unchanged. The invalidation it rides fires
 after the projection commits (ADR-0221) for a local write, for prose typed
@@ -303,18 +303,18 @@ into a row's document, and for bytes that arrived from another device alike.
 
 ```typescript
 // Root of the surface: adapt the chosen document once, then layer app state.
-const workspace = fromWorkspace(data);
-const table = workspace.tables.notes;
+const store = fromData(data);
+const table = store.tables.recordings;
 
 // Derived views: filtering and sorting are cached here, not in the getter.
-const all = $derived(table.rows.filter((note) => note.deletedAt === null));
+const all = $derived(table.rows.filter((recording) => recording.deletedAt === null));
 
 return {
 	get all() {
 		return all;
 	},
-	get(id: NoteId) {
-		return table.rows.find((note) => note.id === id);
+	get(id: RecordingId) {
+		return table.rows.find((recording) => recording.id === id);
 	},
 };
 ```
@@ -327,8 +327,7 @@ declared table nothing reads never subscribes at all. A read inside
 untracked. Do not hand-roll `db.<table>.subscribe(listener)` feeding
 `$state.raw` for table reads; that pattern is what the adapter replaced.
 
-Adapter: `packages/svelte-utils/src/from-workspace.svelte.ts`. Full app
-exemplar: `apps/honeycrisp/src/lib/honeycrisp/notes.svelte.ts`.
+Adapter: `packages/svelte-utils/src/from-data.svelte.ts`.
 
 See the `typescript` skill for iterator helpers (`.toArray()`, `.filter()`, `.find()` on `IteratorObject`).
 
@@ -407,11 +406,11 @@ The `.current` convention comes from [runed](https://github.com/svecosystem/rune
 
 ## Persisted State Utilities
 
-For localStorage/sessionStorage persistence, use `createPersistedState` (single value) or `createPersistedMap` (typed multi-key config) from `@epicenter/svelte`.
+For localStorage/sessionStorage persistence, use `createPersistedState` (single value) or `createPersistedMap` (typed multi-key config) from `@tironian/svelte`.
 
 ```typescript
 // Single value: .current accessor
-import { createPersistedState } from '@epicenter/svelte';
+import { createPersistedState } from '@tironian/svelte';
 const theme = createPersistedState({
 	key: 'app-theme',
 	schema: type("'light' | 'dark'"),
@@ -421,7 +420,7 @@ theme.current; // read
 theme.current = 'light'; // write + persist
 
 // Multi-key config: .get()/.set() with SvelteMap (per-key reactivity)
-import { createPersistedMap, defineEntry } from '@epicenter/svelte';
+import { createPersistedMap, defineEntry } from '@tironian/svelte';
 const config = createPersistedMap({
 	prefix: 'myapp.config.',
 	definitions: {

@@ -20,13 +20,13 @@ Read if curious:   Relationship to ADR-0099, Rejected Alternatives, Open Questio
 
 ## Settled Direction (2026-07-02 design pass)
 
-A greenfield pass re-derived the product from evidence: the current Whispering code, the uncommitted Phase 0 patch, and DeepWiki-verified feature audits of Handy and FluidVoice. The primitive survived. The one thing that did not survive is conflating the storage clean break with the product clean break: the durable format keeps compatibility (shipped users sync rows through the `epicenter-whispering` cloud room), and the clean-break budget is spent on product refusals instead.
+A greenfield pass re-derived the product from evidence: the current Tironian code, the uncommitted Phase 0 patch, and DeepWiki-verified feature audits of Handy and FluidVoice. The primitive survived. The one thing that did not survive is conflating the storage clean break with the product clean break: the durable format keeps compatibility (this predates the removal of sync; the migration below still protects any local `v1` rows a device carries forward), and the clean-break budget is spent on product refusals instead.
 
 | Decision | Class | Choice | Rationale |
 | --- | --- | --- | --- |
-| Storage compatibility | 1 evidence | Keep the v1 -> v2 `recordings` migration and the `epicenter-whispering` workspace id | Without migration, legacy rows do not disappear; they hide (`scan().nonconforming`, invisible in history, re-hydrated from the sync relay forever), and rows already stamped `_v:2` become `newerWriter` entries that `clear()` refuses to remove (`packages/workspace/src/document/table.ts`). An id reset orphans recipes and all synced settings too. The migration is small, written, and tested. |
+| Storage compatibility | 1 evidence | Keep the v1 -> v2 `recordings` migration; the workspace id is `app.tironian.dictation` | Without migration, legacy rows do not disappear; they hide (`scan().nonconforming`, invisible in history), and rows already stamped `_v:2` become `newerWriter` entries that `clear()` refuses to remove (`packages/data`). An id reset orphans recipes and all local settings too. The migration is small, written, and tested. |
 | First slice | 3 taste | Commit Phases 0-1 now; Phase 2 (Instruct) gets its own go/no-go after Phase 1 is solid | Phases 0-1 are wanted under every future; the bet is decided with Phase 1 evidence in hand. Revisit when: Phase 1 ships. |
-| Meeting/file transcription | 1 evidence | Imported files only, through the shared pipeline and the one `recordings` table; live system-audio capture refused | Neither Handy nor FluidVoice captures system audio; FluidVoice's "meeting transcription" is confirmed to be imported-file transcription (`MeetingTranscriptionService.transcribeFile` over `AVAsset`). Whispering's import is already solid (`operations/import.ts`). |
+| Meeting/file transcription | 1 evidence | Imported files only, through the shared pipeline and the one `recordings` table; live system-audio capture refused | Neither Handy nor FluidVoice captures system audio; FluidVoice's "meeting transcription" is confirmed to be imported-file transcription (`MeetingTranscriptionService.transcribeFile` over `AVAsset`). Tironian's import is already solid (`operations/import.ts`). |
 | Command mode | 2 coherence | Refused | FluidVoice's Command mode is a shell-executing agent (`CommandModeService`, `execute_terminal_command`): a different product with a large trust surface. Revisit when: real demand appears after Instruct ships. |
 | Recipes as a noun | 3 taste | Keep Recipes as-is until Phase 2 is committed; then revisit dissolving them into Instruct presets | Deleting Recipes without the replacement verb is pure user loss. Revisit when: the Phase 2 gate returns go. |
 | Keyless installs | 2 coherence | Dictate works fully (local models, raw transcript); Instruct is visibly disabled with an explanation | Handy proves keyless dictation is a complete product. A transform cannot run without a completion connection and must never be silently dark. |
@@ -36,7 +36,7 @@ A greenfield pass re-derived the product from evidence: the current Whispering c
 
 ## Overview
 
-Whispering and its category (FluidVoice, Handy, Wispr Flow, VoiceInk) share one primitive: a transcript whose only job is to land as text at the caret. This spec changes the primitive to an intent applied to a context. "Write down what I said" becomes the degenerate case (empty context, no instruction). The behaviours the category needs (dictate, edit a selection, generate, capture a thought) become one operation, `complete(instruction, operand + speech)`, routed by two axes that are observable from structure (is there an operand? where does output go?) plus exactly one bit that is not: is my speech content, or an instruction about content? That bit is read from which gesture the user pressed, never inferred.
+Tironian and its category (FluidVoice, Handy, Wispr Flow, VoiceInk) share one primitive: a transcript whose only job is to land as text at the caret. This spec changes the primitive to an intent applied to a context. "Write down what I said" becomes the degenerate case (empty context, no instruction). The behaviours the category needs (dictate, edit a selection, generate, capture a thought) become one operation, `complete(instruction, operand + speech)`, routed by two axes that are observable from structure (is there an operand? where does output go?) plus exactly one bit that is not: is my speech content, or an instruction about content? That bit is read from which gesture the user pressed, never inferred.
 
 ## Motivation
 
@@ -69,7 +69,7 @@ DICTATE  (speech is content)                 INSTRUCT (speech is about content)
 
 Feature audits of Handy (`cjpais/Handy`) and FluidVoice (`altic-dev/FluidVoice`), all items below confirmed against concrete files/symbols unless marked weak.
 
-| Feature | Whispering | Handy | FluidVoice |
+| Feature | Tironian | Handy | FluidVoice |
 | --- | --- | --- | --- |
 | Dictation | manual/VAD/PTT, 8 cloud/local/self-hosted backends | PTT/toggle, local-only engines | hold/toggle, local-first engines |
 | Rewrite/edit by voice | no (pre-authored Recipes only) | no | yes: Edit hotkey branches on selection presence (rewrite vs generate) |
@@ -84,11 +84,11 @@ Feature audits of Handy (`cjpais/Handy`) and FluidVoice (`altic-dev/FluidVoice`)
 Key findings:
 
 - **The gesture grammar is category-validated.** FluidVoice ships deterministic hotkey modes with no classifier, and its Edit hotkey branches on selection presence exactly as this spec's Instruct does (selection -> rewrite in place, none -> generate).
-- **"Meeting transcription" in this category means imported files.** Nobody captures live system audio. Whispering already has solid parallel file import; the category gap is real but out of scope by decision.
+- **"Meeting transcription" in this category means imported files.** Nobody captures live system audio. Tironian already has solid parallel file import; the category gap is real but out of scope by decision.
 - **AX selection capture beats synthetic Cmd+C.** FluidVoice reads `kAXSelectedText` with range/value fallbacks; no clipboard round-trip. This de-risks the machinery this spec previously flagged as the residual Phase 2 engineering risk.
-- **Clipboard-restore hygiene is table stakes.** Both comparables snapshot and restore the clipboard around paste delivery. Whether Whispering's cursor paste does is an open verification item (Phase 1).
+- **Clipboard-restore hygiene is table stakes.** Both comparables snapshot and restore the clipboard around paste delivery. Whether Tironian's cursor paste does is an open verification item (Phase 1).
 - **Handy's keyless story is complete.** Local engines plus deterministic fuzzy vocabulary need no key at all; this grounds the keyless stance and keeps ADR-0099's deferred fuzzy matcher on the shelf with a concrete reference implementation.
-- **Whispering's unique differentiator is local-first sync.** Neither comparable syncs anything.
+- **Tironian's unique differentiator is local-first sync.** Neither comparable syncs anything.
 
 ## The gesture grammar
 
@@ -150,7 +150,7 @@ interface Sink {
 ### Phase 0: land the record and the seam (code exists; review and commit)
 
 - [x] **0.1** Review the uncommitted patch as one wave: `workspace/recordings.ts` (v2 + migration), `operations/sink.ts`, the `delivery.ts`/`pipeline.ts`/`transcribe.ts` rewiring, the mechanical `transcript -> raw` renames.
-- [x] **0.2** Run `bun test apps/whispering/tests/recordings-migration.test.ts` and the app typecheck.
+- [x] **0.2** Run `bun test apps/tironian/tests/recordings-migration.test.ts` and the app typecheck.
 - [x] **0.3** Commit with specific staged paths (no `git add -A`), splitting the leaf-module extraction from the behavioral rewiring if the diff reads better as two commits.
 
 ### Phase 1: the result becomes visible (low-regret, committed)
@@ -186,7 +186,7 @@ Decided by Braden after Phase 1 ships, with these inputs on the table:
 
 ### Web platform (Tauri-only gestures)
 
-Whispering also runs on web with no Tauri (`captureSelection`/`writeToCursor` return NotSupported in the browser backend). Every selection gesture is desktop-only. On web the product degrades to Dictate -> cursor/clipboard/ledger and Instruct -> generate/clipboard only. Phase 1/2 success criteria are desktop criteria; the web degradation is explicit.
+Tironian also runs on web with no Tauri (`captureSelection`/`writeToCursor` return NotSupported in the browser backend). Every selection gesture is desktop-only. On web the product degrades to Dictate -> cursor/clipboard/ledger and Instruct -> generate/clipboard only. Phase 1/2 success criteria are desktop criteria; the web degradation is explicit.
 
 ## Success Criteria
 
@@ -220,11 +220,11 @@ This completes ADR-0099's trajectory rather than contradicting it. Its load-bear
 
 ## References
 
-- `apps/whispering/src/lib/workspace/recordings.ts` (uncommitted): the v2 table, migration, sink/operand schemas
-- `apps/whispering/tests/recordings-migration.test.ts` (uncommitted): the migration gate
-- `apps/whispering/src/lib/operations/sink.ts` (uncommitted): the Sink seam
-- `apps/whispering/src/lib/operations/{pipeline,delivery,transcribe,run-polish}.ts`: the rewired pipeline
-- `apps/whispering/src/lib/operations/{selection,recipe-picker,recipe-clipboard}.ts`: today's selection/palette surface (Phase 2 raw material)
+- `apps/tironian/src/lib/workspace/recordings.ts` (uncommitted): the v2 table, migration, sink/operand schemas
+- `apps/tironian/tests/recordings-migration.test.ts` (uncommitted): the migration gate
+- `apps/tironian/src/lib/operations/sink.ts` (uncommitted): the Sink seam
+- `apps/tironian/src/lib/operations/{pipeline,delivery,transcribe,run-polish}.ts`: the rewired pipeline
+- `apps/tironian/src/lib/operations/{selection,recipe-picker,recipe-clipboard}.ts`: today's selection/palette surface (Phase 2 raw material)
 - `packages/workspace/src/document/{define-table,table,nullable}.ts`: version routing, `scan()` buckets, migration mechanics
 - `.agents/skills/workspace-api/references/table-migrations.md`: the documented migration story
 - DeepWiki audits (2026-07-02): `cjpais/Handy`, `altic-dev/FluidVoice` (facts cited inline in Research Findings)

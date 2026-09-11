@@ -2,7 +2,7 @@
 name: method-shorthand-jsdoc
 description: Method shorthand in return objects for JSDoc preservation. Use when factory functions have internal helpers that should expose docs, or hovering over returned methods shows no JSDoc.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -162,7 +162,7 @@ return {
 
 ## Real Example
 
-From `packages/epicenter/src/core/docs/head-doc.ts`:
+Shaped after a real head-document factory:
 
 ```typescript
 export function createHeadDoc(options: { workspaceId: string; ydoc?: Y.Doc }) {

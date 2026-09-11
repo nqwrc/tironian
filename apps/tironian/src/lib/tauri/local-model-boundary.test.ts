@@ -31,7 +31,6 @@ describe('the local transcription boundary Tironian sits behind', () => {
 		for (const command of [
 			'getActiveModel',
 			'setActiveModel',
-			'takePendingHomeSection',
 			'listModels',
 			'downloadModel',
 			'deleteModel',

@@ -114,7 +114,7 @@ repositories.
 Default to project-local skills:
 
 ```bash
-cd /Users/braden/Code/epicenter/.agents/skills
+cd /path/to/repo/.agents/skills
 bun x --package skills skills init <skill-name>
 ```
 
@@ -123,7 +123,7 @@ symlink from the repository root so Claude sessions discover it in every
 worktree:
 
 ```bash
-cd /Users/braden/Code/epicenter
+cd /path/to/repo
 ln -s ../../.agents/skills/<skill-name> .claude/skills/<skill-name>
 ```
 
@@ -316,13 +316,13 @@ Read [references/evaluation.md](references/evaluation.md) for trigger evals, alw
 Validate discovery with the same path the CLI uses before installation:
 
 ```bash
-bun x --package skills skills add /Users/braden/Code/epicenter/.agents/skills --list
+bun x --package skills skills add /path/to/repo/.agents/skills --list
 ```
 
 For one skill, pass the source directory plus the skill name:
 
 ```bash
-bun x --package skills skills add /Users/braden/Code/epicenter/.agents/skills --skill <skill-name> --list
+bun x --package skills skills add /path/to/repo/.agents/skills --skill <skill-name> --list
 ```
 
 The useful signal is:

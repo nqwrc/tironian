@@ -1,6 +1,6 @@
 ---
 name: svelte
-description: Apply Epicenter’s Svelte 5 patterns for runes, components, lifecycles, and workspace-backed state. Use when editing `.svelte`, `.svelte.ts`, or Svelte UI state.
+description: Apply Tironian’s Svelte 5 patterns for runes, components, lifecycles, and workspace-backed state. Use when editing `.svelte`, `.svelte.ts`, or Svelte UI state.
 ---
 
 # Svelte Guidelines
@@ -53,14 +53,14 @@ Skip DeepWiki for stable basics and repo-local patterns already documented here 
 - Map finite unions with a `satisfies Record` lookup, not nested ternaries or `$derived.by()` switches.
 - Use `SvelteMap` for ID-keyed collections where `get`, `has`, `size`, or iteration should update reactively. Values inside a `SvelteMap` are not deep-proxied, so store reactive row objects or replace values when nested data changes. Convert maps to stable arrays with `$derived` before passing them to table-like consumers.
 - Use `SvelteSet` for an id set whose membership (`has`, `size`, iteration) is read in a reactive or template context: `add`/`delete` then drive the UI directly, replacing `$state<string[]>` plus spread/filter reassignment. Reach for `SvelteMap` instead the moment the set needs to carry per-key data (a timestamp, a last error). Use a plain `Set`/`Map` (not the reactive class) when the collection is read only in imperative code, such as a subscription's listener bag: a reactive wrapper read outside any effect is cost with no reader (exemplar: the plain `listeners` set in `createPersistedState`).
-- Read Epicenter store data through `fromWorkspace` from `@epicenter/svelte`: it mirrors an opened workspace's declared `tables`/`kv`, makes every read verb (`rows`, `nonconforming`, `list`, `get`, `ids`, `document`) reactive, and passes writes through. Subscriptions are ref-counted to effect usage, so nothing is disposed by hand and unread tables cost nothing. Do not hand-roll `db.<table>.subscribe(listener)` feeding `$state.raw` for table reads any more; `$derived` over `table.rows` does the filtering and sorting. Adapter: `packages/svelte-utils/src/from-workspace.svelte.ts`; app exemplar: `apps/honeycrisp/src/lib/honeycrisp/notes.svelte.ts`.
+- Read Tironian store data through `fromData` from `@tironian/svelte`: it mirrors an opened data document's declared `tables`/`kv`, makes every read verb (`rows`, `nonconforming`, `list`, `get`, `ids`, `document`) reactive, and passes writes through. Subscriptions are ref-counted to effect usage, so nothing is disposed by hand and unread tables cost nothing. Do not hand-roll `db.<table>.subscribe(listener)` feeding `$state.raw` for table reads any more; `$derived` over `table.rows` does the filtering and sorting. Adapter: `packages/svelte-utils/src/from-data.svelte.ts`.
 - Bridge a non-store external event source (`window` events, an auth store) into reactivity with `createSubscriber` from `svelte/reactivity`, not a hand-rolled `$state` plus `$effect` plus listener set: reads inside an effect become reactive and the subscription is ref-counted to effect usage (start on first subscriber, cleanup at zero). Exemplar: `packages/svelte-utils/src/auth.svelte.ts`. Keep a manual listener set only when the same source also serves imperative `.get()`/`.watch()` consumers whose liveness cannot ride on effect ref-counting (again `createPersistedState`).
 - For new reusable DOM behavior on elements, prefer `{@attach}` attachments over new `use:` actions. Keep `use:` for existing code or libraries that only expose actions.
 - Create TanStack Query mutations in `.svelte` files and call `mutation.mutate(...)` directly from template handlers unless the action earns a semantic helper. Read [mutations and workspace inputs](references/mutations-and-workspace-inputs.md).
 - For workspace string fields, prefer commit-on-blur over writing a CRDT transaction on every keystroke.
 - For string attributes that combine plain text with expressions, use Svelte quoted interpolation (`label="Loading {name}"`, `href="/users/{id}"`) instead of a JavaScript template literal attribute. Keep expression attributes for non-string values, callbacks, objects, booleans, and cases where the entire attribute is a computed JavaScript expression.
 - Keep simple component props inline. Use named `Props` only when a wrapper, generic relationship, exported contract, or native DOM type composition earns it. Push large view-mode branches into focused child components. Read [component and UI patterns](references/component-ui-patterns.md).
-- Use local `@epicenter/ui` loading, empty, pending, and tooltip components before ad hoc markup.
+- Use local `@tironian/ui` loading, empty, pending, and tooltip components before ad hoc markup.
 
 ## Reference Map
 

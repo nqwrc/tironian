@@ -1,6 +1,6 @@
-# Whispering Architecture Deep Dive
+# Tironian Architecture Deep Dive
 
-Whispering uses a clean three-layer architecture that shares one SPA between its browser deployment and the Epicenter desktop host. This is possible because platform differences are selected at build time and business logic stays separate from UI concerns.
+Tironian uses a clean three-layer architecture that shares one SPA between its browser deployment and the Tironian desktop host. This is possible because platform differences are selected at build time and business logic stays separate from UI concerns.
 
 **Quick Navigation:** [Service Layer](#service-layer---pure-business-logic--platform-abstraction) | [Query Layer](#query-layer---adding-reactivity-and-state-management) | [Error Handling](#error-handling-with-wellcrafted)
 
@@ -16,20 +16,20 @@ Whispering uses a clean three-layer architecture that shares one SPA between its
 
 ## Workspace Composition
 
-Whispering binds its inert workspace contract through one environment-owned SQLite runtime, acquired as one ready app inside the mounted Svelte root:
+Tironian binds its inert workspace definition through one environment-owned SQLite runtime, acquired as one ready app inside the mounted Svelte root:
 
 ```txt
-defineWorkspace()                       src/lib/workspace/contract.ts (inert schema)
-  -> openWhisperingApp()        src/lib/whispering/app.ts (transactional async open)
-    -> #platform/whispering             whisperingPlatform: the per-build dependencies
-      -> openWhisperingUiSession()      src/lib/whispering/ui-session.ts (app + query runtime)
+defineData()                            src/lib/workspace/index.ts (inert schema)
+  -> openTironianApp()           src/lib/app/app.ts (transactional async open)
+    -> tironianDependencies             src/lib/app/dependencies.ts: the per-build dependencies
+      -> openTironianUiSession()  src/lib/app/ui-session.ts (app + query runtime)
         -> (app)/+layout.svelte         raw {#await} owns pending / ready / failed
-          -> WhisperingUiSessionProvider      typed context for ready-only descendants
+          -> TironianUiSessionProvider        typed context for ready-only descendants
 ```
 
-`src/lib/workspace/contract.ts` defines the fixed workspace id, row tables, and KV settings schema with no platform APIs. `openWhisperingApp(whisperingPlatform, { signal })` opens the Whispering workspace through the runtime the environment supplies, hydrates settings, recordings, and recipes, and resolves only with those UI-free product namespaces ready; any failure releases everything it opened and rejects. The (app) layout wraps that open in one UI session (`openWhisperingUiSession`), which composes the Svelte reactivity adapters, a session-scoped TanStack `QueryClient`, and the query namespace over the ready app, and owns their ordered disposal. The layout creates the session promise during component initialisation, so the `{#await}` observes it from the first microtask. The fulfilled branch mounts `WhisperingUiSessionProvider`, which only publishes the ready session: typed `getWhisperingApp()` / `getWhisperingQueries()` context plus the session's query client. Boot retry is a full page reload; unmount/HMR aborts the acquisition, and the layout is the single owner of session disposal. Bun scripts import `@epicenter/whispering/app` and `@epicenter/whispering/app/bun`, then use the same product API: `await using app = await openWhisperingApp(createWhisperingBunDependencies({ dataDir }))`. The one `dataDir` roots all persistent Bun storage (`<dataDir>/device/<workspaceId>/store.sqlite3`, `<dataDir>/blobs/`).
+`src/lib/workspace/index.ts` defines the fixed workspace id, row tables, and KV settings schema with `defineData`, with no platform APIs. `openTironianApp(dependencies, { signal })` opens the Tironian workspace through the runtime the environment supplies, hydrates settings, recordings, and recipes, and resolves only with those UI-free product namespaces ready; any failure releases everything it opened and rejects. The (app) layout wraps that open in one UI session (`openTironianUiSession`), which composes the Svelte reactivity adapters, a session-scoped TanStack `QueryClient`, and the query namespace over the ready app, and owns their ordered disposal. The layout creates the session promise during component initialisation, so the `{#await}` observes it from the first microtask. The fulfilled branch mounts `TironianUiSessionProvider`, which only publishes the ready session: typed `getTironianApp()` / `getTironianQueries()` context plus the session's query client. Boot retry is a full page reload; unmount/HMR aborts the acquisition, and the layout is the single owner of session disposal.
 
-The `#platform/whispering` leaves are pure dependency bindings of the workspace runtime plus the platform's composed blob capability (`#platform/blobs`): the browser build opens the one device workspace runtime directly; the Epicenter-hosted build uses the same-origin desktop workspace runtime, whose `open` performs an honest host acquisition handshake. There is no account runtime and no sync: every build opens the same device document. The app's recordings namespace owns row/blob consistency: local audio storage and deletion of the device copy and row as one workflow. Scalar rows live in runtime-native SQLite; row documents are lazy Yjs 14 documents behind the runtime's document provider (ADR-0144).
+`tironianDependencies` is a pure per-build bindings object; its one platform-selected member is the blob capability (`#platform/blobs`): the browser build opens the one device workspace runtime directly; the desktop-hosted build uses the same-origin desktop workspace runtime, whose `open` performs an honest host acquisition handshake. There is no account runtime and no sync: every build opens the same device document. The app's recordings namespace owns row/blob consistency: local audio storage and deletion of the device copy and row as one workflow. Scalar rows live in runtime-native SQLite; row documents are lazy Yjs 14 documents behind the runtime's document provider (ADR-0144).
 
 ## Service Layer - Pure Business Logic + Platform Abstraction
 
@@ -74,9 +74,9 @@ export default defineConfig(async () => ({
 
 Consumers (for example the services barrel `src/lib/services/index.ts`) import the bare specifier `from '#platform/recorder'` with **no platform branch at the call site**. Vite resolves `index.tauri.ts` on Tauri builds and `index.browser.ts` on web builds; the off-target file is never resolved, so it is physically absent from the bundle (a build-time guarantee, not Rollup tree-shaking). This makes the web bundle structurally unable to ship Tauri APIs and vice versa: a Tauri-only file imported by shared code fails the web build instead of shipping a broken runtime.
 
-This mechanism is scoped to `#platform/*` only; every other bare import resolves normally. The browser typecheck uses the default condition, and `tsconfig.desktop.json` repeats the check with the `tironian-host` and `tauri` conditions the Epicenter build activates (ADR-0190). Each impl is annotated with the shared contract (`export const x: Contract = ...`, not `satisfies`, so the concrete type stays hidden and the variants stay in lockstep).
+This mechanism is scoped to `#platform/*` only; every other bare import resolves normally. The browser typecheck uses the default condition, and `tsconfig.desktop.json` repeats the check with the `tironian-host` and `tauri` conditions the desktop build activates (ADR-0190). Each impl is annotated with the shared contract (`export const x: Contract = ...`, not `satisfies`, so the concrete type stays hidden and the variants stay in lockstep).
 
-Tauri-only exports (Whispering's `tauriOnly` namespace in `src/lib/tauri.tauri.ts`) are imported **directly** by `.tauri.ts` files (`import { tauriOnly } from '$lib/tauri.tauri'`), not through a `#platform/*` seam, since that seam is null on web. Shared code that only needs the platform boolean reaches it through `import { tauri } from '#platform/tauri'` and checks `if (tauri)`.
+Tauri-only exports (Tironian's `tauriOnly` namespace in `src/lib/tauri.tauri.ts`) are imported **directly** by `.tauri.ts` files (`import { tauriOnly } from '$lib/tauri.tauri'`), not through a `#platform/*` seam, since that seam is null on web. Shared code that only needs the platform boolean reaches it through `import { tauri } from '#platform/tauri'` and checks `if (tauri)`.
 
 Services are **testable** (just pass mock parameters), **reusable** (work identically anywhere via the shared contract in `types.ts`), and **maintainable** (no hidden runtime branches).
 
@@ -86,15 +86,15 @@ The codebase distinguishes two kinds of "which implementation" decisions and use
 
 ## Query Layer - Adding Reactivity and State Management
 
-The query layer (`$lib/queries`) is where TanStack Query reactivity gets injected on top of the ready app and pure services. One `WhisperingUiSession` owns one `QueryClient` and one `WhisperingQueries` namespace; there is no module-global client. Components reach both through context:
+The query layer (`$lib/queries`) is where TanStack Query reactivity gets injected on top of the ready app and pure services. One `TironianUiSession` owns one `QueryClient` and one `TironianQueries` namespace; there is no module-global client. Components reach both through context:
 
 ```svelte
 <script>
   import { createQuery } from '@tanstack/svelte-query';
-  import { getWhisperingApp, getWhisperingQueries } from '$lib/whispering/context';
+  import { getTironianApp, getTironianQueries } from '$lib/app/context';
 
-  const app = getWhisperingApp();
-  const queries = getWhisperingQueries();
+  const app = getTironianApp();
+  const queries = getTironianQueries();
 
   // Domain data: workspace state (reactive, no queries needed)
   const latestRecording = $derived(app.recordings.sorted[0]);
@@ -146,7 +146,7 @@ if (error) {
 
 ## Error Handling with WellCrafted
 
-Whispering uses [WellCrafted](https://github.com/wellcrafted-dev/wellcrafted), a lightweight TypeScript library I created to bring Rust-inspired error handling to JavaScript. I built WellCrafted after using the [effect-ts library](https://github.com/Effect-TS/effect) when it first came out in 2023. I was very excited about the concepts but found it too verbose. WellCrafted distills my takeaways from effect-ts and makes them better by leaning into more native JavaScript syntax, making it perfect for this use case. Unlike traditional try-catch blocks that hide errors, WellCrafted makes all potential failures explicit in function signatures using the `Result<T, E>` pattern.
+Tironian uses [WellCrafted](https://github.com/wellcrafted-dev/wellcrafted), a lightweight TypeScript library I created to bring Rust-inspired error handling to JavaScript. I built WellCrafted after using the [effect-ts library](https://github.com/Effect-TS/effect) when it first came out in 2023. I was very excited about the concepts but found it too verbose. WellCrafted distills my takeaways from effect-ts and makes them better by leaning into more native JavaScript syntax, making it perfect for this use case. Unlike traditional try-catch blocks that hide errors, WellCrafted makes all potential failures explicit in function signatures using the `Result<T, E>` pattern.
 
 `wellcrafted` ensures robust error handling across the entire codebase, from service layer functions to UI components, while maintaining excellent developer experience with TypeScript's control flow analysis.
 

@@ -1,6 +1,6 @@
 # backend-latency
 
-A falsifier for one proposal: collapse Epicenter's transcription backend to
+A falsifier for one proposal: collapse Tironian's transcription backend to
 **one static dependency, `Backend::Auto`, Metal on Apple, CPU everywhere else**,
 and delete the dynamic-backends plus Vulkan posture that Linux and x86_64
 Windows ship today.
@@ -15,7 +15,7 @@ optional preview exists. Preview is revocable and may simply be absent. A
 second resident model is one useful optimization, not the gate.
 
 It is throwaway. It is not wired into the app build, CI, or the workspace, and
-nothing in `apps/epicenter/src-tauri` can reach it. Delete the directory when
+nothing in `apps/desktop/src-tauri` can reach it. Delete the directory when
 the decision is recorded.
 
 ## Live preview go/no-go, precommitted before measurement
@@ -61,7 +61,7 @@ failure does not by itself kill preview.
 ## The one command
 
 ```sh
-cd apps/epicenter/bench/backend-latency
+cd apps/desktop/bench/backend-latency
 
 TRANSCRIBE_CMAKE_ARGS="-DGGML_NATIVE=OFF" \
   cargo build --release --features static-cpu
@@ -94,7 +94,7 @@ producing a number that looks comparable and isn't.
 ## The preview preemption command
 
 `--stream-model` selects the second question and changes the record schema to
-`epicenter.preview-preemption/1`. `--stream-model` is model B, the preview
+`tironian.preview-preemption/1`. `--stream-model` is model B, the preview
 candidate used for the gating same-model revoke and batch proof. `--model` is
 model A for the non-gating dual-residency study. Both model paths and `--audio`
 are required.
@@ -245,7 +245,7 @@ explicit `-DGGML_*=ON` arguments reach the CMake command line through the sys
 crate's escape hatch (`bindings/rust/sys/build.rs:190-197`), land in the cache
 before `CMakeLists.txt` is processed, and so survive the block's
 `if(NOT DEFINED CACHE{...})` guard. The result is an AVX2-era floor stated in one
-place, which matches the promise Epicenter has not made (support for pre-AVX2 x64
+place, which matches the promise Tironian has not made (support for pre-AVX2 x64
 CPUs). Bare `-DGGML_NATIVE=OFF` also produces an AVX2-ish floor, because
 `INS_ENB` then flips ON and ggml enables its per-tier defaults, but it produces it
 by inheritance. For a release posture, say it.
@@ -296,7 +296,7 @@ Both legs on one machine, same inputs, guarded against accidental mismatch.
 Needs a Vulkan SDK or `libvulkan-dev` plus `glslc` for the dynamic leg only.
 
 ```sh
-cd apps/epicenter/bench/backend-latency
+cd apps/desktop/bench/backend-latency
 MODEL=/path/to/whisper-small-Q4_K_M.gguf
 AUDIO=/path/to/speech_15s_16k_mono.wav
 FLOOR="-DTRANSCRIBE_X86_CONSERVATIVE=ON -DGGML_SSE42=ON -DGGML_AVX=ON \
@@ -325,7 +325,7 @@ The dynamic leg additionally needs SPIRV-Headers through vcpkg on
 `CMAKE_PREFIX_PATH`; the production manifest documents the same requirement.
 
 ```powershell
-cd apps\epicenter\bench\backend-latency
+cd apps\desktop\bench\backend-latency
 $Model = "C:\models\whisper-small-Q4_K_M.gguf"
 $Audio = "C:\audio\speech_15s_16k_mono.wav"
 # MSVC picks one /arch: level and AVX2 already implies FMA and F16C, so the

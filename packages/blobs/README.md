@@ -1,4 +1,4 @@
-# @epicenter/blobs
+# @tironian/blobs
 
 Opaque blob identity and the shared blob contracts: one `BlobId` names an object locally, remotely, and in rows; `BlobStore` is the canonical local store apps read and write; `BlobRemote` is the optional, explicit copy seam (upload, download, purge) to one remote under the same id; `BlobSources` acquires disposable playback URLs over the local bytes.
 
@@ -63,7 +63,7 @@ directory when it fails.
 The Rust recorder additionally deletes `.staging/rust/` wholesale at host
 startup, because a recording is now written progressively and a host that dies
 mid-capture leaves a partial WAV behind (ADR-0184). That sweep is safe only
-because the subtree has exactly one writer and Epicenter is single-instance, so
+because the subtree has exactly one writer and Tironian is single-instance, so
 no live publication can be in it. It deletes and never promotes: a partial
 capture is not a blob and startup does not make it one. Bun has no equivalent
 sweep, and adding one would need the exclusive writer lease this deliberately

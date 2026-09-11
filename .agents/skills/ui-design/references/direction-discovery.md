@@ -51,13 +51,13 @@ Comparisons:
   App or surface | Pattern | Borrow or refuse
 
 Direction:
-  The chosen design and why it fits Epicenter.
+  The chosen design and why it fits Tironian.
 
 Implementation:
   Files or surfaces that need to change.
 ```
 
-Keep Epicenter workspace-first. Prefer dense, quiet, operational UI for tools.
+Keep Tironian workspace-first. Prefer dense, quiet, operational UI for tools.
 Do not stop at mood words: every direction must map to layout, controls, states,
 and verification. Do not prototype when the existing surface already answers
 the question.

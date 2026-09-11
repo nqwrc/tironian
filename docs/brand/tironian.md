@@ -1,10 +1,9 @@
 # Tironian
 
 The brand system for the dictation product this fork ships, replacing the
-Whispering identity inherited from upstream.
+name and identity inherited from the project it forked from.
 
-Status: proposed, partially executed. What is executed is listed under
-"What this branch changed".
+Status: executed. What was done is listed under "What this branch changed".
 
 ## The name
 
@@ -27,9 +26,9 @@ being correct, not on the model being clever.
 Wispr AI filed for `FLOW` and `FLOW VOICE` on 2024-08-03. Any name carrying
 "flow" in this category walks into a live mark. Anything phonetically adjacent
 to "Wispr" or "Whisper" does two bad things at once: it reads as a clone of the
-competitor, and it collides with OpenAI's model name, which is also the reason
-the upstream name was always slightly wrong. "Whispering" describes the input.
-The product's job is the output.
+competitor, and it collides with OpenAI's model name, which is also why the
+upstream app's name was always slightly wrong: it described the input, not
+the output.
 
 ### Availability, checked 2026-09-08
 
@@ -257,28 +256,33 @@ Transcript text stays on Instrument Sans at a longer measure and looser leading.
 The transcript is the product, so it gets reading typography rather than chrome
 typography.
 
-## Naming architecture
+## Naming
 
 One product name. No sub-brands, no "Tironian Pro", no capitalized feature names.
 
 - The app is Tironian, and so is the installed bundle: `productName`, the
   installers, window titles, the tray menu and tooltip, and the host's own
   error messages all say Tironian (`apps/desktop/src-tauri/tauri.conf.json`,
-  `lib.rs`, `shell.rs`). The Rust crate, the deep-link scheme, the sidecar
-  binary, the log directory and every `EPICENTER_*` environment variable
-  moved to Tironian names in the runtime-identifier rename, and the directory
-  and identifier rename that followed it renamed the rest: `apps/whispering`
-  to `apps/tironian`, `apps/epicenter` to `apps/desktop`, and the
-  `whispering`-named code identifiers with them. Upstream's Epicenter and
-  Whispering names survive only as the attribution the license requires.
-- The bundle identifier is now `app.tironian` (`app.tironian.dev` for the dev
-  build), moved off `so.epicenter` in the runtime-identifier rename. It names
-  the data root on every platform and is pinned equal in Rust, TypeScript and
-  both Tauri configs by a test. The move carries no migration: nothing has
-  shipped an installed build under the old identifier to migrate.
-- The package scope moved to `@tironian/*` in the package-scope rename.
-  TypeScript types and import paths still keep the `whispering` name. See the
-  next section for why.
+  `lib.rs`, `shell.rs`).
+- The Rust crate, the deep-link scheme, the sidecar binary, the log
+  directory, and every environment variable use Tironian names. The
+  directory layout follows: `apps/tironian` for the dictation SPA,
+  `apps/desktop` for the Tauri host, and every code identifier that used to
+  carry the forked-from project's name moved with them.
+- The bundle identifier is `app.tironian` (`app.tironian.dev` for the dev
+  build). It names the data root on every platform and is pinned equal in
+  Rust, TypeScript and both Tauri configs by a test. The move carried no
+  migration: nothing had shipped an installed build under the old identifier
+  to migrate.
+- The package scope is `@tironian/*`.
+
+The rename ran as two branches. `feature/tironian-rebrand` did what a person
+or a distributor reads: window and page titles, UI copy, error strings shown
+to a user, the workspace title, the package description, the front-door
+README, and an attribution NOTICE. `feature/debrand` did the rest: type
+names, file paths, import subpaths, package names, code comments, and every
+runtime identifier, once the branch stopped tracking the upstream project and
+a full rename no longer meant a merge conflict on every file that named it.
 
 ## Icon
 
@@ -291,36 +295,9 @@ source `tauri icon` expands into the `.icns`, `.ico` and PNG set in
 `apps/desktop/src-tauri/icons/`. The tray still shows the recorder-state
 images in `recorder-state-icons/`, not the mark.
 
-## Rename tiers
-
-The word "Whispering" appeared 568 times in `apps/tironian/src` before this
-section was last true. Roughly 520 of those were identifiers: `WhisperingApp`
-alone accounted for 277, and `$lib/whispering/*` for another 106.
-
-**Tier 1, executed on `feature/tironian-rebrand`.** Everything a person or a
-distributor reads: window and page titles, UI copy, error strings shown to a
-user, the workspace title, the package description, the front-door README, and
-an attribution NOTICE.
-
-**Tier 2, executed on `feature/debrand`.** Type names, file paths, import
-subpaths, package names, and code comments.
-
-The tier split was measured, not aesthetic, and the measurement changed. Tier 2
-was deferred on `feature/tironian-rebrand` because that branch still tracked
-upstream: a trial `git merge-tree` conflicted on 40 files, and renaming
-`WhisperingApp` to `TironianApp` would have put a conflict on every one of the
-155 files that named it. `feature/debrand` cut that constraint loose on
-purpose: it deletes Honeycrisp, sign-in, sync, hosted inference, the web
-deploy, and every app the dictation product does not import, so there is no
-longer an upstream tree to stay mergeable with. Tier 2 landed on that branch:
-`apps/whispering` renamed to `apps/tironian`, `apps/epicenter` to
-`apps/desktop`, `WhisperingApp` to `TironianApp`, `$lib/whispering/*` to
-`$lib/app/*`, and the rest of the internal vocabulary with them.
-
 ## Licensing and attribution
 
-Tironian is a modified version of Whispering, which is part of Epicenter
-(`EpicenterHQ/epicenter`), under AGPL-3.0.
+Tironian is a modified version of Whispering, which is part of Epicenter (`EpicenterHQ/epicenter`), under AGPL-3.0.
 
 A rebrand is the moment attribution goes missing by accident, so it is written
 into the work rather than added after:
@@ -331,20 +308,23 @@ into the work rather than added after:
 - The README front door credits upstream above the fold.
 - Corresponding source stays public, which the AGPL requires anyway once the app
   is served over a network.
-- Upstream's marks are not used. "Whispering" and "Epicenter" appear only as
-  factual attribution, never as the product name.
+- Upstream's marks are not used. Its names appear only as the factual
+  attribution above, never as the product name.
 
 ## What this branch changed
 
-Branch `feature/tironian-rebrand`, cut from `feature/whispering-snippets` and
-never merged back into it, so the upstream slices stay clean.
+Branch `feature/tironian-rebrand`, cut from the upstream development branch
+before the rename, and never merged back into it, so the upstream slices stay
+clean.
 
 1. This document.
 2. `NOTICE` and README attribution.
 3. One source of truth for the product name,
    `apps/tironian/src/lib/constants/brand.ts`, replacing hardcoded literals so
    the next rename is one line.
-4. The Tier 1 string rename.
+4. The rename of every string a person reads: window and page titles, UI copy,
+   error strings shown to a user, the workspace title, and the package
+   description.
 5. Color and type taken from the Vivavoce design assets, replacing the earlier
    rubrication palette. That earlier palette carried a stated risk of landing on
    the most common look in generated design work; the assets answer it with a
@@ -372,10 +352,11 @@ never merged back into it, so the upstream slices stay clean.
   place where the shipped identity and the artboards differ, and it is deliberate
   rather than an oversight.
 - **The tokens live in the app, not the toolkit.** The design's stated delivery
-  was a patch to `packages/ui/src/app.css`. That package is MIT and shared with
-  Honeycrisp, so patching it would rebrand an app that is not ours. The app's own
-  stylesheet already loads after the shared theme, so the same variable names win
-  with no component changes, which is what the design actually asked for.
+  was a patch to `packages/ui/src/app.css`. That package is MIT and shared
+  across the workspace, so patching it would rebrand code that is not scoped
+  to this app. The app's own stylesheet already loads after the shared theme,
+  so the same variable names win with no component changes, which is what the
+  design actually asked for.
 - **The accent is `--voce`, not shadcn's `--accent`.** The design names its
   accent "accent", but in this component library that token means "subtle hover
   surface": menu rows, ghost buttons and command items all fill with it. Pointing

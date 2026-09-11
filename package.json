@@ -1,28 +1,24 @@
 {
-	"name": "epicenter",
+	"name": "tironian",
 	"type": "module",
 	"private": true,
 	"version": "7.11.0",
-	"description": "Local-first PKM substrate. CRDT-powered tables that materialize to SQLite and markdown.",
+	"description": "Tironian: dictation you own. Local-first speech-to-text on macOS and Windows.",
 	"keywords": [
 		"local-first",
-		"CRDT",
-		"Yjs",
+		"dictation",
+		"speech-to-text",
+		"transcription",
 		"offline-first",
-		"personal knowledge base",
-		"PKM",
-		"second brain",
-		"SQLite",
-		"markdown",
+		"privacy",
 		"open-source",
-		"self-hosted",
-		"workspace"
+		"tauri",
+		"desktop"
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/EpicenterHQ/epicenter.git"
+		"url": "https://github.com/nqwrc/tironian.git"
 	},
-	"homepage": "https://epicenter.so",
 	"license": "SEE LICENSE IN LICENSE",
 	"author": "",
 	"workspaces": {
@@ -34,8 +30,6 @@
 			"@sqlite.org/sqlite-wasm": "^3.53.0-build1",
 			"@types/node": "^24.0.0",
 			"@types/bun": "^1.3.14",
-			"@types/ms": "^2.1.0",
-			"ms": "^2.1.3",
 			"typescript": "^5.9.3",
 			"svelte": "^5.56.3",
 			"@sveltejs/kit": "^2.65.1",
@@ -44,15 +38,12 @@
 			"vite": "^7.3.5",
 			"vite-plugin-singlefile": "^2.3.3",
 			"tailwindcss": "^4.1.17",
-			"clsx": "^2.1.1",
-			"tailwind-merge": "^3.4.0",
 			"tailwind-variants": "^3.2.2",
 			"bits-ui": "^2.14.4",
 			"mode-watcher": "^1.1.0",
 			"svelte-sonner": "^1.0.6",
 			"@lucide/svelte": "^0.561.0",
 			"@tanstack/svelte-query": "^6.0.10",
-			"@tanstack/svelte-query-devtools": "^6.0.2",
 			"@tanstack/svelte-table": "9.0.0-alpha.10",
 			"arkregex": "^0.0.5",
 			"arktype": "^2.1.29",
@@ -61,27 +52,21 @@
 			"@ricky0123/vad-web": "^0.0.30",
 			"date-fns": "^4.1.0",
 			"@biomejs/biome": "^2.4.10",
-			"wrangler": "^4.71.0",
 			"@standard-schema/spec": "^1.1.0",
 			"hono": "^4.12.25",
 			"mime": "^4.0.6",
-			"yjs": "^13.6.31",
 			"typebox": "^1.0.0",
 			"jsrepo": "^3.6.2",
 			"@tailwindcss/vite": "^4.1.11",
 			"fflate": "^0.8.2",
 			"@sveltejs/adapter-static": "^3.0.8",
-			"@sveltejs/adapter-auto": "^6.1.0",
 			"@tailwindcss/typography": "^0.5.19",
-			"@sindresorhus/slugify": "^3.0.0",
 			"@tauri-apps/api": "^2.9.0",
 			"@tauri-apps/plugin-deep-link": "^2.4.9",
 			"@tauri-apps/plugin-fs": "^2.4.1",
 			"@tauri-apps/plugin-opener": "^2.4.0",
 			"@tauri-apps/cli": "^2.9.6",
-			"marked": "^17.0.3",
-			"virtua": "^0.48.5",
-			"@modelcontextprotocol/sdk": "^1.29.0"
+			"marked": "^17.0.3"
 		}
 	},
 	"packageManager": "bun@1.3.3",
@@ -141,15 +126,13 @@
 	"devDependencies": {
 		"@biomejs/biome": "catalog:",
 		"@types/bun": "catalog:",
-		"jsrepo": "^3.6.2",
-		"wrangler": "catalog:"
+		"jsrepo": "^3.6.2"
 	},
 	"dependencies": {
 		"@tironian/constants": "workspace:*",
 		"tinyexec": "^1.0.4"
 	},
 	"patchedDependencies": {
-		"@y/prosemirror@2.0.0-6": "patches/@y%2Fprosemirror@2.0.0-6.patch",
 		"@y/y@14.0.0-rc.24": "patches/@y%2Fy@14.0.0-rc.24.patch"
 	}
 }

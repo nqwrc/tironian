@@ -1,8 +1,8 @@
 ---
 name: worktree-hygiene
-description: Safely reap merged Git worktrees and branches across Epicenter harnesses. Use when cleaning `git worktree list`, removing orphaned or detached worktrees, or deciding whether one is safe to delete, not when creating branches or commits.
+description: Safely reap merged Git worktrees and branches across Tironian harnesses. Use when cleaning `git worktree list`, removing orphaned or detached worktrees, or deciding whether one is safe to delete, not when creating branches or commits.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

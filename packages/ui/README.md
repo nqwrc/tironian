@@ -6,7 +6,7 @@ system it uses, and the component update workflow.
 ## Component Library Overview
 
 This package is a vendored fork of **shadcn-svelte** (1.x) on the **Vega**
-preset, plus a few **shadcn-svelte-extras** and Epicenter-specific components.
+preset, plus a few **shadcn-svelte-extras** and Tironian-specific components.
 
 It uses shadcn-svelte's `cn-*` style system: component markup carries semantic
 hook classes (`cn-button-variant-default`, `cn-dialog-content`) and the actual
@@ -16,7 +16,7 @@ styling lives in CSS:
   scoped under `.style-vega`.
 - `src/styles/shadcn-base.css` (vendored): the upstream base (data-* custom
   variants, `no-scrollbar`, accordion keyframes) the `cn-*` rules depend on.
-- `src/styles/epicenter-overlay.css`: Epicenter style deltas (custom variants
+- `src/styles/tironian-overlay.css`: Tironian style deltas (custom variants
   and per-component overrides). The single place our styling diverges from Vega.
 
 Apps activate the preset with `class="style-vega"` on their root element; the
@@ -25,7 +25,7 @@ preset is a one-class swap (e.g. to `style-rhea`).
 
 ## Design Stance
 
-This package is the shared Epicenter product system, not a place for one-off app
+This package is the shared Tironian product system, not a place for one-off app
 branding. Its job is to make product UI consistent, accessible, and easy to
 compose across apps. The baseline is intentionally restrained: Vega component
 structure, Geist typography, semantic tokens, and app-level composition for
@@ -119,7 +119,7 @@ in this order:
 3. Add a local variant to the wrapper component.
 4. Wrap the component for a real composition boundary: scroll containment, pane
    sizing, table cell structure, sticky headers.
-5. Copy upstream component code only when Epicenter needs to own behavior,
+5. Copy upstream component code only when Tironian needs to own behavior,
    tokens, persistence, shortcuts, or app state.
 
 A new primitive belongs in `packages/ui` only when it is stable, visual, and
@@ -133,10 +133,10 @@ keep it in the app and compose UI primitives there.
 Apps import UI through the public package API:
 
 ```typescript
-import { Button } from '@epicenter/ui/button';
-import { Loading } from '@epicenter/ui/loading';
-import { cn } from '@epicenter/ui/utils';
-import '@epicenter/ui/app.css';
+import { Button } from '@tironian/ui/button';
+import { Loading } from '@tironian/ui/loading';
+import { cn } from '@tironian/ui/utils';
+import '@tironian/ui/app.css';
 ```
 
 Files inside `packages/ui/src` import other UI files with relative paths:
@@ -185,20 +185,20 @@ Consumers import components through the package API; UI source imports siblings
 with relative paths.
 
 Every `packages/ui/src/<folder>/index.ts` file is a public
-`@epicenter/ui/<folder>` subpath. Raw `.svelte` files are private to the package
+`@tironian/ui/<folder>` subpath. Raw `.svelte` files are private to the package
 and should not be imported by apps.
 
 ### 3. Styling: the overlay, not inline overrides
 
 Component styling lives in `cn-*` classes, not inline Tailwind. Keep component
 markup byte-identical to upstream Vega so it stays trivially re-vendorable, and
-put every Epicenter style delta in `src/styles/epicenter-overlay.css`.
+put every Tironian style delta in `src/styles/tironian-overlay.css`.
 
 **Custom variants** (no upstream equivalent) become a `cn-*` class. Example, the
 button `ghost-destructive` variant:
 
 ```css
-/* epicenter-overlay.css, under .style-vega */
+/* tironian-overlay.css, under .style-vega */
 .cn-button-variant-ghost-destructive {
 	@apply text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20;
 }
@@ -218,7 +218,7 @@ here wins:
 ```
 
 **Invariant:** every `cn-*` class a component emits must be defined in
-`style-vega.css` or `epicenter-overlay.css`. An undefined `cn-*` class is a dead
+`style-vega.css` or `tironian-overlay.css`. An undefined `cn-*` class is a dead
 no-op; do not emit one.
 
 Two kinds of delta stay inline, by necessity:
@@ -229,9 +229,9 @@ Two kinds of delta stay inline, by necessity:
 - **Structural divergences** (extra wrapper elements, `<svelte:element>`, an
   injected actions overlay) are markup, not CSS, and live in the component.
 
-### Current Epicenter deltas
+### Current Tironian deltas
 
-`epicenter-overlay.css` is the self-documenting source of truth for **custom
+`tironian-overlay.css` is the self-documenting source of truth for **custom
 variants** (button `ghost-destructive`, alert `warning`, badge
 `id`/`success`/`status.*`) and **per-component overrides** (`cn-table-row`,
 `cn-select-content`, `cn-dialog-content`, `cn-resizable-panel-group`,
@@ -251,11 +251,11 @@ on a re-vendor:
 | Handle base styling | `resizable/resizable-handle.svelte` | Vega has no `cn-resizable-handle` (only `-icon`) | until Vega defines it |
 | `<svelte:element>` span-or-anchor | `badge/badge.svelte` | structural (element choice) | yes |
 | `showOnHover` actions overlay | `item/item-actions.svelte` | structural (absolute overlay + gradient) | yes |
-| `tooltip` prop (wraps in `Tooltip`) | `button/button.svelte`, `link/link.svelte` | Epicenter feature; upstream Button and Link have none | yes |
-| Standard loading shell | `loading/loading.svelte` | Epicenter wrapper around `Empty.Root` + `Spinner` for generic pending panes | yes |
+| `tooltip` prop (wraps in `Tooltip`) | `button/button.svelte`, `link/link.svelte` | Tironian feature; upstream Button and Link have none | yes |
+| Standard loading shell | `loading/loading.svelte` | Tironian wrapper around `Empty.Root` + `Spinner` for generic pending panes | yes |
 | Orientation sizing `data-[orientation=horizontal]:h-px …` | `separator/separator.svelte` | byte-identical to upstream; the size is gated on a Tailwind variant, which only attaches to real utilities. Routing it through `cn-separator-horizontal` (a plain class, not an `@utility`) makes the variant emit nothing, so the divider collapses (a fat bar inside `field-separator`, 0px standalone). Do **not** cn-ify it. | yes |
 
-Correctness wiring (making Vega work, not Epicenter style): `switch` and
+Correctness wiring (making Vega work, not Tironian style): `switch` and
 `alert-dialog` carry a `size` prop that emits `data-size`; sidebar menu and
 sub-menu buttons emit `data-active` only when active. Keep these.
 
@@ -271,7 +271,7 @@ updates are a careful copy plus a translation step.
 2. Normalize imports to relative paths (`../utils.js`, `../button/index.js`).
    The committed package has no generator aliases.
 3. Strip `IconPlaceholder`; use direct `@lucide/svelte/icons/*` imports.
-4. Move every Epicenter style delta into `epicenter-overlay.css` (see Styling
+4. Move every Tironian style delta into `tironian-overlay.css` (see Styling
    above). Do not leave inline override args stacked on a `cn-*` class.
 5. Confirm the invariant: every `cn-*` class the component emits is defined.
 6. Run `bun run check:ui-boundary` and build a consuming app.
@@ -293,7 +293,7 @@ components may need definitions.
 
 ```typescript
 // App code
-import { Button } from '@epicenter/ui/button';
+import { Button } from '@tironian/ui/button';
 
 // UI package source
 import { Button } from '../button/index.js';
@@ -302,7 +302,7 @@ import { cn } from '../utils.js';
 
 ## Component Inventory
 
-Every `src/<folder>/index.ts` is a public `@epicenter/ui/<folder>` subpath. The
+Every `src/<folder>/index.ts` is a public `@tironian/ui/<folder>` subpath. The
 inventory is grouped by job so it does not duplicate `ls`.
 
 - Foundations: `button`, `badge`, `card`, `separator`, `skeleton`, `spinner`,
@@ -320,7 +320,7 @@ inventory is grouped by job so it does not duplicate `ls`.
   `emoji-picker`, `github-button`, `kbd`, `light-switch`, `link`, `loading`,
   `markdown`, `pm-command`, `progress`, `snippet`, `star-rating`.
 - Styles: `styles/shadcn-base.css`, `styles/style-vega.css`,
-  `styles/epicenter-overlay.css`, `prose.css`, and `app.css`.
+  `styles/tironian-overlay.css`, `prose.css`, and `app.css`.
 
 Add a folder only when the component is a shared visual primitive or stable
 product widget. App-owned behavior should stay in the app and compose these
@@ -330,10 +330,10 @@ parts.
 
 1. **Keep Components Pure**: no business logic in UI components.
 2. **Use Barrel Exports**: each component folder has an `index.ts`.
-3. **Style in the overlay**: Epicenter deltas go in `epicenter-overlay.css`, not
+3. **Style in the overlay**: Tironian deltas go in `tironian-overlay.css`, not
    inline on the component, unless they must stay inline (see Styling).
 4. **Hold the invariant**: never emit a `cn-*` class that is not defined.
-5. **Consistent Imports**: relative inside `packages/ui/src`; `@epicenter/ui`
+5. **Consistent Imports**: relative inside `packages/ui/src`; `@tironian/ui`
    only from consumers outside this package.
 
 ## Boundary Check
@@ -349,7 +349,7 @@ The check fails when app configs point at `packages/ui/src`, when app configs
 or package manifests add private UI import paths, when app source imports
 private UI import names, when app or package source imports `packages/ui/src`
 directly, or when UI source imports itself through private aliases or
-`@epicenter/ui/...`.
+`@tironian/ui/...`.
 
 ## Troubleshooting
 
@@ -357,7 +357,7 @@ directly, or when UI source imports itself through private aliases or
 
 If imports are not resolving:
 
-1. Check that the component is exported by `@epicenter/ui`.
+1. Check that the component is exported by `@tironian/ui`.
 2. Ensure your IDE recognizes the package's TypeScript config.
 3. Restart the TypeScript language server.
 
@@ -365,7 +365,7 @@ If imports are not resolving:
 
 If a custom style is not applying:
 
-1. Confirm the rule is in `epicenter-overlay.css` (imported after
+1. Confirm the rule is in `tironian-overlay.css` (imported after
    `style-vega.css`, so it wins at equal specificity).
 2. If you are overriding a value Vega sets inline in the component (e.g.
    z-index), a base-layer `@apply` will not win: override inline or use

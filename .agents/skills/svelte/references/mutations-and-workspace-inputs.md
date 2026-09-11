@@ -10,9 +10,9 @@ In `.svelte` files, use `createMutation` for user-triggered async operations whe
 
 `createMutation` is the component operation lifecycle primitive. It is not reserved for cache invalidation, retry policy, or shared mutation keys.
 
-Use `defineMutation` in `$lib/rpc` when the operation has shared query-layer identity: multiple consumers, cache invalidation, optimistic updates, `useIsMutating`, or a reusable RPC boundary. For a one-off Result-returning component action, keep the operation as a plain function in `$lib/operations`, `$lib/services`, or a focused module, then wrap it locally with `createMutation(() => resultMutationOptions({ mutationKey, mutationFn }))`.
+Use `defineMutation` in `$lib/queries` when the operation has shared query-layer identity: multiple consumers, cache invalidation, optimistic updates, `useIsMutating`, or a reusable query boundary. For a one-off Result-returning component action, keep the operation as a plain function in `$lib/operations`, `$lib/services`, or a focused module, then wrap it locally with `createMutation(() => resultMutationOptions({ mutationKey, mutationFn }))`.
 
-Use direct `await` when no template lifecycle state is observed, when the code runs outside component context, or when a sequential workflow would become harder to read as mutation callbacks. Shared Wellcrafted mutations are callable, so imperative RPC mutation usage is `await rpc.thing(input)`.
+Use direct `await` when no template lifecycle state is observed, when the code runs outside component context, or when a sequential workflow would become harder to read as mutation callbacks. Shared Wellcrafted mutations are callable, so imperative query-layer mutation usage is `await queries.thing(input)`.
 
 ## Async Button Pattern
 
@@ -22,10 +22,12 @@ Pass `onSuccess` and `onError` as the second argument to `.mutate()` so the call
 <script lang="ts">
 	import { createMutation } from '@tanstack/svelte-query';
 	import { report } from '$lib/report';
-	import { rpc } from '$lib/rpc';
+	import { getTironianQueries } from '$lib/app/context';
+
+	const queries = getTironianQueries();
 
 	const downloadRecording = createMutation(
-		() => rpc.download.downloadRecording.options,
+		() => queries.download.downloadRecording.options,
 	);
 </script>
 
@@ -100,33 +102,35 @@ For component-local operation lifecycle, wrap the function locally:
 </Button>
 ```
 
-Do not create an RPC adapter only to get `isPending` for one component. Local `createMutation` gives the component a standard pending/error/success surface without pretending the operation is shared query-layer state.
+Do not create a query adapter only to get `isPending` for one component. Local `createMutation` gives the component a standard pending/error/success surface without pretending the operation is shared query-layer state.
 
-## Whispering RPC Pattern
+## Tironian Query Pattern
 
-Read this section when editing Whispering components that use shared RPC
-adapters or component-local operation lifecycles.
+Read this section when editing Tironian components that use the shared query
+layer or component-local operation lifecycles.
 
-Whispering components consume shared RPC adapters through `.options` inside an
-accessor:
+Tironian components consume the shared query layer through `.options` inside
+an accessor:
 
 ```svelte
 <script lang="ts">
 	import { createMutation, createQuery } from '@tanstack/svelte-query';
-	import { rpc } from '$lib/rpc';
+	import { getTironianQueries } from '$lib/app/context';
+
+	const queries = getTironianQueries();
 
 	const playbackUrl = createQuery(() =>
-		rpc.audio.getPlaybackUrl(() => recordingId).options,
+		queries.audio.getPlaybackUrl(() => recordingId).options,
 	);
 
 	const transcribeRecording = createMutation(
-		() => rpc.transcription.transcribeRecording.options,
+		() => queries.transcription.transcribeRecording.options,
 	);
 </script>
 ```
 
-For a component-local operation lifecycle, do not add a new RPC adapter only to
-observe `isPending`. Wrap the operation locally:
+For a component-local operation lifecycle, do not add a new query adapter only
+to observe `isPending`. Wrap the operation locally:
 
 ```svelte
 <script lang="ts">
@@ -143,7 +147,7 @@ observe `isPending`. Wrap the operation locally:
 </script>
 ```
 
-Whispering error presentation goes through `$lib/report` at the UI or operation
+Tironian error presentation goes through `$lib/report` at the UI or operation
 boundary:
 
 ```typescript
@@ -159,7 +163,7 @@ In `.ts` files, use direct `await` because `createMutation` requires component c
 
 ```typescript
 // In a .ts file (e.g., load function, utility)
-const { error } = await rpc.download.downloadRecording(recording);
+const { error } = await queries.download.downloadRecording(recording);
 if (error !== null) {
 	// Handle error
 } else {
@@ -206,12 +210,12 @@ The compare-then-write guard avoids a no-op Yjs transaction when focus passes th
 
 ## The safety net (app-wide, in `+layout.svelte`)
 
-Render `FlushEditsOnHide` from `@epicenter/svelte` once in the root layout
+Render `FlushEditsOnHide` from `@tironian/svelte` once in the root layout
 (ADR-0110):
 
 ```svelte
 <script lang="ts">
-  import { FlushEditsOnHide } from '@epicenter/svelte';
+  import { FlushEditsOnHide } from '@tironian/svelte';
 </script>
 
 <FlushEditsOnHide />

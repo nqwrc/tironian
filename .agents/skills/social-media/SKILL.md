@@ -2,7 +2,7 @@
 name: social-media
 description: Draft social posts for LinkedIn, Reddit, or Twitter/X. Use when asked to write a post, tweet, announcement, or platform-specific version.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -42,20 +42,20 @@ Follow [writing-voice](../writing-voice/SKILL.md) for tone.
 Good:
 
 ```
-Whispering now does file uploads. Drag audio/video files in, get transcription out. Works with any OpenAI-compatible API.
+Tironian now does file uploads. Drag audio/video files in, get transcription out. Works with any OpenAI-compatible API.
 
-Open source: github.com/EpicenterHQ/epicenter
+Open source: [your repo link]
 ```
 
 Bad:
 
 ```
-🚀 Exciting news! Whispering now supports file uploads!
+🚀 Exciting news! Tironian now supports file uploads!
 
 Drag and drop your files for instant AI-powered transcription. This is a game-changer for productivity! 🎯
 
 Try it now 👇
-github.com/EpicenterHQ/epicenter
+[your repo link]
 
 #OpenSource #AI #Productivity
 ```
@@ -96,7 +96,7 @@ Y.Map creates one CRDT entry per key, each with metadata overhead. A flat YKeyVa
 Tweet 3:
 Trade-off: you lose Y.Map's built-in observe() granularity. We rebuilt it with a CellStore layer that parses keys and emits typed change events. Worth it for the storage savings.
 
-Source: github.com/EpicenterHQ/epicenter
+Source: [your repo link]
 ```
 
 Bad:
@@ -128,17 +128,17 @@ The good thread: each tweet has a concrete fact. The bad thread: tweet 1 is a ho
 ### Good (Actual Human Post)
 
 ```
-Whispering now supports direct file uploads!
+Tironian now supports direct file uploads!
 
 Simply drag and drop (or click to browse) your audio files for instant transcription, with your model of choice.
 
-Free open-source app: https://github.com/EpicenterHQ/epicenter
+Free open-source app: [your repo link]
 ```
 
 ### Bad (AI-Generated Feel)
 
 ```
-Excited to announce that Whispering now supports direct file uploads!
+Excited to announce that Tironian now supports direct file uploads!
 
 This game-changing feature allows you to:
 - Drag and drop any audio/video file
@@ -149,7 +149,7 @@ Built with the same philosophy of transparency and user control, you pay only ac
 
 Ready to revolutionize your workflow? Try it now!
 
-GitHub: https://github.com/EpicenterHQ/epicenter
+GitHub: [your repo link]
 
 #OpenSource #Productivity #Innovation #DeveloperTools #Transcription
 ```
@@ -159,7 +159,7 @@ GitHub: https://github.com/EpicenterHQ/epicenter
 ### Good (Focused on Implementation)
 
 ````
-Hey r/sveltejs! Just shipped a file upload feature for Whispering and wanted to share how I implemented drag-and-drop files.
+Hey r/sveltejs! Just shipped a file upload feature for Tironian and wanted to share how I implemented drag-and-drop files.
 
 I used the [FileDropZone component from shadcn-svelte-extras](https://www.shadcn-svelte-extras.com/components/file-drop-zone), which provided a clean abstraction that allows users to drop and click to upload files:
 
@@ -176,11 +176,11 @@ I used the [FileDropZone component from shadcn-svelte-extras](https://www.shadcn
 />
 ```
 
-The component handles web drag-and-drop, but since Whispering is a Tauri desktop app, drag-and-drop functionality didn't work on the desktop (click-to-select still worked fine). So I reached for Tauri's [onDragDropEvent](https://tauri.app/reference/javascript/api/namespacewebviewwindow/#ondragdropevent) to add native support for dragging files anywhere into the application.
+The component handles web drag-and-drop, but since Tironian is a Tauri desktop app, drag-and-drop functionality didn't work on the desktop (click-to-select still worked fine). So I reached for Tauri's [onDragDropEvent](https://tauri.app/reference/javascript/api/namespacewebviewwindow/#ondragdropevent) to add native support for dragging files anywhere into the application.
 
 You can see the [full implementation here](link) (note that the code is still somewhat messy by my standards; it is slated for cleanup!).
 
-Whispering is a large, open-source, production Svelte 5 + Tauri app: https://github.com/EpicenterHQ/epicenter
+Tironian is a large, open-source, production Svelte 5 + Tauri app: [your repo link]
 
 Feel free to check it out for more patterns! If you're building Svelte 5 apps and need file uploads, definitely check out shadcn-svelte-extras. Not affiliated, it just saved me hours of implementation time.
 

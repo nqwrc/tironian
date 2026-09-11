@@ -104,7 +104,7 @@ Files: `to-drizzle.ts`, `package.json`. Utility that uses field metadata.
 ### Wave 5: Consumers
 
 ```
-feat(schema): update epicenter app to use TablesWithMetadata
+feat(schema): update tironian app to use TablesWithMetadata
 
 - WorkspaceSchema now accepts TablesSchema | TablesWithMetadata
 - Export new types from package index

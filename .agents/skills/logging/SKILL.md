@@ -2,7 +2,7 @@
 name: logging
 description: 'wellcrafted/logger for library diagnostics: 5 levels, typed errors, injected sinks, and host-owned durability. Use for attach primitives, background errors, durable host logs, or replacing console.* in library code.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '2.2'
 ---
 
@@ -11,8 +11,8 @@ metadata:
 Structured, level-keyed, field-oriented logging for library code. Modeled on Rust's `tracing`. Completes the `defineErrors` story: errors are structured data; level lives at the call site.
 
 Ground API and behavior claims in the official `wellcrafted-dev/wellcrafted`
-source and logger declarations for Epicenter's installed version. Ground call
-site examples in current Epicenter code.
+source and logger declarations for Tironian's installed version. Ground call
+site examples in current Tironian code.
 
 ## Where it lives
 
@@ -61,7 +61,7 @@ Do NOT attach a `severity` to `defineErrors` variants. That's `miette`'s pattern
 
 ## The dominant call-site shape
 
-In epicenter, the typical pattern is **branch on the Result, log inside the branch, then take action**. The Result's data is usually needed on the Ok branch, so a chain combinator wouldn't earn its keep:
+In Tironian, the typical pattern is **branch on the Result, log inside the branch, then take action**. The Result's data is usually needed on the Ok branch, so a chain combinator wouldn't earn its keep:
 
 ```ts
 const walResult = trySync({
@@ -91,7 +91,7 @@ You can also mint-and-log a tagged variant directly inside a `.catch` tail when 
 
 Sinks take a raw `LogEvent`, which constrains nothing. `createLogger` is what binds the `Logger` type, and the `Logger` type is the only thing enforcing that `warn`/`error` are unary over a `LoggableError`. Reaching past the factory to `consoleSink({ ts, level, source, message, data })` is not a shortcut to the same behavior: it is opting out of the contract.
 
-Whispering did exactly this and grew a parallel `log` whose `warn(error: Error, data?: unknown)` silently dropped the error object whenever a caller passed the second argument. Nothing caught it, because nothing had promised anything. Import `createLogger`; import `consoleSink` only to compose it into a sink you pass to `createLogger`.
+Tironian did exactly this and grew a parallel `log` whose `warn(error: Error, data?: unknown)` silently dropped the error object whenever a caller passed the second argument. Nothing caught it, because nothing had promised anything. Import `createLogger`; import `consoleSink` only to compose it into a sink you pass to `createLogger`.
 
 ### Do not mint a `new Error` at a log call site
 
@@ -102,14 +102,14 @@ Mint a `defineErrors` variant instead, owned by the module that owns the failure
 **The tell to watch for**: a boundary that types a failure callback as `(cause: unknown)` and ships no vocabulary with it. Every implementer must then invent a message, and `new Error` is the shortest way. If you declare such a callback, export the variants for it from the same file:
 
 ```ts
-export const WhisperingBackgroundError = defineErrors({
+export const TironianBackgroundError = defineErrors({
   AppFailed: ({ cause }: { cause: unknown }) => ({
-    message: 'Whispering app background work failed',
+    message: 'Tironian app background work failed',
     cause,
   }),
 });
 
-export type WhisperingAppDependencies = {
+export type TironianAppDependencies = {
   reportBackgroundError(cause: unknown): void;
 };
 ```
@@ -117,7 +117,7 @@ export type WhisperingAppDependencies = {
 Implementers then name a failure rather than describing one:
 
 ```ts
-reportBackgroundError: (cause) => log.warn(WhisperingBackgroundError.AppFailed({ cause }))
+reportBackgroundError: (cause) => log.warn(TironianBackgroundError.AppFailed({ cause }))
 ```
 
 ## Log-only variants are not public API
@@ -252,4 +252,4 @@ Custom sinks that serialize for the wire should convert `ts` to ISO-8601 and fla
 - `error-handling` skill: the `trySync`/`tryAsync` patterns the logger consumes
 - `define-errors` skill: how to mint the typed error variants the logger consumes
 - `rust-errors` skill: full `tracing` ↔ `Logger` mapping
-- `tapErr` (from `wellcrafted/result`): Result-chain combinator that logs on the Err branch and passes the Result through. Rare in epicenter, since most call sites branch on `result.error` directly to use the data on the Ok branch. Reach for it only when the Result flows out of the function in a `.then(...)` chain.
+- `tapErr` (from `wellcrafted/result`): Result-chain combinator that logs on the Err branch and passes the Result through. Rare in Tironian, since most call sites branch on `result.error` directly to use the data on the Ok branch. Reach for it only when the Result flows out of the function in a `.then(...)` chain.

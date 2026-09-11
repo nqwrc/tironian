@@ -2,7 +2,7 @@
 name: rust-errors
 description: Rust to TypeScript error handling for Tauri apps. Use when mentioning Rust errors, Tauri command errors, invoke errors, or defining Rust error types for TS consumption.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -79,7 +79,7 @@ const result = await tryAsync({
 		const result = TranscriptionErrorType(unknownError);
 		if (result instanceof type.errors) {
 			// Handle unexpected error shape
-			return WhisperingErr({
+			return TironianErr({
 				title: 'Unexpected Error',
 				description: extractErrorMessage(unknownError),
 				action: { type: 'more-details', error: unknownError },
@@ -90,7 +90,7 @@ const result = await tryAsync({
 		// Now we have properly typed discriminated union
 		switch (error.name) {
 			case 'ModelLoadError':
-				return WhisperingErr({
+				return TironianErr({
 					title: 'Model Loading Error',
 					description: error.message,
 					action: {
@@ -100,7 +100,7 @@ const result = await tryAsync({
 				});
 
 			case 'GpuError':
-				return WhisperingErr({
+				return TironianErr({
 					title: 'GPU Error',
 					description: error.message,
 					action: {
@@ -227,4 +227,4 @@ const result = await tryAsync({
 
 Both: pass-through on success, log the structured error on failure.
 
-In practice this shape is rare in epicenter. Most call sites need the Ok data locally and so branch on `result.error` and log inside the branch. Reach for `tapErr` only when the Result flows out of the function in a `.then(...)` chain.
+In practice this shape is rare in Tironian. Most call sites need the Ok data locally and so branch on `result.error` and log inside the branch. Reach for `tapErr` only when the Result flows out of the function in a `.then(...)` chain.

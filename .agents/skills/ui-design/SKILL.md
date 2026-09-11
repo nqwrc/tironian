@@ -1,8 +1,8 @@
 ---
 name: ui-design
-description: Design and review Epicenter interfaces while collapsing local UI primitives into the shared component system. Use when co-designing, exploring comparable apps, turning a feature idea into Svelte UI, or changing `packages/ui`, not for a tiny CSS repair.
+description: Design and review Tironian interfaces while collapsing local UI primitives into the shared component system. Use when co-designing, exploring comparable apps, turning a feature idea into Svelte UI, or changing `packages/ui`, not for a tiny CSS repair.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 license: Complete terms in LICENSE.txt
 ---
@@ -11,11 +11,11 @@ license: Complete terms in LICENSE.txt
 
 `ui-design` preserves the user-visible objective while reimagining the simplest
 greenfield composition and collapsing local markup, arbitrary styling, and
-duplicated visual contracts into `@epicenter/ui`, except where app-specific
+duplicated visual contracts into `@tironian/ui`, except where app-specific
 behavior or a load-bearing interaction earns the custom shape.
 
-The existing screen is evidence, not a structure to reproduce. For Epicenter
-product apps, `@epicenter/ui` is the default system. Treat shadcn-svelte as
+The existing screen is evidence, not a structure to reproduce. For Tironian
+product apps, `@tironian/ui` is the default system. Treat shadcn-svelte as
 implementation lineage and upstream grounding, not as an app import path.
 
 ## Canonical Path
@@ -27,7 +27,7 @@ implementation lineage and upstream grounding, not as an app import path.
 2. Read the current and neighboring surfaces. Inventory the workflow, hierarchy,
    accessibility, important states, and recognizable product intent that matter.
 3. Sketch the simplest greenfield composition using the natural anatomy of
-   existing `@epicenter/ui` primitives.
+   existing `@tironian/ui` primitives.
 4. Run the component-system collapse pass below. Refuse exact reproduction of
    incidental markup, spacing, colors, breakpoints, and one-off states.
 5. Implement the whole state surface: loading, empty, error, disabled, pending,
@@ -98,7 +98,7 @@ details that serve the chosen direction.
 - Read [references/comparable-apps.md](references/comparable-apps.md) when the
   design question depends on category fit or what other apps do.
 - Read [references/component-system.md](references/component-system.md) for every
-  meaningful Epicenter product UI implementation or review. It owns collapse
+  meaningful Tironian product UI implementation or review. It owns collapse
   smells and exceptions, then routes exact component and package mechanics to
   the authoritative `packages/ui` guide.
 - Read [references/anti-slop-tells.md](references/anti-slop-tells.md) for public,

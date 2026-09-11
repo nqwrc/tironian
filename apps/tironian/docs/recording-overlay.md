@@ -1,12 +1,12 @@
 # Recording overlay
 
-A small floating pill that appears while Whispering is capturing audio, inspired
-by Handy's recording overlay. It shows that Whispering is listening and lets the
+A small floating pill that appears while Tironian is capturing audio, inspired
+by Handy's recording overlay. It shows that Tironian is listening and lets the
 user stop or cancel without returning to the main window.
 
 ## How it works
 
-The overlay is driven entirely from the frontend, because Whispering's recording
+The overlay is driven entirely from the frontend, because Tironian's recording
 lifecycle already lives in the frontend (`manualRecorder` and `vadRecorder`
 state modules). This is the key difference from Handy, which drives its overlay
 from Rust because Handy's recording lifecycle lives in Rust. Pushing our overlay
@@ -15,7 +15,7 @@ into Rust would split the source of truth, so we keep it in the main window.
 - **Window**: a separate, transparent, undecorated, always-on-top
   `recording-overlay` window, reused (shown/hidden) and positioned centered near
   the bottom of the active monitor. On macOS it is a non-activating `NSPanel`
-  created in Rust (`../../epicenter/src-tauri/src/overlay.rs`, via
+  created in Rust (`../../desktop/src-tauri/src/overlay.rs`, via
   tauri-nspanel) so clicking it never activates the app or raises the main
   window; `focusable: false` alone does not prevent app activation on click. On
   Windows and Linux it is a
@@ -45,7 +45,7 @@ into Rust would split the source of truth, so we keep it in the main window.
   polishing offers a ship-raw control. They read as buttons in the small pill and
   stop click propagation.
   Clicking the pill body anywhere else emits `main-window:reveal`, which brings
-  the main Whispering window forward (show + unminimize + setFocus); it is a
+  the main Tironian window forward (show + unminimize + setFocus); it is a
   separate gesture from stop/cancel so finishing a recording never yanks the
   window up.
 - **Mic levels** (`mic-level` channel): the bars reflect real loudness, not a
@@ -57,7 +57,7 @@ into Rust would split the source of truth, so we keep it in the main window.
     the pill and updates the host's reactive meter; the Tauri implementation
     lives with the overlay transport and forwards the sample to its webview.
   - Manual (CPAL/Tauri): the PCM lives only in Rust, so the consumer worker
-    (`../../epicenter/src-tauri/src/recorder/recorder.rs`) computes RMS and emits
+    (`../../desktop/src-tauri/src/recorder/recorder.rs`) computes RMS and emits
     a throttled (~20 Hz) targeted
     `emit_to("recording-overlay", "mic-level", rms)`, per Tauri's guidance for
     high-frequency events. This is Handy's approach.
@@ -88,7 +88,7 @@ That is suppression, not positioning, and it stays. All of this is dev-only.
 These are tracked here as follow-ups.
 
 1. **Settings.** There is no `show recording overlay` toggle or top/bottom
-   position setting yet. Whispering settings are workspace KV entries with their
+   position setting yet. Tironian settings are workspace KV entries with their
    own schema evolution rules, which is heavier than this slice warranted, so the
    overlay is on by default in the Tauri build. Add the toggle when touching the
    settings schema is otherwise justified.

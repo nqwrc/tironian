@@ -35,7 +35,7 @@ Use `const T extends readonly T[]` to preserve literal types without requiring `
 The `const` modifier preserves literal types; the `readonly` constraint determines mutability.
 
 ```typescript
-// From packages/epicenter/src/core/schema/fields/factories.ts
+// Shaped after a real field-factory function
 export function select<const TOptions extends readonly [string, ...string[]]>({
 	id,
 	options,

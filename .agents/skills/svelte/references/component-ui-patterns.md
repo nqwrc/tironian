@@ -147,7 +147,7 @@ Use `$bindable` for controlled component values that callers naturally bind:
 
 Good bindable candidates are controlled UI values and DOM handles: `value`,
 `checked`, `open`, `ref`, `viewportRef`, and primitive state passed through from
-Bits UI or local `@epicenter/ui` components. Avoid making rich domain objects
+Bits UI or local `@tironian/ui` components. Avoid making rich domain objects
 bindable just so a child can edit their fields. Domain actions such as archive,
 delete, select, save, or rename should usually be callback props or mutations,
 not two-way bound booleans.
@@ -575,7 +575,7 @@ If a `.svelte.ts` state module has a computed getter that returns an array/objec
 
 ## Never Use Plain Text for Loading States
 
-Always use the `Spinner` component from `@epicenter/ui/spinner` instead of plain text like "Loading...". This applies to:
+Always use the `Spinner` component from `@tironian/ui/spinner` instead of plain text like "Loading...". This applies to:
 
 - `{#await}` blocks gating on async readiness
 - `{#if}` / `{:else}` conditional loading
@@ -587,8 +587,8 @@ When gating UI on an async promise (e.g. `whenReady`, `whenLoaded`), use `Empty.
 
 ```svelte
 <script lang="ts">
-	import * as Empty from '@epicenter/ui/empty';
-	import { Spinner } from '@epicenter/ui/spinner';
+	import * as Empty from '@tironian/ui/empty';
+	import { Spinner } from '@tironian/ui/spinner';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 </script>
 
@@ -618,7 +618,7 @@ When loading state is controlled by a boolean or null check:
 
 ```svelte
 <script lang="ts">
-	import { Spinner } from '@epicenter/ui/spinner';
+	import { Spinner } from '@tironian/ui/spinner';
 </script>
 
 {#if data}
@@ -646,7 +646,7 @@ Use the `Empty.*` compound component for empty states (no results, no items):
 
 ```svelte
 <script lang="ts">
-	import * as Empty from '@epicenter/ui/empty';
+	import * as Empty from '@tironian/ui/empty';
 	import FolderOpenIcon from '@lucide/svelte/icons/folder-open';
 </script>
 

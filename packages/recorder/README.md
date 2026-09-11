@@ -1,4 +1,4 @@
-# @epicenter/recorder
+# @tironian/recorder
 
 Browser microphone capture and voice-activity detection, with no app glue: no
 settings store, no tables, no transcription, no UI. It hands back a `Blob` plus
@@ -24,7 +24,7 @@ import {
 
   // Device vocabulary
   asDeviceIdentifier,
-} from '@epicenter/recorder';
+} from '@tironian/recorder';
 ```
 
 Types: `Device`, `DeviceIdentifier`, `DeviceAcquisitionOutcome`,
@@ -32,7 +32,7 @@ Types: `Device`, `DeviceIdentifier`, `DeviceAcquisitionOutcome`,
 
 The core is callback and `Result` based, with no framework reactivity. A Svelte
 app that wants reactive state wraps the core in its own thin runes layer (see
-Whispering's `vad-recorder.svelte.ts`).
+Tironian's `vad-recorder.svelte.ts`).
 
 ## VAD runtime assets (required)
 
@@ -47,7 +47,7 @@ Feed them to your build's static-copy step. With Vite:
 
 ```ts
 // vite.config.ts
-import { VAD_ASSET_DEST, vadAssetSources } from '@epicenter/recorder/vad-assets';
+import { VAD_ASSET_DEST, vadAssetSources } from '@tironian/recorder/vad-assets';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 viteStaticCopy({

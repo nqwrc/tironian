@@ -53,7 +53,7 @@ function createSomething({ foo, bar = 10 }: { foo: string; bar?: number }) {
 ### Codebase Examples
 
 ```typescript
-// From packages/epicenter/src/core/schema/columns.ts
+// Shaped after a real field-factory function
 export function select<const TOptions extends readonly [string, ...string[]]>({
   options,
   nullable = false,
@@ -66,7 +66,7 @@ export function select<const TOptions extends readonly [string, ...string[]]>({
   return { type: 'select', nullable, options, default: defaultValue };
 }
 
-// From apps/whispering/.../create-key-recorder.svelte.ts
+// Shaped after a real key-recorder factory
 export function createKeyRecorder({
   pressedKeys,
   onRegister,

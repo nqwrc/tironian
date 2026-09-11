@@ -1,8 +1,8 @@
 ---
 name: git
-description: Apply Epicenter Git conventions for commits, branches, and history. Use when staging files, writing or splitting commits, creating branches, or inspecting history, not for pull request text or merge guidance.
+description: Apply Tironian Git conventions for commits, branches, and history. Use when staging files, writing or splitting commits, creating branches, or inspecting history, not for pull request text or merge guidance.
 metadata:
-  author: epicenter
+  author: tironian
   version: '2.0'
 ---
 

@@ -59,10 +59,8 @@ opus builds.
 | `packages/data`, `packages/ui` | The local store and the component library the app is built on. |
 | `docs/brand/` | Name, mark, palette, type, voice, and the claims ledger. |
 
-The directory and identifier rename is complete: `apps/whispering` moved to
-`apps/tironian`, `apps/epicenter` moved to `apps/desktop`, and the package
-scope moved to `@tironian/*`. The reasoning is in the brand document under
-"Rename tiers".
+The package scope is `@tironian/*`. What moved where, and why, is in the
+brand document under "Naming".
 
 ## Attribution and license
 

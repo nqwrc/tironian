@@ -57,9 +57,9 @@ Move per-runtime command definitions into the shared action map, then mount that
 ## Refactor Or Architecture Guide
 
 ````md
-The workspace encryption layer answered a question we stopped asking: can the relay read this data? A `@epicenter/encryption` package derived a per-owner keyring with HKDF, `/api/session` served that keyring on every sign-in, `createWorkspace` took it as a parameter, and an encrypted key-value wrapper ciphered every row on its way into Yjs. All of that protected workspace data from a relay we now trust.
+The workspace encryption layer answered a question we stopped asking: can the relay read this data? An encryption package derived a per-owner keyring with HKDF, `/api/session` served that keyring on every sign-in, `createWorkspace` took it as a parameter, and an encrypted key-value wrapper ciphered every row on its way into Yjs. All of that protected workspace data from a relay we now trust.
 
-The trusted-relay direction answers the question once, at the topology instead of per row: either Epicenter runs the relay and reads plaintext, or you run your own anchor and nobody else sees it. Client-side encryption stopped earning its place, so it comes out.
+The trusted-relay direction answers the question once, at the topology instead of per row: either the vendor runs the relay and reads plaintext, or you run your own anchor and nobody else sees it. Client-side encryption stopped earning its place, so it comes out.
 
 ```ts
 // Before: keyring threads from auth into construction
@@ -74,7 +74,7 @@ const workspace = createWorkspace({ id, tables, kv });
 The deletion cascades past the call site. The keyring no longer rides through `PersistedAuth`, `ApiSessionResponse`, or the `SignedIn` payload, and the encrypted-row read state goes with it.
 
 ```txt
-Before: @epicenter/encryption
+Before: the encryption package
   |-- HKDF keyring derivation
   |-- /api/session keyring serving
   |-- createWorkspace({ keyring }) parameter
@@ -96,7 +96,7 @@ Net change across 44 files: about 1,000 lines deleted.
 ## Feature PR
 
 ````md
-The tab-manager extension needs to tell a browser extension to close tabs, open URLs, and list devices. Epicenter already syncs shared state between devices through a Durable Object relay, but sync is one-way: you can read shared state, you cannot ask another device to do something. That gap is what this PR fills.
+The tab-manager extension needs to tell a browser extension to close tabs, open URLs, and list devices. The product already syncs shared state between devices through a Durable Object relay, but sync is one-way: you can read shared state, you cannot ask another device to do something. That gap is what this PR fills.
 
 Getting there required fixing a few things that were already slightly wrong, and the journey ends with the `sync-client` package collapsing into the workspace module.
 

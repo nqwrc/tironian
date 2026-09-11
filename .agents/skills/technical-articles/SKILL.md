@@ -2,7 +2,7 @@
 name: technical-articles
 description: 'Technical articles and blog posts with honest trade-offs. Use when: "write a blog post", "draft an article", "write about this", creating articles in docs/articles/.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

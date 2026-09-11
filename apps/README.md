@@ -6,7 +6,7 @@ owns no application data and constructs no database (ADR-0226).
 Hosted web as a second runtime with a host-owned replica is refused, and so are
 third-party installed apps, for now.
 
-Not every folder here is that: `epicenter` is the Tauri host, not a surface with
+Not every folder here is that: `desktop` is the Tauri host, not a surface with
 its own data. The rest of this page is about the surfaces that hold a person's
 data.
 
@@ -51,10 +51,10 @@ apps/<app>/
 └── package.json                 "exports": { ".": "./src/lib/workspace/index.ts" }
 ```
 
-`whispering` uses that nesting. Follow the existing package shape.
+`tironian` uses that nesting. Follow the existing package shape.
 
 Where a build genuinely differs, put the difference behind a `#platform/*`
-build-time subpath import rather than a runtime branch. Whispering's
+build-time subpath import rather than a runtime branch. Tironian's
 `#platform/blobs` resolves to `index.tironian-host.ts` or `index.browser.ts`
 under the `tironian-host` and default conditions, because the host's blob
 store reaches the host's own filesystem through the WebView and a browser
@@ -75,8 +75,8 @@ build has none.
 
 ## Where each surface stands
 
-`whispering` is the surface built on the store: it declares a real workspace
+`tironian` is the surface built on the store: it declares a real workspace
 with `defineData` (`src/lib/workspace/index.ts`) and opens the device store
-(`src/lib/whispering/app.ts`), and its [README](whispering/README.md) is the
-worked example. `epicenter` is the Tauri host, not a data surface; it
+(`src/lib/app/app.ts`), and its [README](tironian/README.md) is the
+worked example. `desktop` is the Tauri host, not a data surface; it
 compiles, bundles, and serves the app.

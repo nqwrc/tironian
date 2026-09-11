@@ -1,6 +1,6 @@
 # Audio decoder test fixtures
 
-Fixtures live at `apps/epicenter/src-tauri/tests/fixtures/` and are
+Fixtures live at `apps/desktop/src-tauri/tests/fixtures/` and are
 consumed by `apps/desktop/src-tauri/tests/decode_fixtures.rs`.
 
 Each file is a 2-second 440 Hz mono sine wave at 0.5 amplitude. The audio

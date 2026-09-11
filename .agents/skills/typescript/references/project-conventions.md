@@ -1,6 +1,6 @@
 # TypeScript Project Conventions
 
-Detailed examples for the baseline TypeScript rules used across Epicenter.
+Detailed examples for the baseline TypeScript rules used across Tironian.
 
 ## Core Rules
 

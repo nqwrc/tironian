@@ -1,26 +1,24 @@
-# Epicenter
+# Tironian
 
-Local-first personal data platform. Monorepo with Yjs CRDTs and Svelte UI.
+Local-first dictation app. Monorepo with a Svelte SPA and a Tauri desktop host.
 
 ## Structure
 
 ```
 apps/
-  whispering   transcription SPA, the one app on the store, and the
-               reference for how an app is built
-  epicenter    Tauri host for trusted app windows
+  tironian   the dictation SPA, and the reference for how the product is
+             built
+  desktop    Tauri host for the trusted app window
 packages/
-  data         the store, data definitions, openers, sync, and projection
-  ui           shadcn-svelte components
+  data       the store, data definitions, openers, sync, and projection
+  ui         shadcn-svelte components
 ```
 
 ## Runtime
 
 One runtime: a desktop SPA in a WebView over a client-owned store (ADR-0227). The host serves bundles and brokers credentials and owns no application data (ADR-0226).
 
-`packages/chat` and app-shell's agent chat were removed with Home's chat pane: a single-app dictation product has no chat surface to hold them.
-
-`apps/whispering` and `apps/epicenter` are off that list: they were rebuilt. Whispering declares a real workspace with `defineData` (`src/lib/workspace/index.ts:240`), opens the device and account stores and attaches sync (`src/lib/whispering/app.ts`), and its suite runs green. Epicenter compiles, bundles, and serves. Read the remaining names as a list to re-check against the code rather than a standing fact: this file is the first thing an agent reads, and a stale entry here sends it to rebuild something that already works.
+This is a single-app dictation product: the Home chat pane, `packages/chat`, and app-shell's agent chat are gone, not broken-on-purpose. `apps/tironian` declares a real workspace with `defineData` (`src/lib/workspace/index.ts:283`), opens the device and account stores and attaches sync (`src/lib/app/app.ts`), and its suite runs green. `apps/desktop` compiles, bundles, and serves.
 
 This fork carries no hosted cloud or self-host deployable: `apps/api`, `apps/self-host`, `packages/server`, and `ops/` (upstream's Cloudflare DNS and redirect tooling) were pruned because nothing in the kept apps imports them.
 
@@ -117,7 +115,7 @@ Audience decides vocabulary: what a person reads uses the word they already have
 
 **Punctuation.** Avoid en dash characters (`U+2013`). Prefer colon, comma, semicolon, or sentence break over em dash characters (`U+2014`), especially in UI strings, docs, comments, JSDoc, and commit messages.
 
-**Explaining Epicenter work.** Lead with a useful recommendation or outcome, carry implementation complexity the agent can safely handle, and surface only the reasoning and details that materially affect the user's judgment, action, safety, or review. Necessary difficulty is fine; incidental complexity is not.
+**Explaining Tironian work.** Lead with a useful recommendation or outcome, carry implementation complexity the agent can safely handle, and surface only the reasoning and details that materially affect the user's judgment, action, safety, or review. Necessary difficulty is fine; incidental complexity is not.
 
 **Generated prose.** Applies to everything the agent writes unless a more specific skill owns the destination.
 

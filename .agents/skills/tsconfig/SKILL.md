@@ -2,7 +2,7 @@
 name: tsconfig
 description: 'TypeScript config conventions for this monorepo: the two-base layering, the seven leaf tiers, and the never-redeclare list. Use when adding a package, editing any tsconfig.json, picking a tier for a new app, or debugging module resolution.'
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

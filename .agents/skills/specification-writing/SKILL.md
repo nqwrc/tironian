@@ -2,7 +2,7 @@
 name: specification-writing
 description: Write technical specs that let agents implement autonomously. Use for "write a spec", "plan this feature", "create a planning doc".
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -289,24 +289,24 @@ Find actual usages in the codebase first. Show the verbatim "Before" with file:l
 ````markdown
 ## Call sites: before and after
 
-### honeycrisp notes table
+### recordings table
 
-**Before** (`apps/honeycrisp/src/lib/workspace.ts:78`):
+**Before** (`apps/tironian/src/lib/workspace/recordings.ts:78`):
 
 ```ts
-const notesTable = defineTable(
-  type({ id: NoteId, title: 'string', _v: '1' }),
-  type({ id: NoteId, title: 'string', wordCount: 'number | undefined', _v: '2' }),
+const recordingsTable = defineTable(
+  type({ id: RecordingId, title: 'string', _v: '1' }),
+  type({ id: RecordingId, title: 'string', wordCount: 'number | undefined', _v: '2' }),
 ).migrate(...)
 ```
 
 **After**:
 
 ```ts
-const notesTable = defineTable(
-  { id: field.string<NoteId>(), title: field.string() },
+const recordingsTable = defineTable(
+  { id: field.string<RecordingId>(), title: field.string() },
   {
-    id: field.string<NoteId>(),
+    id: field.string<RecordingId>(),
     title: field.string(),
     wordCount: nullable(field.number()),
   },

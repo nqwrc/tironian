@@ -2,7 +2,7 @@
 
 **Status**: Draft
 **Type**: Organization (chrome, routes, and which screen owns which control)
-**Scope**: `apps/whispering/src/routes/(app)/`
+**Scope**: `apps/tironian/src/routes/(app)/`
 **Replaces**: `20260830T210000-navigation-and-surface-organization.md`, whose
 rule this keeps and whose proposals 1, 2 and 4 this decides.
 
@@ -45,8 +45,8 @@ One addition, which is what this document decides:
   second level of navigation is horizontal, inside the content column, or it
   does not exist.
 
-`apps/honeycrisp`, the reference app, already obeys this: flat `account/` and
-`device/` routes, no settings nav at all.
+Flat routes with no separate settings nav are the shape this decision adopts:
+one left menu, and no second level of navigation anywhere in the app.
 
 ## Decisions
 

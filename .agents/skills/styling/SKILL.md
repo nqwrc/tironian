@@ -2,7 +2,7 @@
 name: styling
 description: CSS and Tailwind, cn(), flex layouts. Use for "style this", "fix the CSS", "add classes", "not scrolling", "overflow", Tailwind utilities.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -49,7 +49,7 @@ This principle applies to all elements where the styling doesn't conflict with t
 
 ## Shared Primitive Overrides
 
-When styling a local `@epicenter/ui` primitive, use `ui-design`'s component-system reference. Tailwind classes on shared primitives should usually express parent layout or product state, not redefine the primitive's visual budget.
+When styling a local `@tironian/ui` primitive, use `ui-design`'s component-system reference. Tailwind classes on shared primitives should usually express parent layout or product state, not redefine the primitive's visual budget.
 
 Good primitive overrides:
 

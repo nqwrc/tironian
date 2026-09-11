@@ -1,8 +1,8 @@
 ---
 name: testing
-description: Apply Epicenter test-file conventions for setup, factories, Result assertions, type tests, naming, and pruning. Use when writing, reviewing, deleting, or reorganizing tests, especially `*.test.ts` files.
+description: Apply Tironian test-file conventions for setup, factories, Result assertions, type tests, naming, and pruning. Use when writing, reviewing, deleting, or reorganizing tests, especially `*.test.ts` files.
 metadata:
-  author: epicenter
+  author: tironian
   version: '2.0'
 ---
 

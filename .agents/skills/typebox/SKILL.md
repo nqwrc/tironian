@@ -2,7 +2,7 @@
 name: typebox
 description: TypeBox patterns for runtime schema validation and JSON Schema generation. Use when mentioning TypeBox, Standard Schema, or schema-based validation.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

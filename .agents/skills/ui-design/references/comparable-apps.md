@@ -8,7 +8,7 @@ vote.
 
 Before choosing the design, name three to five comparable apps and write one
 line each about how they handle the same concrete question. Include both the
-category Epicenter belongs to and the category the proposal risks drifting
+category Tironian belongs to and the category the proposal risks drifting
 toward.
 
 ```txt
@@ -30,7 +30,7 @@ IDE                    identity supports authoring and sync, then disappears
 LOCAL-FIRST WORKSPACE  the workspace is primary; identity is configuration
 ```
 
-Epicenter is a local-first workspace. Start from that row. When a design imports
+Tironian is a local-first workspace. Start from that row. When a design imports
 a communication-first or infrastructure pattern, name why.
 
 ## Method
@@ -39,7 +39,7 @@ a communication-first or infrastructure pattern, name why.
    it persists, not what the auth UI should look like.
 2. Pick three to five apps across at least two relevant categories.
 3. Write one line per app in a table with only the columns the question needs.
-4. State which pattern Epicenter borrows and which it refuses.
+4. State which pattern Tironian borrows and which it refuses.
 5. When the refusal may delete disproportionate complexity, use
    [asymmetric-wins](../../asymmetric-wins/SKILL.md).
 
@@ -50,11 +50,11 @@ it opens a workspace picker, and where preferences persist.
 ## Guardrails
 
 - Do not list one app and call it a comparison.
-- Do not select only apps from Epicenter's own category; include the category
+- Do not select only apps from Tironian's own category; include the category
   the design could drift toward.
 - Do not compare apps that lack the surface being designed.
 - Put the table before convergence. Afterward it is only a sanity check.
 - Treat the result as evidence, not authority.
 
 The move succeeds when a reader can tell from the table whether the proposal
-fits Epicenter's category and which deviation, if any, is intentional.
+fits Tironian's category and which deviation, if any, is intentional.

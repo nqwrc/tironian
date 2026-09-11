@@ -2,7 +2,7 @@
 name: control-flow
 description: Linearize complex control flow with early returns, guard clauses, nested ifs, and natural-language conditions. Use when flattening nested conditions, linearizing try/catch logic, or separating mixed throw-and-return handlers, not for a broad "simplify this" pass over a diff or package, which belongs to collapse-pass.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -26,7 +26,7 @@ Into this: linear flow that mirrors human decision-making
 ## Example: Early Returns with Natural Language Variables
 
 ```typescript
-// From apps/whispering/src/routes/(app)/_layout-utils/check-ffmpeg.ts
+// A layout-guard example, shaped after a real recording-method compatibility check
 
 export async function checkFfmpegRecordingMethodCompatibility() {
 	if (!window.__TAURI_INTERNALS__) return;
@@ -48,7 +48,7 @@ export async function checkFfmpegRecordingMethodCompatibility() {
 ## Example: Natural Language Booleans
 
 ```typescript
-// From apps/whispering/src/routes/(app)/_layout-utils/check-ffmpeg.ts
+// Same compatibility check, showing the natural-language boolean shape
 
 const isUsingNavigator = settings.value['recording.method'] === 'navigator';
 const isUsingLocalTranscription =
@@ -62,7 +62,7 @@ return isUsingNavigator && isUsingLocalTranscription && !isFFmpegInstalled;
 ## Example: Cleanup Check with Comment
 
 ```typescript
-// From packages/epicenter/src/indexes/markdown/markdown-index.ts
+// A rename-detection example, shaped after a real markdown-index cleanup check
 
 /**
  * This is checking if there's an old filename AND if it's different

@@ -17,7 +17,7 @@ downloadRecording: defineMutation({
 		if (error !== null) return Err(error);
 
 		return services.download.downloadBlob({
-			name: `whispering_recording_${recording.id}`,
+			name: `tironian_recording_${recording.id}`,
 			blob: audioBlob,
 		});
 	},

@@ -18,11 +18,7 @@ import { expect, test } from 'bun:test';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { createBrowserSqliteAdapter } from './browser.js';
 import { createBunSqliteAdapter } from './bun.js';
-import {
-	createDurableObjectSqliteAdapter,
-	type DurableObjectSqliteStorage,
-} from './durable-object.js';
-import type { SqliteDatabase, SqliteValue } from './index.js';
+import type { SqliteDatabase } from './index.js';
 
 const sqlite3 = await sqlite3InitModule();
 
@@ -30,22 +26,6 @@ type OpenDatabase = () => {
 	database: SqliteDatabase;
 	close(): void;
 };
-
-function execute(
-	database: Database,
-	sql: string,
-	parameters: readonly SqliteValue[],
-): void {
-	database.run(sql, [...parameters]);
-}
-
-function query<TRow>(
-	database: Database,
-	sql: string,
-	parameters: readonly SqliteValue[],
-): TRow[] {
-	return database.query<TRow, SqliteValue[]>(sql).all(...parameters);
-}
 
 function openBrowser() {
 	const handle = new sqlite3.oo1.DB(':memory:');
@@ -67,32 +47,6 @@ const adapters: [name: string, open: OpenDatabase][] = [
 		},
 	],
 	['browser SQLite OO1', openBrowser],
-	[
-		'Durable Object SQLite',
-		() => {
-			const sqlite = new Database(':memory:');
-			const storage = {
-				sql: {
-					exec<TRow>(sql: string, ...bindings: SqliteValue[]) {
-						let rows: TRow[] = [];
-						if (/^\s*(SELECT|WITH|PRAGMA)/i.test(sql)) {
-							rows = query<TRow>(sqlite, sql, bindings);
-						} else {
-							execute(sqlite, sql, bindings);
-						}
-						return { toArray: () => rows };
-					},
-				},
-				transactionSync(run) {
-					return sqlite.transaction(run).immediate();
-				},
-			} satisfies DurableObjectSqliteStorage;
-			return {
-				database: createDurableObjectSqliteAdapter(storage),
-				close: () => sqlite.close(),
-			};
-		},
-	],
 ];
 
 for (const [name, open] of adapters) {

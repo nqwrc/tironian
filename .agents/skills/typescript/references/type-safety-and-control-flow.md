@@ -22,7 +22,7 @@ function isWorkspaceHandle(value: unknown): value is WorkspaceHandle {
 // Better: brand stamped by the factory, one check carries the intent.
 // Use `Symbol.for('<namespace>.<thing>')`, not `Symbol(...)`, so the brand
 // survives module duplication (see "Cross-package brands" below).
-export const WORKSPACE_HANDLE = Symbol.for('epicenter.workspace-handle');
+export const WORKSPACE_HANDLE = Symbol.for('tironian.workspace-handle');
 
 function isWorkspaceHandle(value: unknown): value is WorkspaceHandle {
 	return (
@@ -35,19 +35,19 @@ function isWorkspaceHandle(value: unknown): value is WorkspaceHandle {
 
 ### Cross-package brands: `Symbol.for`, never `Symbol`
 
-Any brand that has to be recognized across a module boundary: CLI-walks-user-bundles, server-adapter-walks-workspace, AI-tool-bridge-walks-actions: must use the global symbol registry. Plain `Symbol('name')` creates a fresh reference per module evaluation; a monorepo that ends up with two instances of `@epicenter/workspace` (pnpm hoisting, dual CJS/ESM publish, bundler dedup miss, test vs. app resolution) gives each instance its own brand reference. `defineX` from copy A stamps symbol-A; `isX` from copy B checks for symbol-B; the identity check silently fails.
+Any brand that has to be recognized across a module boundary: CLI-walks-user-bundles, server-adapter-walks-workspace, AI-tool-bridge-walks-actions: must use the global symbol registry. Plain `Symbol('name')` creates a fresh reference per module evaluation; a monorepo that ends up with two instances of `@tironian/data` (pnpm hoisting, dual CJS/ESM publish, bundler dedup miss, test vs. app resolution) gives each instance its own brand reference. `defineX` from copy A stamps symbol-A; `isX` from copy B checks for symbol-B; the identity check silently fails.
 
-`Symbol.for('epicenter.action')` talks to a process-global registry keyed by the string. Every call anywhere returns the same reference. The brand survives duplication.
+`Symbol.for('tironian.action')` talks to a process-global registry keyed by the string. Every call anywhere returns the same reference. The brand survives duplication.
 
 ```ts
 // Wrong: local reference; fails under module duplication
-export const ACTION_BRAND = Symbol('epicenter.action');
+export const ACTION_BRAND = Symbol('tironian.action');
 
 // Right: registry-resolved; always the same reference
-export const ACTION_BRAND = Symbol.for('epicenter.action');
+export const ACTION_BRAND = Symbol.for('tironian.action');
 ```
 
-Convention: namespace the key (`epicenter.action`, `epicenter.document-handle`), and centralize cross-package brand keys in one `brands.ts` per package so the duplication-safe identity set is visible and reviewable. The brand constant itself is an implementation detail: consumers import the `isX` guard, never the raw symbol.
+Convention: namespace the key (`tironian.action`, `tironian.document-handle`), and centralize cross-package brand keys in one `brands.ts` per package so the duplication-safe identity set is visible and reviewable. The brand constant itself is an implementation detail: consumers import the `isX` guard, never the raw symbol.
 
 **When the brand can be local**: if the factory and the check both live in the same file and the type never crosses a package boundary, plain `Symbol()` is fine. The `Symbol.for` rule is specifically for cross-package identity.
 

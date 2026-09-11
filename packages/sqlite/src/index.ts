@@ -1,7 +1,7 @@
 /**
- * Values shared by SQLite bindings in browsers, Bun, and Durable Objects.
- * BLOB values bind as `Uint8Array`; Durable Object reads may surface them as
- * `ArrayBuffer`.
+ * Values shared by SQLite bindings in browsers and Bun.
+ * BLOB values bind as `Uint8Array`; the browser's WASM build may surface a
+ * read back as `ArrayBuffer`.
  */
 export type SqliteValue = string | number | null | Uint8Array;
 

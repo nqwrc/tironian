@@ -3,7 +3,7 @@ name: handoff
 description: Draft a cold-start prompt for a manually operated Claude Code session. Use when the user asks for a handoff, continuation prompt, or something to copy and paste into Claude Code, not when the active agent should ask Claude to review or implement the work.
 argument-hint: "What should the next agent accomplish?"
 metadata:
-  author: epicenter
+  author: tironian
   version: '7.0'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: pull-request
-description: Draft and review Epicenter pull request titles and bodies, including changelog and merge details. Use when creating a PR or editing its text, not for local commits, branches, or issue replies.
+description: Draft and review Tironian pull request titles and bodies, including changelog and merge details. Use when creating a PR or editing its text, not for local commits, branches, or issue replies.
 ---
 
 # Pull Request Guidelines

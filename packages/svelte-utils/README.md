@@ -1,4 +1,4 @@
-# @epicenter/svelte
+# @tironian/svelte
 
 Svelte utilities for synchronizing state with external systems.
 
@@ -8,12 +8,12 @@ This package provides utilities that help synchronize Svelte state with external
 
 ## Installation
 
-This package is part of the Epicenter monorepo and is used internally. To use it in your app:
+This package is part of the Tironian monorepo and is used internally. To use it in your app:
 
 ```json
 {
   "dependencies": {
-    "@epicenter/svelte": "workspace:*"
+    "@tironian/svelte": "workspace:*"
   }
 }
 ```
@@ -35,7 +35,7 @@ Creates a persisted state object tied to local storage, accessible through `.val
 #### Usage
 
 ```typescript
-import { createPersistedState } from '@epicenter/svelte';
+import { createPersistedState } from '@tironian/svelte';
 import { z } from 'zod';
 
 // Define your schema

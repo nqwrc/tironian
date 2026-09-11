@@ -2,7 +2,7 @@
 name: cohesion-over-testability
 description: Collapse test-shaped production boundaries while preserving behavior and coverage. Use when a helper, wrapper, injected dependency, or export exists mainly to let a unit test reach internals.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -113,7 +113,7 @@ two pieces?** If yes, keep the split. If no, inline.
 
 ## Worked Example: session lifecycle
 
-From `@epicenter/svelte`, commit `d5b61aed8`:
+From `@tironian/svelte`, commit `d5b61aed8`:
 
 ```
 session-lifecycle.ts        47 LOC  (the "pure" inner)

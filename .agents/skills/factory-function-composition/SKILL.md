@@ -2,7 +2,7 @@
 name: factory-function-composition
 description: Factory function patterns to compose clients and services. Use when wrapping resources with domain methods or refactoring mixed client/service/method options.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -238,7 +238,7 @@ If a function is called both by return-object methods *and* by pre-return initia
 
 A factory's return object can be designed to **structurally satisfy** an external contract, so it can be passed directly to a platform-agnostic core without an adapter.
 
-The canonical example is `createPersistedState` / `createStorageState`, whose return shape structurally satisfies the `SessionStore` contract that `@epicenter/auth`'s `createAuth` consumes:
+The canonical example is `createPersistedState` / `createStorageState`, whose return shape structurally satisfies a `SessionStore` contract that an external session-consuming library's `createAuth` might consume:
 
 ```ts
 // The contract (in a platform-agnostic core):
@@ -285,7 +285,7 @@ When in doubt: start without the adapter. Add one only when the seam actually ea
 
 ### Why this works
 
-TypeScript's structural typing means the factory doesn't have to `implements SessionStore` or import the contract type. As long as the return shape matches, it's assignable. This keeps the factory package free of the consumer's dependencies: `createPersistedState` lives in `@epicenter/svelte` and has zero knowledge of `@epicenter/auth`.
+TypeScript's structural typing means the factory doesn't have to `implements SessionStore` or import the contract type. As long as the return shape matches, it's assignable. This keeps the factory package free of the consumer's dependencies: `createPersistedState` lives in `@tironian/svelte` and has zero knowledge of whatever consumes the contract.
 
 ## The Mental Model
 

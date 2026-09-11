@@ -12,7 +12,7 @@ Run this for any visible UI change:
 
 ```txt
 Foundation:
-  Uses @epicenter/ui primitives where appropriate.
+  Uses @tironian/ui primitives where appropriate.
   Does not import from packages/ui/src or stock $lib/components/ui paths.
   Does not create a one-off primitive when a local one exists.
   Does not preserve inherited markup or styling merely for exact reproduction.
@@ -85,7 +85,7 @@ Content:
   Logo walls, testimonials, and examples do not use generic filler.
 
 Implementation fit:
-  @epicenter/ui owns primitives.
+  @tironian/ui owns primitives.
   styling owns Tailwind/CSS mechanics.
   svelte owns component lifecycle and state mechanics.
   tanstack-table owns table state when tables are involved.

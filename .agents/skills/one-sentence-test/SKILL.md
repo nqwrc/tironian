@@ -2,7 +2,7 @@
 name: one-sentence-test
 description: Test a product, API, utility, or design by stating what it actually does in one sentence. Use when auditing coherence or looking for orphaned surfaces, duplicate verbs, or inert abstractions, not for plain code-comprehension questions.
 metadata:
-  author: epicenter
+  author: tironian
   version: '2.0'
 ---
 
@@ -84,7 +84,7 @@ Finding: `schedule`, `batch`, `digest` belong to a sibling product. The cohesion
 
 Bad: *"A CLI for managing your workspace."* Vague. Could be anything.
 
-Good: *"Introspect and invoke `defineQuery`/`defineMutation` actions in `epicenter.config.ts`, either locally or on a peer that's online right now."*
+Good: *"Introspect and invoke `defineQuery`/`defineMutation` actions in `app.config.ts`, either locally or on a peer that's online right now."*
 
 The good sentence names the objects (actions), their source (config file), the verbs (introspect, invoke), and the scope (local or live peer). Every CLI command maps to one of those verbs or objects. Anything else is a surface that does not belong.
 

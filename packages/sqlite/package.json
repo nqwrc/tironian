@@ -6,8 +6,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./browser": "./src/browser.ts",
-		"./bun": "./src/bun.ts",
-		"./durable-object": "./src/durable-object.ts"
+		"./bun": "./src/bun.ts"
 	},
 	"files": [
 		"src",
@@ -20,7 +19,6 @@
 	},
 	"dependencies": {},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20260405.1",
 		"@sqlite.org/sqlite-wasm": "catalog:",
 		"@types/bun": "catalog:",
 		"typescript": "catalog:"

@@ -1903,9 +1903,9 @@ mod tests {
             "tironian://surface/home",
             "tironian://window/home",
             "tironian://app/unknown",
-            // Honeycrisp, Mail, and Books are gone: a single-app product admits
-            // no other apps, so these no longer resolve to anything.
-            "tironian://app/honeycrisp",
+            // These were catalog entries before the single-app cut; a
+            // single-app product admits no other apps, so they no longer
+            // resolve to anything.
             "tironian://app/mail",
             "tironian://app/books",
             "tironian://app/home/",

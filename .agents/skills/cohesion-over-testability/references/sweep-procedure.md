@@ -153,7 +153,7 @@ For each test you delete, name where the regression coverage now lives:
 - **Manual + product use**: when the branch is small enough that
   type-checking plus the next product invocation catches regressions
   cheaper than the seam taxed them. Document the risk decision
-  explicitly: "the dead-pid sweep is exercised on every `epicenter ps`;
+  explicitly: "the dead-pid sweep is exercised on every host boot;
   manual smoke covers it."
 
 If you can't name where the coverage goes, you haven't earned the

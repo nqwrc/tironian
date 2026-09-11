@@ -65,13 +65,13 @@ Construction returns immediately. The async initialization (loading from disk, c
 
 ## The UI Render Gate
 
-In Svelte, gate once at the root using `@epicenter/ui/spinner` for the loading state and `@epicenter/ui/empty` for error recovery:
+In Svelte, gate once at the root using `@tironian/ui/spinner` for the loading state and `@tironian/ui/empty` for error recovery:
 
 ```svelte
 <!-- +layout.svelte -->
 <script>
-	import * as Empty from '@epicenter/ui/empty';
-	import { Spinner } from '@epicenter/ui/spinner';
+	import * as Empty from '@tironian/ui/empty';
+	import { Spinner } from '@tironian/ui/spinner';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { client } from '$lib/client';
 </script>

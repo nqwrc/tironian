@@ -2,7 +2,7 @@
 name: tauri
 description: Tauri commands, permissions, capabilities, security config, path handling, cross-platform file ops, and native filesystem APIs. Use when mentioning Tauri, desktop apps, Rust commands, invoke, capabilities, permissions, ResourceId, file paths, or platform differences.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
@@ -67,8 +67,8 @@ When a Tauri app uses `tauri-specta`, keep the Rust command registry, generated 
 Verification for IPC changes usually needs both sides:
 
 ```bash
-cargo check --manifest-path apps/epicenter/src-tauri/Cargo.toml
-cargo test --manifest-path apps/epicenter/src-tauri/Cargo.toml export_types
+cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml export_types
 ```
 
 If binding generation rewrites unrelated sections, inspect the diff before committing it.

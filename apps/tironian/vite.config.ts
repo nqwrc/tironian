@@ -61,7 +61,7 @@ export default defineConfig(
 			],
 		},
 		// The records Worker (module type) transitively includes sqlite-wasm;
-		// its chunk needs ES output and current syntax, same as honeycrisp.
+		// its chunk needs ES output and current syntax.
 		worker: { format: 'es' },
 		build: { target: 'esnext' },
 		resolve: {
@@ -71,8 +71,9 @@ export default defineConfig(
 			// selects the leaves whose owner is the Bun host (its replica,
 			// credential, deployment choice, blob bytes, and asset base), `tauri`
 			// the leaves that call native commands. Tironian has no build where
-			// they come apart, but Honeycrisp does, which is why they are named
-			// apart rather than collapsed (ADR-0190). The web build uses `default`
+			// they come apart, so the seam could collapse to one leaf, but the
+			// shared vite-config names the two conditions apart on purpose rather
+			// than collapsing them per app (ADR-0190). The web build uses `default`
 			// (browser) for every seam, so a desktop-only file imported by shared
 			// code is unresolvable there and fails at vite build time rather than
 			// at user runtime. The `...defaultClientConditions` spread is

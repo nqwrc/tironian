@@ -2,7 +2,7 @@
 name: refactoring
 description: Apply caller-aware, behavior-preserving code simplifications such as inlining, branch collapse, and typed access boundaries. Use when cleaning up code or planning focused refactor commits.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 

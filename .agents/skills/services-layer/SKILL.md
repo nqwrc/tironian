@@ -1,15 +1,15 @@
 ---
 name: services-layer
-description: Apply Whispering service-boundary patterns for UI-free capabilities, explicit inputs, Result fallibility, Live objects, lifecycle factories, and platform variants. Use when creating or refactoring services, contracts, provider dispatch, or the `$lib/services` barrel.
+description: Apply Tironian service-boundary patterns for UI-free capabilities, explicit inputs, Result fallibility, Live objects, lifecycle factories, and platform variants. Use when creating or refactoring services, contracts, provider dispatch, or the `$lib/services` barrel.
 metadata:
-  author: epicenter
+  author: tironian
   version: '3.0'
 ---
 
 # Services Layer
 
-Ground service guidance in `apps/whispering/src/lib/services`, its consumers,
-and the `#platform/*` mappings in `apps/whispering/package.json`. Historical
+Ground service guidance in `apps/tironian/src/lib/services`, its consumers,
+and the `#platform/*` mappings in `apps/tironian/package.json`. Historical
 examples and neighboring skills are leads, not current architecture.
 
 ## Product Sentence
@@ -87,7 +87,7 @@ time; shared callers import one stable name and do not inspect
 Use the nullable `#platform/tauri` namespace for Tauri-only capabilities.
 
 User-selected providers are runtime policy, not a platform seam. Keep the
-dispatch in the consuming operation. Whispering transcription reads the
+dispatch in the consuming operation. Tironian transcription reads the
 selected provider in `$lib/operations/transcribe.ts`; the query layer only
 observes that operation.
 

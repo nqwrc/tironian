@@ -2,7 +2,7 @@
 name: post-implementation-review
 description: Review completed implementation work for dead paths, stale imports, invariant ownership, and API shape, then delegate focused checks. Use when reviewing work after implementation, doing a second pass, or performing a final sweep.
 metadata:
-  author: epicenter
+  author: tironian
   version: '1.0'
 ---
 
