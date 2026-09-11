@@ -836,7 +836,7 @@ fn launch_host(app: &DesktopAppHandle, port: u16) -> Result<LaunchedHost> {
         Ok(value) => value,
         Err(mpsc::RecvTimeoutError::Timeout) => {
             stop_starting_child(child, stdin);
-            bail!("Bun did not emit its v2 ready frame within 15 seconds");
+            bail!("Bun did not emit its v{PROTOCOL_VERSION} ready frame within 15 seconds");
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => {
             stop_starting_child(child, stdin);
@@ -1232,15 +1232,15 @@ fn read_ready_frame(reader: &mut impl BufRead, expected_port: u16) -> Result<()>
         .read_line(&mut line)
         .context("read the Bun readiness frame")?;
     if count == 0 {
-        bail!("Bun exited without emitting its v2 ready frame");
+        bail!("Bun exited without emitting its v{PROTOCOL_VERSION} ready frame");
     }
     if !line.ends_with('\n') {
-        bail!("Bun closed stdout before completing its v2 ready frame");
+        bail!("Bun closed stdout before completing its v{PROTOCOL_VERSION} ready frame");
     }
 
     let line = line.trim_end_matches(['\r', '\n']);
-    let frame: ReadyFrame =
-        serde_json::from_str(line).context("Bun stdout was not one strict v2 ready frame")?;
+    let frame: ReadyFrame = serde_json::from_str(line)
+        .context(format!("Bun stdout was not one strict v{PROTOCOL_VERSION} ready frame"))?;
     if frame.r#type != "ready" {
         bail!("Bun emitted a frame other than ready");
     }

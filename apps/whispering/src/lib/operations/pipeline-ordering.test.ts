@@ -119,7 +119,6 @@ const app = {
 		create(fields: Record<string, unknown>) {
 			return { ...fields, id: 'recording-1' as RecordingId };
 		},
-		uploadAudio: mock(async () => Ok(undefined)),
 		update: mock(async () => Ok(undefined)),
 	},
 	snippets: { all: [] },

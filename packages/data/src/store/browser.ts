@@ -42,9 +42,8 @@ import {
 	type ParsedDataDefinition,
 	parseData,
 } from '@epicenter/data/definition';
-import type { PrincipalId } from '@epicenter/identity';
 import * as Y from '@y/y';
-import { type DBSchema, deleteDB, type IDBPDatabase, openDB } from 'idb';
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import { Err, Ok, type Result, tryAsync } from 'wellcrafted/result';
 import { claimDocument, releaseDocument } from './claims.js';
 import {
@@ -56,9 +55,7 @@ import {
 } from './log.js';
 import type { DurableOp, DurablePort, DurableSnapshot } from './persistence.js';
 import {
-	type AccountStore,
 	asData,
-	createAccountStoreOverPort,
 	createDeviceStoreOverPort,
 	type DataOf,
 	type DataView,
@@ -67,30 +64,9 @@ import {
 	type UntypedDataView,
 } from './store.js';
 
-// Re-exported so a browser caller's one import site names both kinds beside
-// the openers that produce them.
-export type { AccountStore, DeviceStore } from './store.js';
-
-/** One browser document that replicates with an account authority. */
-export type BrowserAccountStore = AccountStore & {
-	/** The canonical server identity this replica belongs to. */
-	readonly baseURL: string;
-	/** The principal asserted by that server for this replica. */
-	readonly principalId: PrincipalId;
-	/**
-	 * Delete this store's durable record whole, disposing the store first.
-	 *
-	 * A superseded replica discards and rejoins at zero. Terminal for this store;
-	 * the caller reloads (ADR-0232's instrument) and boot opens fresh. Crash-safe
-	 * by repetition: a discard that never ran leaves the old file, whose next
-	 * dial is refused again.
-	 *
-	 * Its blast radius is this store's own address and nothing else (ADR-0261),
-	 * so a definition discard names one account's replica and can reach neither
-	 * the device document nor any other account's.
-	 */
-	discard(): Promise<Result<void, StoreError>>;
-};
+// Re-exported so a browser caller's one import site names the kind beside
+// the opener that produces it.
+export type { DeviceStore } from './store.js';
 
 /**
  * The durable facts, one object store each (ADR-0238, ADR-0248).
@@ -152,28 +128,6 @@ function openIndexedDb(address: string): Promise<BrowserDurableDatabase> {
 			(sqlite) => {
 				if (blocked) sqlite.close();
 				else resolve(sqlite);
-			},
-			(cause) => reject(cause),
-		);
-	});
-}
-
-/** Delete one store's IndexedDB definition whole. Our own connection is closed first. */
-function deleteIndexedDb(address: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		let blocked = false;
-		void deleteDB(address, {
-			blocked() {
-				// `deleteDB` waits for the other tab. This caller must instead know
-				// that its requested wipe did not happen before it reloads.
-				blocked = true;
-				reject(
-					new Error('Another tab is holding this store open. Close it first.'),
-				);
-			},
-		}).then(
-			() => {
-				if (!blocked) resolve();
 			},
 			(cause) => reject(cause),
 		);
@@ -381,30 +335,15 @@ async function openIdbBacking(
 }
 
 /**
- * Where one of an application's durable documents lives, as ownership
- * (ADR-0261, amending ADR-0233):
+ * Where an application's device document lives, as ownership (ADR-0261,
+ * amending ADR-0233):
  *
  * ```text
  * epicenter/<definition id>/device
- * epicenter/<definition id>/account/<base URL>/<principal id>
  * ```
  *
- * A browser application keeps one device document and one retained account
- * replica per server identity, and may hold them open at once. The device
- * document never joins definition sync and survives every sign-in and
- * sign-out; an account replica is this device's replica of one principal's
- * current authority document (ADR-0231), retained across sign-out too. The
- * server URL is part of the address because the same principal identifier can
- * exist on multiple independent servers.
- *
- * Three identities, none of them collapsed into another: the definition id says
- * which application, the base URL and principal form the server identity that
- * owns this replica, and the authority document id says which current Yjs
- * document that replica belongs to. The first two are in the name. The third
- * lives inside the store
- * because a future explicit document replacement may change it while the
- * logical address stays stable; the current runtime does not expose that
- * replacement action.
+ * A browser application keeps one device document. It never joins definition
+ * sync and holds only local rows.
  *
  * A definition id is dot-separated lowercase labels, so it holds no `/`: the
  * segment after `epicenter/` is always exactly the application, and no address
@@ -415,69 +354,25 @@ function deviceAddress(databaseId: string): string {
 }
 
 /**
- * Normalize the server identity before it becomes durable local state.
- *
- * Auth authorities already persist this form, but the data opener is also a
- * public boundary and must not create two local replicas for equivalent URL
- * spellings. A path prefix remains part of an Epicenter deployment; query and
- * fragment are not server identity.
- */
-function canonicalBaseURL(raw: string): string | undefined {
-	const trimmed = raw.trim();
-	if (trimmed === '') return undefined;
-
-	let url: URL;
-	try {
-		url = new URL(trimmed);
-	} catch {
-		return undefined;
-	}
-	if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-		return undefined;
-	}
-	if (url.hostname === '') return undefined;
-	if (url.username !== '' || url.password !== '') return undefined;
-	url.search = '';
-	url.hash = '';
-	return `${url.origin}${url.pathname}`.replace(/\/+$/, '');
-}
-
-function accountAddress(
-	databaseId: string,
-	{ baseURL, principalId }: { baseURL: string; principalId: PrincipalId },
-): string {
-	return `epicenter/${databaseId}/account/${encodeURIComponent(baseURL)}/${encodeURIComponent(principalId)}`;
-}
-
-/**
- * Delete the browser storage that came before the account-scoped address.
+ * Delete the browser storage that came before the device-scoped address.
  *
  * Two superseded shapes, neither of them read: `epicenter-store-<definition id>`,
- * the single definition from before an application had two documents, which held
- * anonymous work or an account replica indistinguishably; and
- * `epicenter-store-<definition id>#private` / `#database`, the per-application
- * split that separated the two documents but left an account replica with no
- * owner, so a second account would have opened the first account's bytes.
- * Neither is the final address, so both are deleted rather than renamed,
- * merged, or reinterpreted: the browser-storage twin of the format wipe in
- * ADR-0231's cutover.
+ * the single definition from before an application had a dedicated device
+ * document; and `epicenter-store-<definition id>#private` / `#database`, an
+ * earlier per-application split. Neither is the final address, so both are
+ * deleted rather than renamed, merged, or reinterpreted: the browser-storage
+ * twin of the format wipe in ADR-0231's cutover.
  *
  * Never rejects, because a dead artifact must not block a boot: a delete
  * blocked by another tab completes when that tab closes, and running again at
  * every open makes the deletion certain without anyone waiting on it.
  */
-function deleteSupersededStorage(
-	databaseId: string,
-	owner: 'device' | 'account',
-	principalId?: PrincipalId,
-): Promise<void> {
+function deleteSupersededStorage(databaseId: string): Promise<void> {
 	const superseded = [
 		`epicenter-store-${databaseId}`,
 		`epicenter-store-${databaseId}#private`,
 		`epicenter-store-${databaseId}#database`,
-		owner === 'device'
-			? `epicenter/${databaseId}/private`
-			: `epicenter/${databaseId}/database/${principalId}`,
+		`epicenter/${databaseId}/private`,
 	];
 	return Promise.all(
 		superseded.map(
@@ -497,8 +392,7 @@ function deleteSupersededStorage(
  * names.
  *
  * This document has no remote authority, so it carries neither an outbox nor
- * replica-only verbs, and no verb that could delete it. It can remain open
- * while an account replica is open too.
+ * replica-only verbs, and no verb that could delete it.
  */
 export async function openDevice<const TDatabase extends DataDefinition>(
 	definition: TDatabase,
@@ -515,7 +409,7 @@ export async function openDevice<const TDatabase extends DataDefinition>(
 	const { error: claimError } = claimDocument(address);
 	if (claimError !== null) return Err(claimError);
 
-	await deleteSupersededStorage(parsed.id, 'device');
+	await deleteSupersededStorage(parsed.id);
 
 	const opened = await openIdbBacking(address);
 	if (opened.error !== null) {
@@ -556,89 +450,6 @@ export async function openDevice<const TDatabase extends DataDefinition>(
 			// Through `unknown` deliberately: comparing the untyped view with
 			// `DataView<TDatabase>` re-enters the per-field descriptor
 			// instantiation and exceeds the depth limit.
-			view as unknown as DataView<TDatabase>,
-			parsedDefinition.definition,
-		),
-	);
-}
-
-/** Open this device's retained replica of one account's document. */
-export async function openAccount<const TDatabase extends DataDefinition>(
-	definition: TDatabase,
-	{ baseURL, principalId }: { baseURL: string; principalId: PrincipalId },
-): Promise<
-	Result<
-		DataOf<TDatabase, BrowserAccountStore>,
-		StoreError | DataDefinitionParseError
-	>
-> {
-	const canonicalURL = canonicalBaseURL(baseURL);
-	if (canonicalURL === undefined || principalId.trim() === '') {
-		return StoreError.Unaddressable();
-	}
-
-	const { data: parsed, error: parseError } = parseData(definition);
-	if (parseError !== null) return Err(parseError);
-
-	const address = accountAddress(parsed.id, {
-		baseURL: canonicalURL,
-		principalId,
-	});
-	const { error: claimError } = claimDocument(address);
-	if (claimError !== null) return Err(claimError);
-
-	await deleteSupersededStorage(parsed.id, 'account', principalId);
-
-	const opened = await openIdbBacking(address);
-	if (opened.error !== null) {
-		releaseDocument(address);
-		return Err(opened.error);
-	}
-	const backing = opened.data;
-
-	// Contained for the same reason the device open is: a hydration replay
-	// that throws must refuse the boot, not leak the claim.
-	let parts: {
-		store: AccountStore;
-		view: UntypedDataView;
-		definition: ParsedDataDefinition;
-	};
-	try {
-		parts = createAccountStoreOverPort({
-			definition: parsed,
-			durable: backing.port,
-			loaded: backing.loaded,
-			dispose: () => {
-				backing.close();
-				releaseDocument(address);
-			},
-		});
-	} catch (cause) {
-		backing.close();
-		releaseDocument(address);
-		return StoreError.StorageFailed({ cause });
-	}
-	const { store, view, definition: parsedDefinition } = parts;
-
-	const replicaStore: BrowserAccountStore = Object.freeze({
-		...store,
-		baseURL: canonicalURL,
-		principalId,
-		async discard(): Promise<Result<void, StoreError>> {
-			// Dispose first: the engine drains its queue and stops, and our own
-			// IndexedDB connection closes, so the delete is not blocked by
-			// ourselves and no flush can re-create the definition mid-delete.
-			await store[Symbol.asyncDispose]();
-			return tryAsync({
-				try: () => deleteIndexedDb(address),
-				catch: (cause) => StoreError.StorageFailed({ cause }),
-			});
-		},
-	});
-
-	return Ok(
-		asData<TDatabase, BrowserAccountStore>(
-			replicaStore,
 			view as unknown as DataView<TDatabase>,
 			parsedDefinition.definition,
 		),

@@ -23,7 +23,6 @@
         "@epicenter/constants": "workspace:*",
         "@epicenter/data": "workspace:*",
         "@epicenter/field": "workspace:*",
-        "@epicenter/sync": "workspace:*",
         "@epicenter/ui": "workspace:*",
         "@epicenter/whispering": "workspace:*",
         "@tauri-apps/api": "catalog:",
@@ -163,7 +162,6 @@
         "@epicenter/field": "workspace:*",
         "@epicenter/identity": "workspace:*",
         "@epicenter/sqlite": "workspace:*",
-        "@epicenter/sync": "workspace:*",
         "@sqlite.org/sqlite-wasm": "catalog:",
         "@y/y": "14.0.0-rc.24",
         "idb": "^8.0.3",
@@ -237,14 +235,6 @@
         "@types/bun": "catalog:",
         "svelte": "catalog:",
         "svelte-check": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/sync": {
-      "name": "@epicenter/sync",
-      "version": "0.3.0",
-      "devDependencies": {
-        "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -454,8 +444,6 @@
     "@epicenter/sqlite": ["@epicenter/sqlite@workspace:packages/sqlite"],
 
     "@epicenter/svelte": ["@epicenter/svelte@workspace:packages/svelte-utils"],
-
-    "@epicenter/sync": ["@epicenter/sync@workspace:packages/sync"],
 
     "@epicenter/ui": ["@epicenter/ui@workspace:packages/ui"],
 

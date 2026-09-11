@@ -1,7 +1,7 @@
 {
 	"name": "@epicenter/data",
 	"version": "0.0.1",
-	"description": "The Epicenter store: one document per application, a synchronous surface, and the transport that carries it.",
+	"description": "The Epicenter store: one document per application, and a synchronous surface over it.",
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
@@ -9,8 +9,7 @@
 		"./projection": "./src/projection/index.ts",
 		"./engine": "./src/engine.ts",
 		"./bun": "./src/store/bun.ts",
-		"./browser": "./src/store/browser.ts",
-		"./sync": "./src/sync/index.ts"
+		"./browser": "./src/store/browser.ts"
 	},
 	"files": [
 		"src",
@@ -26,7 +25,6 @@
 		"@epicenter/field": "workspace:*",
 		"@epicenter/identity": "workspace:*",
 		"@epicenter/sqlite": "workspace:*",
-		"@epicenter/sync": "workspace:*",
 		"@sqlite.org/sqlite-wasm": "catalog:",
 		"@y/y": "14.0.0-rc.24",
 		"idb": "^8.0.3",

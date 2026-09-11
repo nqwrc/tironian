@@ -21,11 +21,12 @@ deployable browser build, and the variant Epicenter serves is selected at
 build time by the `epicenter-host` resolve condition.
 
 That condition does not decide where the data lives. Every build opens its own
-store, with no platform seam, and reaches one authority per signed-in account
-(ADR-0226, ADR-0227). The host serves bundles and brokers credentials; it owns
-no application data and constructs no database. What the condition still selects
-is the credential path (`#platform/auth`, `#platform/instance`), because the
-host really does broker a credential its windows cannot obtain.
+local store, with no platform seam (ADR-0226, ADR-0227). The host serves
+bundles and local blobs; it owns no credential path, no application data, and
+constructs no database. What the condition still selects is the local blob
+composition (`#platform/blobs`, `#platform/base-path`), because the host's
+blob store reaches the host's own filesystem through the WebView, where a
+browser build has none.
 
 ## Run locally
 

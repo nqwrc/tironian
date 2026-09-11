@@ -61,12 +61,12 @@ Scenario 4 (a hosted competitor) is the one where the license is most load-beari
 
 ### Tier 1: MIT
 
-**Applies to:** exactly six packages, which is what `bun run check:licenses` reports. The embeddable toolkit libraries `packages/data`, `packages/ui`, `packages/sqlite`, and `packages/sync`, plus the toolkit-internal packages they carry: `packages/field` and `packages/identity`.
+**Applies to:** exactly five packages, which is what `bun run check:licenses` reports. The embeddable toolkit libraries `packages/data`, `packages/ui`, and `packages/sqlite`, plus the toolkit-internal packages they carry: `packages/field` and `packages/identity`.
 
 **Rationale:**
 - Libraries: we want developers to embed `@epicenter/data` in their own projects with zero friction. AGPL would forbid that for closed-source consumers, killing adoption. The library is not what we sell.
 - Toolkit-internal packages (`field`, `identity`): these are dependencies bundled into the MIT toolkit libraries, so they must be MIT-compatible for the toolkit to stay distributable as MIT. `@epicenter/identity` owns the capability and identity vocabulary shared by the MIT toolkit and the AGPL auth layer. It is not separately marketed.
-- MIT-clean closure: the toolkit depends on no AGPL package. `PrincipalId` and `AuthState` live in `@epicenter/identity`; the store sync route and bearer subprotocol live in the MIT `@epicenter/sync`. `bun run check:licenses` enforces this, on dependency edges only.
+- MIT-clean closure: the toolkit depends on no AGPL package. `PrincipalId` and `AuthState` live in `@epicenter/identity`. `bun run check:licenses` enforces this, on dependency edges only.
 
 ### Tier 2: AGPL-3.0
 
@@ -115,12 +115,11 @@ All apps are AGPL-3.0. MIT is reserved for the embeddable toolkit libraries.
 
 | Path | License | Notes |
 |---|---|---|
-| `apps/epicenter` | AGPL-3.0 | Desktop host: serves bundles, brokers credentials |
+| `apps/epicenter` | AGPL-3.0 | Desktop host: serves bundles and local blobs |
 | `apps/whispering` | AGPL-3.0 | Desktop transcription |
-| `packages/data` | MIT | The store: one document per application, its SQLite log and projection, and its transport (toolkit) |
+| `packages/data` | MIT | The store: one document per application, its SQLite log and projection (toolkit) |
 | `packages/ui` | MIT | shadcn-svelte components (toolkit) |
 | `packages/sqlite` | MIT | Domain-free synchronous SQLite adapter contract shared across embedded runtimes (toolkit) |
-| `packages/sync` | MIT | Store sync route contract plus the WebSocket bearer subprotocol (toolkit) |
 | `packages/field` | MIT | Field schema kinds (toolkit-internal) |
 | `packages/identity` | MIT | Capability and identity vocabulary shared by the MIT toolkit and AGPL auth layer (toolkit-internal) |
 | `packages/auth` | AGPL-3.0 | Framework-agnostic auth core (private, internal) |
@@ -132,7 +131,7 @@ All apps are AGPL-3.0. MIT is reserved for the embeddable toolkit libraries.
 | `packages/recorder` | AGPL-3.0 | Audio recording |
 | `packages/vite-config` | AGPL-3.0 | Shared Vite config |
 
-> **MIT-clean closure:** the MIT toolkit's entire dependency closure is MIT. `@epicenter/data` imports from no AGPL package: shared capability state lives in `@epicenter/identity`, and the store sync route plus bearer subprotocol live in `@epicenter/sync`. `bun run check:licenses` walks every package's dependency closure and fails if an MIT package can reach an AGPL one. It reports the same six packages this table marks MIT; if the two disagree, one of them is wrong and the script is not the one that can be edited into agreement.
+> **MIT-clean closure:** the MIT toolkit's entire dependency closure is MIT. `@epicenter/data` imports from no AGPL package: shared capability state lives in `@epicenter/identity`. `bun run check:licenses` walks every package's dependency closure and fails if an MIT package can reach an AGPL one. It reports the same five packages this table marks MIT; if the two disagree, one of them is wrong and the script is not the one that can be edited into agreement.
 
 ## Decision procedure for new packages
 
@@ -196,6 +195,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ## Open questions and review triggers
 
-- Revisit if a meaningful external contributor lands a PR on `apps/api`, `apps/self-host`, `packages/server`, or `packages/sync`. Decide then whether to add CLA Assistant.
+- Revisit if a meaningful external contributor lands a PR on `apps/api`, `apps/self-host`, or `packages/server`. Decide then whether to add CLA Assistant.
 - Revisit if a specific paying customer requires a feature that AGPL would let them self-host for free. This is the trigger to populate the proprietary tier (one feature, scoped to a subdirectory). Until that happens, the tier stays empty by design.
 - Revisit if we sell self-hosted enterprise licenses. That would be the trigger for moving to a real dual-license posture (and retroactively adding CLAs).

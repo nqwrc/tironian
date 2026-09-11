@@ -1,18 +1,17 @@
 # @epicenter/data
 
 The Epicenter store: one scalar Yjs document per application, independently
-loaded row documents for rich content, a synchronous surface over the scalar
-state, and the transport that carries it between a person's devices. MIT.
+loaded row documents for rich content, and a synchronous surface over the
+scalar state. MIT.
 
-The package has one definition entrypoint and four runtime entrypoints:
+The package has one definition entrypoint and three runtime entrypoints:
 
 | Import | What it gives you |
 | --- | --- |
 | `@epicenter/data` | the opened data surface |
 | `@epicenter/data/definition` | `defineData`, `parseData`, and the field descriptor vocabulary |
 | `@epicenter/data/bun` | `open(definition, { root })`, and `openMemory(definition)` for tests |
-| `@epicenter/data/browser` | `openDevice(definition)`, and `openAccount(definition, { baseURL, principalId })` |
-| `@epicenter/data/sync` | `createSyncConnection`, and the authority half a server runs |
+| `@epicenter/data/browser` | `openDevice(definition)` |
 | `@epicenter/data/projection` | `createSqliteProjection`, a read-only SQL follower |
 
 A Bun opener imports `bun:sqlite` and a browser opener imports a WASM build, so
@@ -22,12 +21,9 @@ openers live at their own entry points rather than on `@epicenter/data`.
 ## Opening is the only asynchronous thing
 
 ```ts
-import { openAccount } from '@epicenter/data/browser';
+import { openDevice } from '@epicenter/data/browser';
 
-const { data, error } = await openAccount(honeycrispDefinition, {
-	baseURL,
-	principalId,
-});
+const { data, error } = await openDevice(honeycrispDefinition);
 if (error !== null) return handle(error);
 
 await using opened = data;
@@ -46,20 +42,15 @@ not name. The runtime that comes back holds exactly this one definition for
 its whole life (ADR-0240); a newer declaration reads the same durable data by
 closing it and opening the next one.
 
-In a browser the caller also names which durable document it means and whose it
-is (ADR-0261). An application keeps one device document that never joins
-account sync, and one retained replica per account:
+In a browser the caller also names which durable document it means (ADR-0261).
+An application keeps one device document:
 
 ```text
 epicenter/<definitionId>/device
-epicenter/<definitionId>/account/<base URL>/<principal id>
 ```
 
 That address is the IndexedDB database name, so a data discard or
-supersession can reach exactly one account's replica and never the
-device document or another account's. An account replica cannot be opened
-without an account: the argument is a union with nowhere to omit one, and an
-empty id is refused with `StoreError.Unaddressable` rather than addressed.
+supersession can reach exactly this one document.
 
 Opening replays a durable log into one `Y.Doc`. After that every read is a
 property access on a document already in memory, so nothing below returns a
@@ -68,9 +59,7 @@ promise.
 Opening one address twice in a process is refused with
 `StoreError.AlreadyOpen`. Two opens would be two `Y.Doc`s of one document that
 cannot see each other's writes, so they would converge through storage under
-last-writer-wins and quietly lose one side's work. The device document and
-each account's replica are different documents, so any number of them may be
-open at once.
+last-writer-wins and quietly lose one side's work.
 
 ## The surface
 
@@ -114,7 +103,10 @@ beside the tables so that no table name is reserved: `kv` is the only one a
 definition refuses, and that is because KV projects as a SQL relation of that
 name.
 The delivery machinery underneath sync (the outbox, cursors,
-acknowledgements) is internal; only the transport drives it.
+acknowledgements) is internal; a transport drives it, and this package no
+longer bundles one (`@epicenter/data/bun`'s account opener is exported but
+unused in this repository; `@epicenter/data/browser` opens device documents
+only).
 
 ### Reading
 
@@ -361,35 +353,14 @@ is visible in memory.
 
 ## Sync
 
-A host supplies one thing, `dial`, and the library owns everything done with a
-socket (ADR-0222):
-
-```ts
-import { createSyncConnection } from '@epicenter/data/sync';
-
-const connection = createSyncConnection({
-	store,
-	dial: ({ cursor, opened, received, closed }) => { /* make a socket */ },
-});
-```
-
-The cursor, attach and detach, reconnect on close, reconnect when the client is
-stuck behind a gap, and a watchdog for a submission nobody answers all live
-here, because every one of them is correctness rather than transport. A fuzz
-proved that omitting the resync reconnect wedges a device permanently. The
-store announces its own durable local work to the transport internally, so
-nothing has to remember to nudge it.
-
-The authority is one Cloudflare Durable Object per (principal, definitionId), named
-`principals/<principalId>/stores/<definitionId>`, keeping a snapshot plus the
-entries after it (ADR-0220, ADR-0225). It reads nothing and holds opaque bytes.
-`packages/server/src/store-sync/` is the mount; `@epicenter/data/sync` is where
-every merge rule actually lives, so what is deployed and what the transport's
-tests drive are the same object.
-
-**Being signed in on two devices is the entire sharing model.** Nothing is
-paired, invited, or approved, and there is no identifier a client can supply
-that reaches another partition.
+`@epicenter/data/sync` and its authority-side counterpart in
+`packages/server` are gone from this repository: nothing here opens a
+network connection for a store anymore, and the one product that used to
+(sign-in and cross-device sync) was removed. `createAccountStore` and
+`createAccountStoreOverPort` remain in the engine as a published surface
+(`@epicenter/data/bun` still exports an account opener) so a future consumer
+can build a transport against the `sync` capability without redesigning the
+store, but this package does not ship one today.
 
 ## What is not here
 

@@ -27,7 +27,6 @@
 		"@epicenter/constants": "workspace:*",
 		"@epicenter/data": "workspace:*",
 		"@epicenter/field": "workspace:*",
-		"@epicenter/sync": "workspace:*",
 		"@epicenter/ui": "workspace:*",
 		"@epicenter/whispering": "workspace:*",
 		"@tauri-apps/api": "catalog:",

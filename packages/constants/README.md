@@ -2,7 +2,7 @@
 
 Shared Epicenter platform contracts: the facts several packages and apps must agree on but none can own, so they live below all of them. Each runtime context gets its own subpath export, so bundlers only pull in what they need.
 
-This is a floor, not a junk drawer. A fact belongs here only when more than one package (or app) needs it and no single one is its natural owner. Single-owner values live beside their owner instead: HTTP error unions live in `@epicenter/server` and the billing layer, the store sync route lives in `@epicenter/sync`, and the release version lives in `apps/landing`.
+This is a floor, not a junk drawer. A fact belongs here only when more than one package (or app) needs it and no single one is its natural owner. Single-owner values live beside their owner instead: HTTP error unions live in `@epicenter/server` and the billing layer, and the release version lives in `apps/landing`.
 
 ## Exports
 

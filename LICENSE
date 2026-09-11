@@ -22,7 +22,6 @@ entirely MIT; the boundary is enforced by 'bun run check:licenses'.
                                                          component library
     - packages/filesystem       (@epicenter/filesystem)  POSIX layer over
                                                          workspace tables
-    - packages/sync             (@epicenter/sync)        Yjs sync protocol
     - packages/identity         (@epicenter/identity)    capability + identity
                                                          vocabulary
     - packages/encryption       (@epicenter/encryption)  toolkit-internal
@@ -32,7 +31,7 @@ entirely MIT; the boundary is enforced by 'bun run check:licenses'.
     - packages/sqlite           (@epicenter/sqlite)      portable embedded
                                                          SQLite adapter contract
     - packages/data             (@epicenter/data)        typed local-first
-                                                         Epicenter replica and sync
+                                                         Epicenter replica
     - packages/document-sync    (@epicenter/document-sync) row-document sync plane
     - packages/app              (@epicenter/app)         the public Epicenter
                                                          client an installed
