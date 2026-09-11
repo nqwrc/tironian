@@ -15,7 +15,7 @@
         "wrangler": "catalog:",
       },
     },
-    "apps/epicenter": {
+    "apps/desktop": {
       "name": "@tironian/desktop",
       "version": "0.0.1",
       "dependencies": {
@@ -44,7 +44,7 @@
         "vite-plugin-singlefile": "catalog:",
       },
     },
-    "apps/whispering": {
+    "apps/tironian": {
       "name": "@tironian/app",
       "version": "7.11.1",
       "dependencies": {
@@ -815,7 +815,7 @@
 
     "@tauri-apps/plugin-os": ["@tauri-apps/plugin-os@2.3.2", "", { "dependencies": { "@tauri-apps/api": "^2.8.0" } }, "sha512-n+nXWeuSeF9wcEsSPmRnBEGrRgOy6jjkSU+UVCOV8YUGKb2erhDOxis7IqRXiRVHhY8XMKks00BJ0OAdkpf6+A=="],
 
-    "@tironian/app": ["@tironian/app@workspace:apps/whispering"],
+    "@tironian/app": ["@tironian/app@workspace:apps/tironian"],
 
     "@tironian/blobs": ["@tironian/blobs@workspace:packages/blobs"],
 
@@ -825,7 +825,7 @@
 
     "@tironian/data": ["@tironian/data@workspace:packages/data"],
 
-    "@tironian/desktop": ["@tironian/desktop@workspace:apps/epicenter"],
+    "@tironian/desktop": ["@tironian/desktop@workspace:apps/desktop"],
 
     "@tironian/field": ["@tironian/field@workspace:packages/field"],
 

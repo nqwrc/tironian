@@ -1,5 +1,5 @@
 /**
- * Fail when a wire URL path Epicenter serves or calls is hardcoded outside
+ * Fail when a wire URL path Tironian serves or calls is hardcoded outside
  * packages/constants.
  *
  * Every wire URL path lives in one place:
@@ -10,7 +10,7 @@
  * Excluded (per spec § Decisions Log):
  *   - The constants files themselves (they ARE the source of truth).
  *   - Vendored mirrors that intentionally re-declare these paths to avoid a
- *     runtime dependency on @tironian/constants (apps/epicenter/src/routes.ts,
+ *     runtime dependency on @tironian/constants (apps/desktop/src/routes.ts,
  *     whose /api/session is the shell's own loopback contract, not the cloud
  *     session endpoint).
  *   - *.test.ts / *.test.tsx (mock URL matchers may reference paths verbatim).
@@ -48,7 +48,7 @@ const HARDCODED_PATH =
 // the workflow's `grep -v` filters did. The record is built with forward
 // slashes on every platform (see below), so these stay POSIX.
 const ALLOWED_RECORD =
-	/packages\/constants\/src\/(api|oauth)-routes\.ts|apps\/epicenter\/src\/routes\.ts/;
+	/packages\/constants\/src\/(api|oauth)-routes\.ts|apps\/desktop\/src\/routes\.ts/;
 const COMMENT_RECORD = /^[^:]+:[0-9]+:[ \t\v\f\r]*(\*|\/\/|\/\*)/;
 
 const isScannedFile = (name: string): boolean =>

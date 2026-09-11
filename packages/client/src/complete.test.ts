@@ -85,7 +85,7 @@ describe('complete over the OpenAI chat wire', () => {
 	});
 
 	test('routes through an injected base fetch, not globalThis.fetch', async () => {
-		// A native app (Whispering on Tauri) injects its platform fetch so the
+		// A native app (Tironian on Tauri) injects its platform fetch so the
 		// request leaves from the native side, not the webview. Prove the resolved
 		// transport wraps the injected fetch and never touches globalThis.fetch.
 		globalThis.fetch = (async () => {

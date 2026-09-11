@@ -107,9 +107,9 @@ type DocumentEngine = {
 };
 
 /** Bytes replayed from storage, which must not be appended back to storage. */
-const hydrationOrigin = Object.freeze({ kind: 'epicenter-hydration' });
+const hydrationOrigin = Object.freeze({ kind: 'tironian-hydration' });
 /** Bytes that arrived from a peer: durable, but not local work. */
-const remoteOrigin = Object.freeze({ kind: 'epicenter-remote' });
+const remoteOrigin = Object.freeze({ kind: 'tironian-remote' });
 
 type LiveDocument = {
 	doc: Y.Doc;

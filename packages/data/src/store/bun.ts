@@ -38,17 +38,16 @@ export type BunAccountStore = AccountStore & {
  *
  * The definition names the store (ADR-0229), so the folder is
  * `<root>/<definition.id>` rather than a path a caller picks. The root
- * is where Epicenter lives on this machine (ADR-0201), which is an environment
+ * is where Tironian lives on this machine (ADR-0201), which is an environment
  * fact rather than a second name for the application.
  *
- * **No application in this repository calls this today.** Honeycrisp opens the
- * browser store in every build including the Tauri one, by the refusal in
- * `apps/honeycrisp/src/lib/databases.ts`: a host serves bundles and owns no
- * application data (ADR-0226). This stays exported because it is a
- * published entry point of an MIT package and because it is the only opener
- * that proves the log survives a real reopen from a real file, which
- * `store.test.ts` uses. An in-repo caller returning is a decision, not a
- * default.
+ * **No application in this repository calls this today.** Tironian opens the
+ * browser store in every build including the Tauri one: a host serves
+ * bundles and owns no application data (ADR-0226). This stays exported
+ * because it is a published entry point of an MIT package and because it is
+ * the only opener that proves the log survives a real reopen from a real
+ * file, which `store.test.ts` uses. An in-repo caller returning is a
+ * decision, not a default.
  */
 export async function open<const TDatabase extends DataDefinition>(
 	definition: TDatabase,
@@ -56,7 +55,7 @@ export async function open<const TDatabase extends DataDefinition>(
 		root,
 		keepHistory = true,
 	}: {
-		/** Where Epicenter keeps application folders on this machine (ADR-0201). */
+		/** Where Tironian keeps application folders on this machine (ADR-0201). */
 		root: string;
 		/** Whether collapse preserves what it supersedes (ADR-0214). */
 		keepHistory?: boolean;

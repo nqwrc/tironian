@@ -1,12 +1,12 @@
 /**
- * Where Epicenter stores things on a machine.
+ * Where Tironian stores things on a machine.
  *
- * Epicenter owns exactly one application-data root. Every trusted app it runs or
+ * Tironian owns exactly one application-data root. Every trusted app it runs or
  * admits receives one directory below it and owns everything inside, partitioned
  * by an identifier the external authority owns and never reuses. See ADR-0201.
  *
  * Three parties choose names along that path, and each function below is one
- * hand-off between two of them: Epicenter names the root and its own
+ * hand-off between two of them: Tironian names the root and its own
  * directories, an app names everything in its directory, and an external
  * authority names a partition. `apps/` and the partition-kind directory exist
  * because a directory whose next name is chosen by somebody else cannot be
@@ -25,7 +25,7 @@ import { isAbsolute, join } from 'node:path';
 /**
  * The `app.tironian` bundle identity, which is what names the root on every
  * platform. It has to equal `identifier` in
- * `apps/epicenter/src-tauri/tauri.conf.json`, because the desktop host resolves
+ * `apps/desktop/src-tauri/tauri.conf.json`, because the desktop host resolves
  * the same directory through Tauri; `app-data.test.ts` pins the two together.
  */
 export const TIRONIAN_BUNDLE_IDENTIFIER = 'app.tironian';
@@ -86,7 +86,7 @@ export type DataRootSystem = {
 };
 
 /**
- * The one Epicenter application-data root. `TIRONIAN_DATA_DIR` wins, for tests
+ * The one Tironian application-data root. `TIRONIAN_DATA_DIR` wins, for tests
  * and for a person who wants their data elsewhere; an empty value counts as
  * unset and a relative one is refused, for the same reason a relative
  * `XDG_DATA_HOME` is ignored below.
@@ -103,7 +103,7 @@ export type DataRootSystem = {
  * each do today: both honour a relative `XDG_DATA_HOME`, and neither has a
  * Windows branch, so a Windows install lands in `%USERPROFILE%\.local\share`.
  */
-export function epicenterDataRoot(
+export function tironianDataRoot(
 	system: DataRootSystem = {
 		env: process.env,
 		platform: process.platform,
@@ -130,7 +130,7 @@ export function epicenterDataRoot(
 /**
  * The one human-facing folder: where a person and an agent read this data.
  *
- * Deliberately not {@link epicenterDataRoot}. That directory is machinery, is
+ * Deliberately not {@link tironianDataRoot}. That directory is machinery, is
  * explicitly not an inter-app API, and is where a continuous producer with no
  * consumer went to die once already (ADR-0010). This one is a place you `cd`
  * into, so it takes the shape every tool in its category converged on
@@ -138,10 +138,10 @@ export function epicenterDataRoot(
  * `~/OneDrive`, and the same under `%USERPROFILE%` on Windows).
  *
  * Overridable, because a person may keep it elsewhere. The default has to stay
- * typeable, because "point your agent at `~/Epicenter`" is the whole product
+ * typeable, because "point your agent at `~/Tironian`" is the whole product
  * (ADR-0207).
  */
-export function epicenterFolderRoot(
+export function tironianFolderRoot(
 	system: Pick<DataRootSystem, 'env' | 'homeDir'> = {
 		env: process.env,
 		homeDir: homedir(),
@@ -159,7 +159,7 @@ export function epicenterFolderRoot(
 		}
 		return override;
 	}
-	return join(system.homeDir, 'Epicenter');
+	return join(system.homeDir, 'Tironian');
 }
 
 function dataDir({ env, platform, homeDir }: DataRootSystem): string {
@@ -174,7 +174,7 @@ function dataDir({ env, platform, homeDir }: DataRootSystem): string {
 		// this fails the same way rather than inventing a fallback.
 		if (!appData || appData.length === 0) {
 			throw new Error(
-				'APPDATA is not set, so the Epicenter data root cannot be resolved. Set TIRONIAN_DATA_DIR to name it explicitly.',
+				'APPDATA is not set, so the Tironian data root cannot be resolved. Set TIRONIAN_DATA_DIR to name it explicitly.',
 			);
 		}
 		return appData;
@@ -189,9 +189,9 @@ function dataDir({ env, platform, homeDir }: DataRootSystem): string {
 
 /**
  * An app's one directory: `<root>/apps/<appId>`. The app owns everything below
- * the result and Epicenter never looks inside it (ADR-0201, ADR-0193).
+ * the result and Tironian never looks inside it (ADR-0201, ADR-0193).
  *
- * `apps/` is where naming authority changes hands. Above it Epicenter chooses
+ * `apps/` is where naming authority changes hands. Above it Tironian chooses
  * the names (`data`, `blobs`, `app-catalog`, and whatever it adds next); below
  * it an app does. One segment keeps a host directory added later from landing
  * on an app id, and it is the boundary the host's promise is stated against:
@@ -204,7 +204,7 @@ function dataDir({ env, platform, homeDir }: DataRootSystem): string {
  *
  * The result is a string, injected at the owner's composition root the way the
  * sidecar already computes `join(root, 'data')` and `join(root, 'blobs')`. It is
- * deliberately not a capability: the bytes are not Epicenter's to offer
+ * deliberately not a capability: the bytes are not Tironian's to offer
  * (ADR-0181, ADR-0183).
  *
  * The id is validated rather than typed, because it comes from an open space:

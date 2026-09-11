@@ -23,7 +23,7 @@ import {
 } from './store.js';
 
 const database = defineData({
-	id: 'app.tironian.honeycrisp',
+	id: 'app.tironian.notes',
 	kv: { theme: field.select(['light', 'dark']), fontSize: field.number() },
 	tables: {
 		notes: {
@@ -213,7 +213,7 @@ describe('deletion', () => {
 
 describe('a nonconforming row is reported, never repaired', () => {
 	const wrongDatabase = defineData({
-		id: 'app.tironian.honeycrisp',
+		id: 'app.tironian.notes',
 		kv: {},
 		tables: {
 			notes: {
@@ -344,7 +344,7 @@ describe('two replicas converge', () => {
 
 describe('a database names the store it opens', () => {
 	test('one databaseId opens once per process, and disposing releases it', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'epicenter-claim-'));
+		const root = await mkdtemp(join(tmpdir(), 'tironian-claim-'));
 		try {
 			const first = await open(database, { root });
 			if (first.error !== null) throw first.error;
@@ -367,7 +367,7 @@ describe('a database names the store it opens', () => {
 	});
 
 	test('a database that will not parse releases the databaseId it claimed', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'epicenter-refused-'));
+		const root = await mkdtemp(join(tmpdir(), 'tironian-refused-'));
 		try {
 			// A table named `kv` collides with the relation KV projects into, which
 			// is the one name a database still reserves. The store this half-opened must
@@ -389,7 +389,7 @@ describe('a database names the store it opens', () => {
 	});
 
 	test('a corrupt durable record refuses the boot and releases the claim', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'epicenter-corrupt-'));
+		const root = await mkdtemp(join(tmpdir(), 'tironian-corrupt-'));
 		try {
 			{
 				const { data: first, error } = await open(database, { root });
@@ -431,7 +431,7 @@ function expectOkCreate(data: DataOf<typeof database>): void {
 
 describe('the document a row inherently owns (ADR-0248)', () => {
 	test('holds application-named roots and survives a reopen', async () => {
-		const directory = await mkdtemp(join(tmpdir(), 'epicenter-doc-'));
+		const directory = await mkdtemp(join(tmpdir(), 'tironian-doc-'));
 		try {
 			let id!: string;
 			{
@@ -578,7 +578,7 @@ describe('a received update is persisted as the bytes that arrived', () => {
 		origin.tables.notes.update(made.id, { title: 'second' });
 		const second = origin.store.encodeStateSince(afterFirst);
 
-		const directory = await mkdtemp(join(tmpdir(), 'epicenter-store-'));
+		const directory = await mkdtemp(join(tmpdir(), 'tironian-store-'));
 		try {
 			{
 				const { data: laptop, error: openError } = await open(database, {
@@ -696,7 +696,7 @@ describe('a subscription names the rows a commit touched', () => {
 		// implementation that invalidated every subscriber on every commit.
 		const other = openMemory(
 			defineData({
-				id: 'app.tironian.honeycrisp',
+				id: 'app.tironian.notes',
 				kv: {},
 				tables: {
 					notes: {
@@ -885,7 +885,7 @@ describe('kv survives a declaration upgrade (ADR-0240)', () => {
 
 		const second = createAccountStore({
 			definition: defineData({
-				id: 'app.tironian.honeycrisp',
+				id: 'app.tironian.notes',
 				kv: {
 					theme: field.select(['light', 'dark']),
 					added: field.string(),
@@ -916,7 +916,7 @@ describe('kv survives a declaration upgrade (ADR-0240)', () => {
 
 describe('an undeclared table waits in the CRDT (ADR-0240)', () => {
 	const withScratch = defineData({
-		id: 'app.tironian.honeycrisp',
+		id: 'app.tironian.notes',
 		kv: { theme: field.select(['light', 'dark']) },
 		tables: {
 			notes: { title: field.string() },
@@ -924,7 +924,7 @@ describe('an undeclared table waits in the CRDT (ADR-0240)', () => {
 		},
 	});
 	const withoutScratch = defineData({
-		id: 'app.tironian.honeycrisp',
+		id: 'app.tironian.notes',
 		kv: {},
 		tables: { notes: { title: field.string() } },
 	});
@@ -997,7 +997,7 @@ describe('foreign bytes have exactly one door', () => {
 
 describe('discard deletes the live file whole, and the shelf survives (ADR-0231)', () => {
 	test('a discarded store reopens empty at cursor zero, with history intact', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'epicenter-discard-'));
+		const root = await mkdtemp(join(tmpdir(), 'tironian-discard-'));
 		try {
 			const opened = await open(database, { root });
 			if (opened.error !== null) throw opened.error;

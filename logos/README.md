@@ -16,10 +16,10 @@ logos/
 
 | File                          | What it is                                                                                     |
 | ----------------------------- | ---------------------------------------------------------------------------------------------- |
-| `epicenter-icon.svg`          | The mark, transparent background. Use for embeds on dark UI.                                   |
-| `epicenter-icon-square.svg`   | The mark on a black square. Use when the containing surface supplies its own rounding or mask. |
-| `epicenter-icon-squircle.svg` | The mark on a black squircle. Default app icon and favicon shape.                              |
-| `epicenter-wordmark.svg`      | The mark above the word "epicenter" (Manrope).                                                 |
+| `tironian-icon.svg`          | The mark, transparent background. Use for embeds on dark UI.                                   |
+| `tironian-icon-square.svg`   | The mark on a black square. Use when the containing surface supplies its own rounding or mask. |
+| `tironian-icon-squircle.svg` | The mark on a black squircle. Default app icon and favicon shape.                              |
+| `tironian-wordmark.svg`      | The mark above the word "epicenter" (Manrope).                                                 |
 
 SVG is the canonical format: edit these, never the PNGs.
 
@@ -27,9 +27,9 @@ SVG is the canonical format: edit these, never the PNGs.
 
 | File                               | Source                        | Notes                            |
 | ---------------------------------- | ----------------------------- | -------------------------------- |
-| `epicenter-icon-1024.png`          | `epicenter-icon.svg`          | 8-bit sRGB, transparent.         |
-| `epicenter-icon-square-1024.png`   | `epicenter-icon-square.svg`   | 8-bit sRGB.                      |
-| `epicenter-icon-squircle-1024.png` | `epicenter-icon-squircle.svg` | 8-bit sRGB, transparent corners. |
+| `tironian-icon-1024.png`          | `tironian-icon.svg`          | 8-bit sRGB, transparent.         |
+| `tironian-icon-square-1024.png`   | `tironian-icon-square.svg`   | 8-bit sRGB.                      |
+| `tironian-icon-squircle-1024.png` | `tironian-icon-squircle.svg` | 8-bit sRGB, transparent corners. |
 
 PNG is the default generated raster format: it carries alpha and works
 everywhere as an app icon, favicon, or social image. WebP/AVIF are not generated;
@@ -57,8 +57,8 @@ then render directly:
 
 ```bash
 brew install librsvg font-manrope
-rsvg-convert -w 1024 logos/source/epicenter-wordmark.svg \
-  -o logos/generated/epicenter-wordmark-1024.png
+rsvg-convert -w 1024 logos/source/tironian-wordmark.svg \
+  -o logos/generated/tironian-wordmark-1024.png
 ```
 
 For most uses, serve the wordmark as the SVG instead.
@@ -66,5 +66,5 @@ For most uses, serve the wordmark as the SVG instead.
 ## App copies
 
 Apps that serve a logo directly keep their own copy under `static/`/`public/`
-(for example `apps/whispering/static/favicon.ico`). Those mirror the shapes
+(for example `apps/tironian/static/favicon.ico`). Those mirror the shapes
 here; update them by hand when the mark changes.

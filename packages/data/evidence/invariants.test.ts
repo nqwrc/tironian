@@ -1,8 +1,8 @@
 /**
- * The Yjs behaviour Epicenter's data model depends on, pinned.
+ * The Yjs behaviour Tironian's data model depends on, pinned.
  *
  * Every assertion here is a property of `@y/y@14.0.0-rc.24` rather than of
- * Epicenter's own code. They live in a test because they are load-bearing
+ * Tironian's own code. They live in a test because they are load-bearing
  * design premises taken from a release candidate, and an rc can move them
  * quietly: one of them, that a type's behaviour comes from its name, was
  * asserted in a record as "verified" and turned out to be false.

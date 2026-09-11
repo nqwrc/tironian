@@ -22,9 +22,9 @@ const SIZE = 1024;
 
 /** Pure-shape sources that rasterize with ImageMagick alone (no fonts). */
 const icons = [
-	'epicenter-icon',
-	'epicenter-icon-square',
-	'epicenter-icon-squircle',
+	'tironian-icon',
+	'tironian-icon-square',
+	'tironian-icon-squircle',
 ] as const;
 
 await $`mkdir -p ${generated}`;

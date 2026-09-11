@@ -1,6 +1,6 @@
 {
 	"name": "@tironian/vite-config",
-	"description": "Shared Vite config for Epicenter workspace apps",
+	"description": "Shared Vite config for Tironian workspace apps",
 	"private": true,
 	"version": "0.1.1",
 	"type": "module",

@@ -1,0 +1,36 @@
+import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
+import type { TironianApp } from '$lib/app/app';
+import { report } from '$lib/report';
+import type { Recording } from '$lib/state/recordings.svelte';
+
+/** Confirm and run the app's recording deletion workflow. */
+export function deleteRecordingsWithConfirmation(
+	app: TironianApp,
+	toDelete: Recording | Recording[],
+	{ onSuccess }: { onSuccess?: () => void } = {},
+) {
+	const arr = Array.isArray(toDelete) ? toDelete : [toDelete];
+	const isSingle = arr.length === 1;
+	const noun = isSingle ? 'recording' : 'recordings';
+
+	confirmationDialog.open({
+		title: `Delete ${noun}`,
+		description: `Are you sure you want to delete ${isSingle ? 'this' : 'these'} ${noun}?`,
+		confirm: {
+			text: 'Delete',
+			variant: 'destructive',
+		},
+		onConfirm: async () => {
+			const { error } = await app.recordings.delete(arr.map(({ id }) => id));
+			if (error !== null) {
+				report.error({ title: `Failed to delete ${noun}`, cause: error });
+				return;
+			}
+			report.success({
+				title: `Deleted ${noun}!`,
+				description: `Your ${noun} ${isSingle ? 'has' : 'have'} been deleted.`,
+			});
+			onSuccess?.();
+		},
+	});
+}

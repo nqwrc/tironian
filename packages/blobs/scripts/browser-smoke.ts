@@ -41,7 +41,7 @@ try {
 			);
 		};
 		const id = 'blob_abcdefghijklmnopqrstu';
-		const databaseName = `epicenter-webkit-smoke-${crypto.randomUUID()}`;
+		const databaseName = `tironian-webkit-smoke-${crypto.randomUUID()}`;
 		const input = new Blob(['webkit bytes'], { type: 'audio/wav' });
 		const first = createBrowserBlobStore({ databaseName });
 		const put = await first.put(id, input);

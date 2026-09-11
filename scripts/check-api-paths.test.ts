@@ -64,7 +64,7 @@ test('passes allowlisted mirrors, comments, tests, and excluded dirs', () => {
 		);
 		write(
 			dir,
-			'apps/epicenter/src/routes.ts',
+			'apps/desktop/src/routes.ts',
 			"export const SESSION = '/api/session';\n",
 		);
 		// Comment lines are prose, not constructions.

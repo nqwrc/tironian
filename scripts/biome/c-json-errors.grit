@@ -1,6 +1,6 @@
 // Reject hand-rolled error bodies in `c.json(...)` calls.
 //
-// Invariant: every non-2xx Hono response (apps/epicenter's Bun host is the
+// Invariant: every non-2xx Hono response (apps/desktop's Bun host is the
 // current emitter) must come from a `defineErrors` variant owned by the
 // layer that emits it, so the wire shape is the wellcrafted envelope
 // `{ data: null, error: { name, message, ...fields } }`.

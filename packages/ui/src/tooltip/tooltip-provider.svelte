@@ -10,7 +10,7 @@
 </script>
 
 <!--
-	How long a tooltip waits is a property of Epicenter, not of an app, so the
+	How long a tooltip waits is a property of Tironian, not of an app, so the
 	two timings are constants here rather than props. bits-ui waits 700ms and
 	skips for 300ms, which reads as sluggish on a desktop app.
 

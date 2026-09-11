@@ -1,10 +1,10 @@
 /**
- * jsrepo registry config for Epicenter app blocks.
+ * jsrepo registry config for Tironian app blocks.
  *
  * Each app under apps/<app>/blocks/ contributes recipe blocks that consumers
- * copy into their own tree with `bunx jsrepo add epicenter/<app>/<recipe>`.
- * The blocks depend on the npm primitives in @epicenter/data, the
- * @epicenter/<app> schema package root, and friends; consumers install those
+ * copy into their own tree with `bunx jsrepo add tironian/<app>/<recipe>`.
+ * The blocks depend on the npm primitives in @tironian/data, the
+ * @tironian/<app> schema package root, and friends; consumers install those
  * normally. The blocks themselves are owned by the consumer once copied.
  */
 
@@ -25,13 +25,12 @@ const BLOCKS = {} as const;
 export default defineConfig({
 	languages: [js()],
 	registry: {
-		name: '@epicenterhq/epicenter',
+		name: 'tironian',
 		version: 'package',
-		homepage: 'https://epicenter.so',
-		repository: 'https://github.com/EpicenterHQ/epicenter',
+		repository: 'https://github.com/nqwrc/tironian',
 		items: Object.entries(BLOCKS).flatMap(([app, blocks]) =>
 			blocks.map((block) => ({
-				name: `epicenter/${app}/${block}`,
+				name: `tironian/${app}/${block}`,
 				type: 'block',
 				files: [{ path: `apps/${app}/blocks/${block}.ts` }],
 			})),

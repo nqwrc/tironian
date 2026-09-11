@@ -42,11 +42,11 @@ stable, and CMake. On Windows, the Vulkan SDK as well.
 
 ```bash
 bun install
-bun dev:epicenter
+bun dev:desktop
 ```
 
 That runs the desktop app in development. A release build is
-`bun run --cwd apps/epicenter desktop:build`. CMake 4 needs
+`bun run --cwd apps/desktop desktop:build`. CMake 4 needs
 `CMAKE_POLICY_VERSION_MINIMUM=3.5` in the environment for the bundled ggml and
 opus builds.
 
@@ -54,14 +54,15 @@ opus builds.
 
 | Path | What it is |
 | --- | --- |
-| `apps/whispering` | The dictation app itself, a Svelte SPA. Its internal name is inherited from upstream. |
-| `apps/epicenter/src-tauri` | The native desktop host that bundles and runs it: recorder, local transcription, tray, shortcuts. |
+| `apps/tironian` | The dictation app itself, a Svelte SPA. |
+| `apps/desktop/src-tauri` | The native desktop host that bundles and runs it: recorder, local transcription, tray, shortcuts. |
 | `packages/data`, `packages/ui` | The local store and the component library the app is built on. |
 | `docs/brand/` | Name, mark, palette, type, voice, and the claims ledger. |
 
-Code keeps upstream's `whispering` identifiers so upstream fixes can still be
-merged; the package scope moved to `@tironian/*` in the package-scope rename.
-The reasoning is in the brand document under "Rename tiers".
+The directory and identifier rename is complete: `apps/whispering` moved to
+`apps/tironian`, `apps/epicenter` moved to `apps/desktop`, and the package
+scope moved to `@tironian/*`. The reasoning is in the brand document under
+"Rename tiers".
 
 ## Attribution and license
 

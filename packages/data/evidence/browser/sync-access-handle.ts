@@ -36,7 +36,7 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>sync access handle</ti
  */
 const PROBE = `async () => {
 	const root = await navigator.storage.getDirectory();
-	const file = await root.getFileHandle('epicenter-probe', { create: true });
+	const file = await root.getFileHandle('tironian-probe', { create: true });
 	if (typeof file.createSyncAccessHandle !== 'function') {
 		return { available: false, reason: 'createSyncAccessHandle is not a function' };
 	}
@@ -44,7 +44,7 @@ const PROBE = `async () => {
 		const handle = await file.createSyncAccessHandle();
 		// Actually write through it. A handle that exists and refuses every write
 		// would answer this question the same way as one that is missing.
-		const wrote = handle.write(new TextEncoder().encode('epicenter'), { at: 0 });
+		const wrote = handle.write(new TextEncoder().encode('tironian'), { at: 0 });
 		handle.flush();
 		handle.close();
 		return { available: true, bytesWritten: wrote };

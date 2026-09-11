@@ -38,8 +38,6 @@ apps/local-books/.infisical.json
 # Vercel
 .vercel
 
-# Epicenter
-.epicenter
 examples/**/matter.sqlite
 
 # WXT (browser extension framework)
@@ -74,7 +72,6 @@ test-results/
 
 # Smoke-test and tooling run logs (machine-local, regenerated per run)
 .artifacts/
-dist-epicenter
 
 # Sentry native crash-handler run state (created by the Tauri host at runtime)
 .sentry-native/

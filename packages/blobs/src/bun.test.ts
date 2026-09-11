@@ -41,7 +41,7 @@ afterEach(async () => {
 });
 
 async function setup() {
-	const directory = await mkdtemp(join(tmpdir(), 'epicenter-bun-blobs-'));
+	const directory = await mkdtemp(join(tmpdir(), 'tironian-bun-blobs-'));
 	testDirectories.push(directory);
 	return { blobs: createBunBlobStore({ directory }), directory };
 }
@@ -63,7 +63,7 @@ async function pathExists(path: string): Promise<boolean> {
 }
 
 async function setupHostilePathTarget() {
-	const root = await mkdtemp(join(tmpdir(), 'epicenter-hostile-bun-blobs-'));
+	const root = await mkdtemp(join(tmpdir(), 'tironian-hostile-bun-blobs-'));
 	testDirectories.push(root);
 	const directory = join(root, 'blobs');
 	const outside = join(root, 'outside');

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @fileoverview Version stamping utility for the Epicenter monorepo.
+ * @fileoverview Version stamping utility for the Tironian monorepo.
  *
  * Stamps a version number into all package.json, tauri.conf.json, and Cargo.toml
  * files. Discovers files via glob: no hardcoded list.

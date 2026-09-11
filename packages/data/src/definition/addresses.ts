@@ -212,7 +212,7 @@ export function isDatabaseId(
  * whole promise. The promise is that a trusted host can mount this name and
  * write `SELECT * FROM <name>` with no quoting and no collision, so two more
  * things must hold: the name is not a SQLite keyword (case-insensitively), and
- * it does not enter SQLite's reserved `sqlite_` space. Every relation Epicenter
+ * it does not enter SQLite's reserved `sqlite_` space. Every relation Tironian
  * storage occupies sits behind an underscore prefix, which the leading-letter
  * rule already makes unreachable.
  *

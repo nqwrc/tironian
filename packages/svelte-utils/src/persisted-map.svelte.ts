@@ -18,7 +18,7 @@ type InferDefinitionValue<TDef> =
 type PersistedMapOptions<
 	TDefs extends Record<string, PersistedMapDefinition<StandardSchemaV1>>,
 > = {
-	/** Prefix for all storage keys. e.g., `'whispering.device.'` → `'whispering.device.apiKeys.openai'`. */
+	/** Prefix for all storage keys. e.g., `'tironian.device.'` → `'tironian.device.apiKeys.openai'`. */
 	prefix: string;
 	/** Per-key schema and default value definitions. */
 	definitions: TDefs;

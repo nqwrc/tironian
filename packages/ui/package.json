@@ -2,11 +2,11 @@
 	"name": "@tironian/ui",
 	"version": "0.3.0",
 	"private": true,
-	"description": "Svelte 5 UI components for Epicenter apps. Built with shadcn-svelte and Tailwind CSS.",
+	"description": "Svelte 5 UI components for Tironian apps. Built with shadcn-svelte and Tailwind CSS.",
 	"keywords": [
 		"svelte",
 		"UI",
-		"epicenter",
+		"tironian",
 		"components",
 		"local-first",
 		"CRDT",
@@ -15,10 +15,10 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/EpicenterHQ/epicenter.git",
+		"url": "https://github.com/TironianHQ/tironian.git",
 		"directory": "packages/ui"
 	},
-	"homepage": "https://epicenter.so",
+	"homepage": "https://tironian.so",
 	"type": "module",
 	"exports": {
 		"./*": "./src/*/index.ts",

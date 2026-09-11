@@ -20,7 +20,7 @@ export function desktopBlobUrl(id: BlobId): string {
 }
 
 /**
- * Create the WebView adapter for Epicenter's authenticated local-blob routes.
+ * Create the WebView adapter for Tironian's authenticated local-blob routes.
  * Relative URLs deliberately preserve the active loopback origin and its
  * HttpOnly session cookie.
  */

@@ -28,7 +28,7 @@ uploaded as the `smoke-macos-aarch64` artifact whatever the verdict.
 Pushing a tag `vX.Y.Z` builds both platforms and creates a draft release with
 the installers attached. Nothing is public until someone opens the draft and
 publishes it. The version in the file names comes from `version` in
-`apps/epicenter/src-tauri/tauri.conf.json`, so bump it before tagging.
+`apps/desktop/src-tauri/tauri.conf.json`, so bump it before tagging.
 
 Builds are unsigned. macOS asks for confirmation on first open (right-click,
 Open) and Windows SmartScreen warns once. Signing needs an Apple Developer ID

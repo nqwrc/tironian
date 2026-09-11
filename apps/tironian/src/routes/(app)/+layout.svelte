@@ -1,0 +1,97 @@
+<!--
+	The (app) route layout is the session root and the boot owner. It mounts
+	once and persists across navigation, so the app is acquired
+	exactly once per launch: the raw {#await} below owns pending, fulfilled,
+	and failed rendering from the moment this component initialises, and the
+	fulfilled branch mounts the provider that supplies the ready app
+	to every descendant. AppEffects, GlobalDialogs, and the build-selected
+	DictationIndicator start exactly once, inside the ready subtree. Only the
+	nav chrome and ContentShell swap on a breakpoint change.
+-->
+<script lang="ts">
+	import { PRODUCT_NAME } from '$lib/constants/brand';
+	import { m } from '$lib/paraglide/messages';
+	import { Button } from '@tironian/ui/button';
+	import { Loading } from '@tironian/ui/loading';
+	import * as Sidebar from '@tironian/ui/sidebar';
+	import * as Tooltip from '@tironian/ui/tooltip';
+	import { onDestroy } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { createLogger } from 'wellcrafted/logger';
+	import DictationIndicator from '#platform/dictation-indicator';
+	import { tironianDependencies } from '$lib/app/dependencies';
+	import TironianUiSessionProvider from '$lib/app/TironianUiSessionProvider.svelte';
+	import { createTironianUiSessionOpening } from '$lib/app/ui-session-opening';
+	import {
+		openTironianUiSession,
+		TironianUiSessionError,
+	} from '$lib/app/ui-session';
+	import AppEffects from './_components/AppEffects.svelte';
+	import BottomNav from './_components/BottomNav.svelte';
+	import ContentShell from './_components/ContentShell.svelte';
+	import GlobalDialogs from './_components/GlobalDialogs.svelte';
+	import VerticalNav from './_components/VerticalNav.svelte';
+
+	const log = createLogger('tironian/app-layout');
+
+	let { children } = $props();
+
+	let sidebarOpen = $state(false);
+
+	// Sidebar when wide, bottom bar on narrow viewports (phone, small window).
+	const isNarrow = new MediaQuery('(max-width: 767px)');
+
+	// Created during component initialisation, so the {#await} owns the
+	// acquisition before any failure can settle. Boot retry is a full page
+	// reload. Unmount/HMR aborts an in-flight acquisition; after fulfillment,
+	// this route owner drains shell, query, and app resources together.
+	const owner = createTironianUiSessionOpening((signal) =>
+		openTironianUiSession(tironianDependencies, signal),
+	);
+	const opening = owner.opening;
+	const dispose = () =>
+		void owner[Symbol.asyncDispose]().catch((cause) => {
+			log.warn(TironianUiSessionError.TeardownFailed({ cause }));
+		});
+	onDestroy(dispose);
+</script>
+
+{#await opening}
+	<Loading class="h-dvh" />
+{:then session}
+	<TironianUiSessionProvider {session}>
+		<!-- Uses UI package defaults (300ms delay, 150ms skip) -->
+		<Tooltip.Provider>
+			<AppEffects />
+
+			{#if isNarrow.current}
+				<div class="flex h-full min-h-svh flex-col">
+					<div class="flex-1 pb-14">
+						<ContentShell>{@render children()}</ContentShell>
+					</div>
+					<BottomNav />
+				</div>
+			{:else}
+				<Sidebar.Provider bind:open={sidebarOpen}>
+					<VerticalNav />
+					<Sidebar.Inset>
+						<ContentShell>{@render children()}</ContentShell>
+					</Sidebar.Inset>
+				</Sidebar.Provider>
+			{/if}
+
+			<GlobalDialogs />
+			<DictationIndicator />
+		</Tooltip.Provider>
+	</TironianUiSessionProvider>
+{:catch error}
+	<div class="flex h-dvh flex-col items-center justify-center gap-4 p-8 text-center">
+		<h1 class="text-lg font-semibold">{m.boot_failed_title({ productName: PRODUCT_NAME })}</h1>
+		<p class="text-muted-foreground max-w-md text-sm">
+			{error instanceof Error ? error.message : String(error)}
+		</p>
+		<div class="flex gap-2">
+			<Button onclick={() => location.reload()}>{m.app_reload()}</Button>
+		</div>
+	</div>
+{/await}

@@ -6,7 +6,7 @@
 // Svelte error surface can mount. The Safari gate falsified exactly this on
 // 2026-07-18. The contract: `runtime.open()` is asynchronous and resolves
 // only with a ready handle, and every fallible acquisition runs inside a
-// mounted observer. Whispering synchronously creates one application-opening
+// mounted observer. Tironian synchronously creates one application-opening
 // promise in a mounted component and renders it through a stable `{#await}`
 // boundary. Its library modules remain inert.
 //
@@ -19,7 +19,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ROOTS = ['apps/whispering/src/lib'];
+const ROOTS = ['apps/tironian/src/lib'];
 
 function* walk(dir: string): Generator<string> {
 	for (const entry of readdirSync(dir)) {

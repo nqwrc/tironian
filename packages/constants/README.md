@@ -8,7 +8,7 @@ This is a floor, not a junk drawer. A fact belongs here only when more than one 
 
 ### `@epicenter/constants/apps`
 
-The app dev-port and, where an app still has one, canonical production-URL registry (`APPS`). Tironian ships no hosted deployment of its own, so `APPS.WHISPERING` carries only the dev port `workspaceAppViteConfig` binds to.
+The app dev-port and, where an app still has one, canonical production-URL registry (`APPS`). Tironian ships no hosted deployment of its own, so `APPS.TIRONIAN` carries only the dev port `workspaceAppViteConfig` binds to.
 
 ```typescript
 import { APPS } from '@epicenter/constants/apps';

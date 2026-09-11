@@ -90,11 +90,11 @@ function structCount(document: Y.Doc): number {
 const mintRowId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 24);
 
 /** Bytes this process authored, which is what has to reach the authority. */
-const localOrigin = Object.freeze({ kind: 'epicenter-local' });
+const localOrigin = Object.freeze({ kind: 'tironian-local' });
 /** Bytes replayed from SQLite, which must not be appended back to SQLite. */
-const hydrationOrigin = Object.freeze({ kind: 'epicenter-hydration' });
+const hydrationOrigin = Object.freeze({ kind: 'tironian-hydration' });
 /** Bytes that arrived from a peer: durable, but not local work. */
-const remoteOrigin = Object.freeze({ kind: 'epicenter-remote' });
+const remoteOrigin = Object.freeze({ kind: 'tironian-remote' });
 
 /**
  * The store capability itself is gone: the store was disposed.
@@ -331,7 +331,7 @@ export type TableHandle = {
 	 * error arm is storage trouble.
 	 *
 	 * The application names its own roots and picks their formats:
-	 * `handle.get('editor', 'text')`. Epicenter derives the address, retires
+	 * `handle.get('editor', 'text')`. Tironian derives the address, retires
 	 * the document with the row, and never looks inside. Dispose the handle
 	 * when the surface holding it unmounts; the manager keeps one live
 	 * document per address while any handle holds it.
@@ -436,8 +436,8 @@ export type DataView<TDatabase extends DataDefinition> = {
  *
  * Named for what it is to the caller. The application itself is a bigger
  * thing that owns UI, state, and sync attachments; what an opener returns is
- * that application's DATA, which is exactly what the reference app already
- * called it (`HoneycrispData`, bound as `db`).
+ * that application's DATA, which is exactly what a consuming app calls it
+ * (`TironianData`, bound as `db`).
  *
  * The split is by who calls it. `tables` and `kv` are what an
  * application does; `store` holds pressure, the CRDT verbs, and, on a

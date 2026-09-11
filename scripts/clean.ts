@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * @fileoverview Clean script for Epicenter monorepo
+ * @fileoverview Clean script for Tironian monorepo
  *
  * Removes build artifacts, caches, and node_modules across the monorepo.
  *
@@ -44,7 +44,7 @@ async function main() {
 	console.log(
 		isNuke
 			? '💥 NUKE MODE: Cleaning everything including Rust target...\n\n⚠️  Warning: Rust recompilation will take several minutes!\n'
-			: '🧹 Cleaning Epicenter monorepo...\n',
+			: '🧹 Cleaning Tironian monorepo...\n',
 	);
 
 	// Discover all monorepo package roots from workspace config

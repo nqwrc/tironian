@@ -47,8 +47,8 @@
  * @example
  * ```svelte
  * <script lang="ts">
- *   const honeycrisp = fromData(data);
- *   const notes = honeycrisp.tables.notes;
+ *   const workspace = fromData(data);
+ *   const notes = workspace.tables.notes;
  *   const active = $derived(notes.rows.filter((n) => n.deletedAt === null));
  * </script>
  * <button onclick={() => notes.create({ title: '' })}>New</button>

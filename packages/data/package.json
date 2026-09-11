@@ -1,7 +1,7 @@
 {
 	"name": "@tironian/data",
 	"version": "0.0.1",
-	"description": "The Epicenter store: one document per application, and a synchronous surface over it.",
+	"description": "The Tironian store: one document per application, and a synchronous surface over it.",
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",

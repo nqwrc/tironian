@@ -23,7 +23,7 @@ import type { SqliteDatabase, SqliteRow, SqliteValue } from './index.js';
  * production caller nests (the store's projection rebuild is the only
  * browser-reachable transaction), OO1 itself throws loudly on a nested
  * `BEGIN`, and OO1 ships a native `savepoint()` for the day nesting earns
- * itself. The hand-rolled `SAVEPOINT epicenter_nested_*` emulation that used
+ * itself. The hand-rolled `SAVEPOINT tironian_nested_*` emulation that used
  * to live here served zero callers.
  */
 export type BrowserSqliteDatabase = {

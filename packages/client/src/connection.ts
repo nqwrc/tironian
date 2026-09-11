@@ -9,16 +9,16 @@
  * static data a human types into a form: a base URL and an optional bearer key.
  * `resolveConnection` turns that into a transport with a single, branchless rule
  * (`apiKey` -> `Authorization: Bearer`). Anything that is NOT static data, the
- * hosted Epicenter gateway (an injected session fetch) and any future
+ * hosted Tironian gateway (an injected session fetch) and any future
  * signing/refresh auth (Bedrock SigV4, Vertex OAuth), never enters this shape: the
  * caller composes it into a {@link ResolvedConnection} and injects it. Hosted is
  * therefore not a member of this type; it is the registry's injected fallback
  * transport (see `@tironian/app-shell` `createInferenceConnections`).
  *
- * The leak guard is structural (ADR-0053): the Epicenter bearer is attached only by
+ * The leak guard is structural (ADR-0053): the Tironian bearer is attached only by
  * `auth.fetch`, and only to the origin it signed into. A connection here is always
  * a third-party URL reached with a plain fetch carrying only the user's own key and
- * headers, so a custom turn can never reach its URL with the Epicenter bearer. The
+ * headers, so a custom turn can never reach its URL with the Tironian bearer. The
  * single origin check lives on the credential in `fetchWithAuth`, not in this
  * resolver, so this resolver needs no hosted argument to stay safe.
  */
@@ -56,7 +56,7 @@ export type ConnectionPreset = {
  * and loses prompt caching and thinking) and a bring-your-own Gemini (its compat
  * layer 400s on tools and JSON together, which the agent loops use) are
  * deliberately absent; both are reachable as a raw custom URL. Self-hosted
- * Epicenter is also a raw custom URL, not a preset.
+ * Tironian is also a raw custom URL, not a preset.
  */
 export const CONNECTION_PRESETS = [
 	{
@@ -121,12 +121,12 @@ export type ResolvedConnection = {
 /**
  * Resolve a connection to its transport. One branchless rule: attach the user's
  * key as `Authorization: Bearer` when present; a keyless local server gets a bare
- * fetch. It is never the Epicenter bearer (this resolver only ever sees a
+ * fetch. It is never the Tironian bearer (this resolver only ever sees a
  * third-party connection; the hosted transport is injected elsewhere, never built
- * here), so a custom turn cannot leak the Epicenter session (ADR-0053).
+ * here), so a custom turn cannot leak the Tironian session (ADR-0053).
  *
  * `baseFetch` is the transport the Bearer wraps, defaulting to `globalThis.fetch`.
- * A native app passes its platform fetch: Whispering hands in Tauri's
+ * A native app passes its platform fetch: Tironian hands in Tauri's
  * `@tauri-apps/plugin-http` fetch so a desktop request reaches a third-party
  * provider from the native side, not the webview, where the provider's absent CORS
  * headers would block it. On the web the platform fetch is undefined, so the

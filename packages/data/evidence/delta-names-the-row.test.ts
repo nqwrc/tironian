@@ -2,7 +2,7 @@
  * The `'delta'` behaviour the store's per-table subscription rests on, pinned.
  *
  * Every assertion here is a property of `@y/y@14.0.0-rc.24` rather than of
- * Epicenter's own code, and a failure means an upgrade moved something the
+ * Tironian's own code, and a failure means an upgrade moved something the
  * subscription's design is resting on rather than that the store has a bug.
  *
  * There is a specific reason to pin this one. `store.ts` correctly recorded
@@ -101,7 +101,7 @@ describe("a table root's 'delta' names the rows a commit touched", () => {
 		peer.transact(() =>
 			writeRow(peer.get('notes'), 'note-b', { title: 'From the phone' }),
 		);
-		const remote = { kind: 'epicenter-remote' };
+		const remote = { kind: 'tironian-remote' };
 
 		Y.applyUpdateV2(document, Y.encodeStateAsUpdateV2(peer), remote);
 

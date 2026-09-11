@@ -1,9 +1,8 @@
 # Builds Tironian for Windows and macOS, smoke-tests the macOS build, and on a
 # `v*` tag collects both into a draft GitHub Release.
 #
-# The desktop app is the Tauri host in apps/epicenter (its code keeps upstream's
-# name; the bundle it produces is Tironian). This is the only workflow that
-# compiles Rust.
+# The desktop app is the Tauri host in apps/desktop. This is the only
+# workflow that compiles Rust.
 #
 # Why a full `tauri build` per platform instead of a cheap `cargo check` leg:
 #   - Most of the native code sits behind `cfg(windows)` and
@@ -42,7 +41,7 @@
 name: Tironian desktop build
 
 # No `paths:` filter: `beforeBuildCommand` runs `bun run build:desktop`, which
-# builds the Home frontend plus the Whispering bundle and compiles the Bun
+# builds the Home frontend plus the Dictation bundle and compiles the Bun
 # sidecar, so almost any workspace package can break it.
 on:
   pull_request:
@@ -171,7 +170,7 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './apps/epicenter/src-tauri -> target'
+          workspaces: './apps/desktop/src-tauri -> target'
           # Windows redirects CARGO_TARGET_DIR off the workspace, so only the
           # registry and git caches survive there.
           cache-targets: ${{ matrix.os != 'windows' }}
@@ -185,10 +184,10 @@ jobs:
         run: bun install --frozen-lockfile
 
       # tauri.conf.json's `beforeBuildCommand` is `bun run build:desktop`, which
-      # builds Home and Whispering, then compiles the Bun sidecar that
+      # builds Home and Dictation, then compiles the Bun sidecar that
       # `externalBin` requires.
       - name: Build the desktop app
-        run: bun run --cwd apps/epicenter desktop:build
+        run: bun run --cwd apps/desktop desktop:build
 
       - name: Stage Windows installers
         if: ${{ matrix.os == 'windows' }}
@@ -225,7 +224,7 @@ jobs:
           function Dlls([string]$dir) {
             @(Get-ChildItem $dir -Recurse -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object Name)
           }
-          Assert-Runtime 'staged transcribe-libs' (Dlls 'apps/epicenter/src-tauri/transcribe-libs')
+          Assert-Runtime 'staged transcribe-libs' (Dlls 'apps/desktop/src-tauri/transcribe-libs')
           $out = Join-Path $env:GITHUB_WORKSPACE 'ci-artifacts'
           # WiX MSI: an administrative install extracts the payload without
           # elevation and without touching the registry.
@@ -251,7 +250,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUNDLE="apps/epicenter/src-tauri/target/release/bundle/macos"
+          BUNDLE="apps/desktop/src-tauri/target/release/bundle/macos"
           test -d "$BUNDLE" || { echo "::error::no macOS bundle directory at $BUNDLE"; exit 1; }
           APP="$(find "$BUNDLE" -maxdepth 1 -name '*.app' -type d | head -1)"
           test -n "$APP" || { echo "::error::tauri build produced no .app bundle under $BUNDLE"; exit 1; }
@@ -262,7 +261,7 @@ jobs:
           # every macOS bundle before this check shipped without apps-dist and
           # could not start. Assert the files the host needs at launch.
           missing=0
-          for f in apps-dist/home/index.html apps-dist/whispering/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
+          for f in apps-dist/home/index.html apps-dist/dictation/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
             test -f "$APP/Contents/Resources/$f" || { echo "::error::bundle is missing Contents/Resources/$f"; missing=1; }
           done
           ls -R "$APP/Contents/Resources" | head -40
@@ -333,7 +332,7 @@ jobs:
           screencapture -x "$OUT/screen-launch.png" || echo "::warning::screencapture failed (screen recording not granted on this image)"
           # Open the dictation window through the app's own deep link, then
           # capture it. Informational: a runner may not route the scheme.
-          open "tironian://app/whispering" || true
+          open "tironian://app/dictation" || true
           sleep 10
           screencapture -x "$OUT/screen-dictation.png" || true
 
@@ -355,14 +354,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bun run --cwd apps/whispering test
-          cd apps/epicenter/src-tauri && cargo test --release --lib
+          bun run --cwd apps/tironian test
+          cd apps/desktop/src-tauri && cargo test --release --lib
 
       - name: Test the host TypeScript suite (macOS, reported only)
         if: ${{ matrix.os == 'macos' }}
         continue-on-error: true
         shell: bash
-        run: bun run --cwd apps/epicenter test
+        run: bun run --cwd apps/desktop test
 
       - name: Upload the smoke-test evidence
         if: ${{ always() && matrix.os == 'macos' }}

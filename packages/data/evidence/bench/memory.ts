@@ -132,7 +132,7 @@ if (process.argv[2] === '--measure') {
 	process.exit(0);
 }
 
-const directory = await mkdtemp(join(tmpdir(), 'epicenter-mem-'));
+const directory = await mkdtemp(join(tmpdir(), 'tironian-mem-'));
 try {
 	console.log(
 		`runtime  bun ${Bun.version} (${process.platform}/${process.arch})`,

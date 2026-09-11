@@ -3,12 +3,12 @@
 	"version": "0.3.0",
 	"private": true,
 	"type": "module",
-	"description": "Svelte 5 bindings for Epicenter: reactive workspace state and persisted state.",
+	"description": "Svelte 5 bindings for Tironian: reactive workspace state and persisted state.",
 	"keywords": [
 		"svelte",
 		"local-first",
 		"CRDT",
-		"epicenter",
+		"tironian",
 		"workspace",
 		"reactive state"
 	],

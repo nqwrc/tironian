@@ -59,14 +59,14 @@ describe('transcribe over the OpenAI wire', () => {
 				baseUrl: 'https://api.groq.com/openai/v1',
 				apiKey: 'sk-test',
 			}),
-			{ model: 'whisper-large-v3', language: 'en', prompt: 'Epicenter' },
+			{ model: 'whisper-large-v3', language: 'en', prompt: 'Tironian' },
 		);
 
 		const headers = new Headers(seen[0]?.init?.headers);
 		expect(headers.get('Authorization')).toBe('Bearer sk-test');
 		const form = seen[0]?.init?.body as FormData;
 		expect(form.get('language')).toBe('en');
-		expect(form.get('prompt')).toBe('Epicenter');
+		expect(form.get('prompt')).toBe('Tironian');
 	});
 
 	test('a non-2xx becomes a RequestFailed carrying the status', async () => {

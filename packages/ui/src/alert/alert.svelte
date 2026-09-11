@@ -7,7 +7,7 @@
 			variant: {
 				default: 'cn-alert-variant-default',
 				destructive: 'cn-alert-variant-destructive',
-				// Epicenter custom variant (overlay, not upstream).
+				// Tironian custom variant (overlay, not upstream).
 				warning: 'cn-alert-variant-warning',
 			},
 		},

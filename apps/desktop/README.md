@@ -1,0 +1,114 @@
+# Epicenter desktop host
+
+Epicenter is the repository's native application host. It owns one Tauri runtime and one native command API. Product SPAs keep their source in their own `apps/*` folders; Epicenter builds and serves their desktop variants without copying that source into this folder.
+
+```text
+trusted SPA source                 Epicenter build output
+
+apps/whispering/src  -----------> dist/whispering
+apps/epicenter/ui     -----------> dist/home
+                                          |
+                                          v
+                              Bun loopback sidecar
+                                          |
+                                          v
+                              apps/epicenter/src-tauri
+```
+
+A compiled application is a `dist/<id>` build this release declares, served
+below `/apps/<id>/`. Whispering is the one. It keeps its independently
+deployable browser build, and the variant Epicenter serves is selected at
+build time by the `tironian-host` resolve condition.
+
+That condition does not decide where the data lives. Every build opens its own
+local store, with no platform seam (ADR-0226, ADR-0227). The host serves
+bundles and local blobs; it owns no credential path, no application data, and
+constructs no database. What the condition still selects is the local blob
+composition (`#platform/blobs`, `#platform/base-path`), because the host's
+blob store reaches the host's own filesystem through the WebView, where a
+browser build has none.
+
+## Run locally
+
+Start Epicenter from the repository root:
+
+```bash
+bun dev:epicenter
+```
+
+### On Windows
+
+`bun dev:epicenter` alone does not build here. The native crate pulls
+transcribe-cpp with the `vulkan` feature on Windows x64, and that build needs
+four things an ordinary shell does not provide: the MSVC environment, the Ninja
+generator, a short target directory, and a CMake policy floor for the Opus that
+`audiopus_sys` vendors. Each missing one is a hard failure, and the errors point
+at vendored C++ rather than at what is actually wrong.
+
+`apps/desktop/scripts/windows-build-env.bat` supplies all four and then runs
+the dev server. Run it from this directory:
+
+```bat
+scripts\windows-build-env.bat
+```
+
+It takes an optional command, so it also wraps anything else that has to compile
+the crate:
+
+```bat
+scripts\windows-build-env.bat cargo build --manifest-path src-tauri\Cargo.toml
+```
+
+It finds Visual Studio through `vswhere`, so Build Tools, Community,
+Professional and Enterprise all work, and it uses the Ninja that ships inside
+that install. It picks a short `CARGO_TARGET_DIR` at the root of the repository's
+drive, because the ggml-vulkan shader build otherwise runs past Windows'
+250-character object-path limit; set `CARGO_TARGET_DIR` yourself to override
+that, keeping it near a drive root. It needs `VULKAN_SDK` set, and warns when it
+is not.
+
+Epicenter opens Home, which is an application beside the others rather than a
+shell above them (ADR-0209). Its Apps pane lists what this build can launch,
+and launching one opens its own window; the OS is the switcher from there, and
+closing Home leaves everything it launched running. Its Data pane is Epicenter's
+own job: every workspace id as real read-only tables, where picking one makes
+`SELECT * FROM notes` mean something and "Everything raw" shows the storage as it
+is. Whispering hands transcription setup back to Home's Settings pane
+when the host has no usable local model, and Settings offers the ordinary launch
+action once there is one. The tray and deep links remain shortcuts into the same
+windows:
+
+```bash
+open 'tironian://app/whispering'
+open 'tironian://app/home'
+```
+
+## Build and verify
+
+```bash
+# Build Home, every compiled application, and the Bun sidecar
+bun run --cwd apps/epicenter build:desktop
+
+# Package the complete native application
+bun run --cwd apps/epicenter desktop:build
+
+# Typecheck Home plus every compiled application's platform conditions
+bun run --cwd apps/epicenter typecheck
+
+# Host, routing, sidecar, and window tests
+bun test apps/epicenter/scripts apps/epicenter/src
+
+# Native command and fixture tests
+cargo test --manifest-path apps/epicenter/src-tauri/Cargo.toml
+```
+
+## Ownership rules
+
+- `src-tauri` owns native commands, permissions, windows, deep links, and packaging.
+- `src` owns the Bun host, trusted route catalog, static-asset containment, and Home session.
+- `dist` is generated. Never edit it or commit product source beneath it.
+- A product SPA owns its UI and browser deployment from its own app folder.
+- A multi-host SPA selects implementations through build-time `#platform/*` conditions. Runtime checks guard optional capabilities; they do not choose which implementation was bundled.
+- Do not create `apps/epicenter/<app>` source copies. The build must consume the canonical app source directly.
+
+The durable host and trust decision is recorded in ADR-0118.

@@ -5,7 +5,7 @@
  * Every surface here takes a caller-built connection (base URL, API key,
  * fetch); this package owns no auth state, no identity, and no deployment of
  * its own. It talks to whatever OpenAI-compatible or provider-specific HTTP
- * endpoint the caller resolved, never a hosted Epicenter server.
+ * endpoint the caller resolved, never a hosted Tironian server.
  */
 
 export type { EngineFetch } from './agent-engine.js';

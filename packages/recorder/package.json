@@ -11,7 +11,7 @@
 		"microphone",
 		"voice-activity-detection",
 		"VAD",
-		"epicenter"
+		"tironian"
 	],
 	"exports": {
 		".": "./src/index.ts",

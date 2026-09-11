@@ -52,8 +52,8 @@ export const BlobId = type(new RegExp(`^${BLOB_ID_ROUTE_REGEX}$`)).as<BlobId>();
  * (row cell, local store key, remote key) is a copy of a minted value or a
  * parse of one via the {@link BlobId} validator.
  *
- * One other implementation mints this same shape: Epicenter's native recorder,
- * in `apps/epicenter/src-tauri/src/recorder/blob.rs`, because the host decides
+ * One other implementation mints this same shape: Tironian's native recorder,
+ * in `apps/tironian/src-tauri/src/recorder/blob.rs`, because the host decides
  * which recording exists and hands the id back over IPC. The two mints must
  * agree, and each side has a round-trip test against its own parse to keep them
  * from drifting apart.

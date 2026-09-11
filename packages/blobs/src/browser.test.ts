@@ -19,7 +19,7 @@ import { createBrowserBlobSources, createBrowserBlobStore } from './browser.js';
 let databaseSequence = 0;
 
 function setup() {
-	const databaseName = `epicenter-browser-blobs-test-${databaseSequence++}`;
+	const databaseName = `tironian-browser-blobs-test-${databaseSequence++}`;
 	return {
 		databaseName,
 		blobs: createBrowserBlobStore({ databaseName, indexedDb: indexedDB }),

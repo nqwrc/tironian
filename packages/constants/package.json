@@ -1,6 +1,6 @@
 {
 	"name": "@tironian/constants",
-	"description": "Shared Epicenter platform contracts: app origins and ports, the model catalog, and the application-data root apps partition below",
+	"description": "Shared Tironian platform contracts: app origins and ports, the model catalog, and the application-data root apps partition below",
 	"version": "0.1.1",
 	"type": "module",
 	"imports": {

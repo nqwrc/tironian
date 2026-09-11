@@ -263,12 +263,14 @@ One product name. No sub-brands, no "Tironian Pro", no capitalized feature names
 
 - The app is Tironian, and so is the installed bundle: `productName`, the
   installers, window titles, the tray menu and tooltip, and the host's own
-  error messages all say Tironian (`apps/epicenter/src-tauri/tauri.conf.json`,
+  error messages all say Tironian (`apps/desktop/src-tauri/tauri.conf.json`,
   `lib.rs`, `shell.rs`). The Rust crate, the deep-link scheme, the sidecar
   binary, the log directory and every `EPICENTER_*` environment variable
-  moved to Tironian names in the runtime-identifier rename; upstream's
-  Epicenter name survives only in the `apps/epicenter` directory itself and
-  the `whispering`-named code identifiers, neither of which is renamed yet.
+  moved to Tironian names in the runtime-identifier rename, and the directory
+  and identifier rename that followed it renamed the rest: `apps/whispering`
+  to `apps/tironian`, `apps/epicenter` to `apps/desktop`, and the
+  `whispering`-named code identifiers with them. Upstream's Epicenter and
+  Whispering names survive only as the attribution the license requires.
 - The bundle identifier is now `app.tironian` (`app.tironian.dev` for the dev
   build), moved off `so.epicenter` in the runtime-identifier rename. It names
   the data root on every platform and is pinned equal in Rust, TypeScript and
@@ -286,34 +288,34 @@ on `--ground`, inside the macOS 824-unit rounded square. A font's glyph would
 carry that font's license into the logo, and a slanted stem reads as a 7.
 `docs/brand/icon/mark.ps1` renders it at any size; `tironian-1024.png` is the
 source `tauri icon` expands into the `.icns`, `.ico` and PNG set in
-`apps/epicenter/src-tauri/icons/`. The tray still shows the recorder-state
+`apps/desktop/src-tauri/icons/`. The tray still shows the recorder-state
 images in `recorder-state-icons/`, not the mark.
 
 ## Rename tiers
 
-The word "Whispering" appears 568 times in `apps/whispering/src`. Roughly 520 of
-those are identifiers: `WhisperingApp` alone accounts for 277, and
-`$lib/whispering/*` for another 106.
+The word "Whispering" appeared 568 times in `apps/tironian/src` before this
+section was last true. Roughly 520 of those were identifiers: `WhisperingApp`
+alone accounted for 277, and `$lib/whispering/*` for another 106.
 
-**Tier 1, executed on this branch.** Everything a person or a distributor reads:
-window and page titles, UI copy, error strings shown to a user, the workspace
-title, the package description, the front-door README, and an attribution
-NOTICE.
+**Tier 1, executed on `feature/tironian-rebrand`.** Everything a person or a
+distributor reads: window and page titles, UI copy, error strings shown to a
+user, the workspace title, the package description, the front-door README, and
+an attribution NOTICE.
 
-**Tier 2, deliberately not executed.** Type names, file paths, import subpaths,
-package names, and code comments.
+**Tier 2, executed on `feature/debrand`.** Type names, file paths, import
+subpaths, package names, and code comments.
 
-The reason is measured, not aesthetic. This fork is 497 commits behind upstream,
-and a trial `git merge-tree` already conflicts on 40 files, with the store code
-facing a rewritten data vocabulary. Renaming `WhisperingApp` to `TironianApp`
-would put a conflict on every one of the 155 files that names it, in a tree that
-still wants upstream fixes and still has slices going out as upstream PRs. A
-rebrand that makes the fork unmergeable has bought a consistent codebase and sold
-the ability to keep up.
-
-Tier 2 becomes correct the day this fork stops tracking upstream. Until then the
-internal vocabulary is a historical artifact, which is what the file paths in any
-long-lived product are.
+The tier split was measured, not aesthetic, and the measurement changed. Tier 2
+was deferred on `feature/tironian-rebrand` because that branch still tracked
+upstream: a trial `git merge-tree` conflicted on 40 files, and renaming
+`WhisperingApp` to `TironianApp` would have put a conflict on every one of the
+155 files that named it. `feature/debrand` cut that constraint loose on
+purpose: it deletes Honeycrisp, sign-in, sync, hosted inference, the web
+deploy, and every app the dictation product does not import, so there is no
+longer an upstream tree to stay mergeable with. Tier 2 landed on that branch:
+`apps/whispering` renamed to `apps/tironian`, `apps/epicenter` to
+`apps/desktop`, `WhisperingApp` to `TironianApp`, `$lib/whispering/*` to
+`$lib/app/*`, and the rest of the internal vocabulary with them.
 
 ## Licensing and attribution
 
@@ -340,7 +342,7 @@ never merged back into it, so the upstream slices stay clean.
 1. This document.
 2. `NOTICE` and README attribution.
 3. One source of truth for the product name,
-   `apps/whispering/src/lib/constants/brand.ts`, replacing hardcoded literals so
+   `apps/tironian/src/lib/constants/brand.ts`, replacing hardcoded literals so
    the next rename is one line.
 4. The Tier 1 string rename.
 5. Color and type taken from the Vivavoce design assets, replacing the earlier
@@ -349,7 +351,7 @@ never merged back into it, so the upstream slices stay clean.
    dark warm-neutral system, so the risk note is retired rather than left open.
 
 6. The token system applied as the app's brand layer, in
-   `apps/whispering/src/app.css`, with Instrument Sans and IBM Plex Mono bundled
+   `apps/tironian/src/app.css`, with Instrument Sans and IBM Plex Mono bundled
    through fontsource.
 7. A message layer, so Italian is a locale rather than a fork of the source.
 

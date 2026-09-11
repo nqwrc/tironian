@@ -252,7 +252,7 @@ if (process.argv[2] === '--measure') {
 	process.exit(0);
 }
 
-const directory = await mkdtemp(join(tmpdir(), 'epicenter-tomb-'));
+const directory = await mkdtemp(join(tmpdir(), 'tironian-tomb-'));
 try {
 	console.log(
 		`runtime  bun ${Bun.version} (${process.platform}/${process.arch}), JavaScriptCore`,

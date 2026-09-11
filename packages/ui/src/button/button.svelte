@@ -7,8 +7,8 @@
 	import { cn, type WithElementRef } from '../utils.js';
 
 	// Styling lives in the vendored Vega preset (cn-* classes); see
-	// packages/ui/src/styles/style-vega.css. Epicenter-specific variants live in
-	// packages/ui/src/styles/epicenter-overlay.css.
+	// packages/ui/src/styles/style-vega.css. Tironian-specific variants live in
+	// packages/ui/src/styles/tironian-overlay.css.
 	export const buttonVariants = tv({
 		base: 'cn-button group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
 		variants: {
@@ -19,7 +19,7 @@
 				secondary: 'cn-button-variant-secondary',
 				ghost: 'cn-button-variant-ghost',
 				link: 'cn-button-variant-link',
-				// Epicenter custom variant (overlay, not upstream).
+				// Tironian custom variant (overlay, not upstream).
 				'ghost-destructive': 'cn-button-variant-ghost-destructive',
 			},
 			size: {

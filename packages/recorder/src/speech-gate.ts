@@ -3,7 +3,7 @@ import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';
 import { DEFAULT_VAD_ASSET_PATH } from './vad-recorder';
 
-const log = createLogger('epicenter/recorder/speech-gate');
+const log = createLogger('tironian/recorder/speech-gate');
 
 const SpeechGateError = defineErrors({
 	/** The gate could not run, so the caller was told there was speech. */

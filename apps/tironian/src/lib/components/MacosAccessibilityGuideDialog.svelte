@@ -1,0 +1,134 @@
+<script module lang="ts">
+	import { m } from '$lib/paraglide/messages';
+	import { PRODUCT_NAME } from '$lib/constants/brand';
+	import { toast } from '@tironian/ui/sonner';
+	import { tauri } from '#platform/tauri';
+
+	/**
+	 * Global opener for the macOS Accessibility guide. Mirrors the
+	 * `confirmationDialog` idiom: mount `<MacosAccessibilityGuideDialog />` once at
+	 * the app root, then call `accessibilityGuide.open()` from anywhere (the home
+	 * notice) to surface the remove/re-add walkthrough. The guide content is fixed,
+	 * so the store carries no payload: it
+	 * is open or closed and nothing else.
+	 *
+	 * The guide is user-opened, never auto-popped: the ambient "you still need
+	 * this" signal is the declarative `DictationCapabilityNotice`, which a modal
+	 * must not duplicate by nagging.
+	 */
+	function createAccessibilityGuide() {
+		let isOpen = $state(false);
+		return {
+			get isOpen() {
+				return isOpen;
+			},
+			set isOpen(value) {
+				isOpen = value;
+			},
+			open() {
+				isOpen = true;
+			},
+			close() {
+				isOpen = false;
+			},
+		};
+	}
+
+	export const accessibilityGuide = createAccessibilityGuide();
+
+	/**
+	 * Shared "send me to the Accessibility pane" action for both macOS
+	 * accessibility surfaces: the home notice and this guide. It lives here beside
+	 * `accessibilityGuide` because those are its only two callers and the toast
+	 * copy must stay identical between them.
+	 *
+	 * macOS never lets an app grant itself Accessibility, so this is the whole
+	 * "enable" path. The leading `request()` fires only for its first-run side
+	 * effect: it adds Tironian to the Accessibility list (toggle off) so the
+	 * user flips a switch instead of hunting with "+", and shows the native prompt
+	 * once (TCC suppresses it after). We discard its Result: it cannot grant in
+	 * place and a failed prompt must not block the deep-link. The capability then
+	 * flips to `active` on its own when the Rust supervisor next sees the grant.
+	 */
+	export async function openSystemSettings() {
+		if (!tauri) return;
+		await tauri.permissions.accessibility.request();
+		const { error } = await tauri.permissions.accessibility.openSettings();
+		if (error) {
+			toast.info('Open System Settings manually', {
+				description:
+					m.macos_accessibility_guide_dialog_apple_menu_system(),
+				duration: 10000,
+			});
+			return;
+		}
+		toast.info('System Settings opened', {
+			description: m.macos_accessibility_guide_dialog_turn_on_app_in({ productName: PRODUCT_NAME }),
+			duration: 8000,
+		});
+	}
+</script>
+
+<script lang="ts">
+	import { Badge } from '@tironian/ui/badge';
+	import { Button } from '@tironian/ui/button';
+	import * as Dialog from '@tironian/ui/dialog';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import MacosAccessibilityGuide from '$lib/components/MacosAccessibilityGuide.svelte';
+	import { dictationCapability } from '$lib/state/dictation-capability.svelte';
+
+	// The Rust supervisor pushes the capability change, so the dialog flips to its
+	// granted state the moment the supervisor sees the grant, with no reload.
+	const isGranted = $derived(dictationCapability.isActive);
+
+	// A stale grant (`broken`) is the only case that needs the remove-and-re-add
+	// dance; never-granted (and the pre-seed `unknown`) just needs the switch
+	// flipped on a row `openSystemSettings` already added. This drives the title,
+	// the description, and which steps the guide renders, so a first-timer is never
+	// told to remove an Tironian that isn't in their list yet.
+	const variant = $derived(
+		dictationCapability.isStale ? 're-add' : 'first-grant',
+	);
+</script>
+
+<Dialog.Root bind:open={accessibilityGuide.isOpen}>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>
+				{variant === 're-add' ? 'Re-grant Accessibility' : 'Enable Accessibility'}
+			</Dialog.Title>
+			<Dialog.Description>
+				{#if variant === 're-add'}
+					Tironian already has Accessibility, but paste at cursor is not
+					working. That usually means a stale entry from an app update. Open
+					System Settings below, then remove Tironian from the list and add it
+					back.
+				{:else}
+					macOS needs Accessibility before Tironian can paste where you're
+					typing. Open System Settings below, then switch Tironian on. It'll
+					already be in the list.
+				{/if}
+			</Dialog.Description>
+		</Dialog.Header>
+
+		<MacosAccessibilityGuide {variant} />
+
+		<Dialog.Footer>
+			{#if isGranted}
+				<Badge variant="success">
+					<CheckIcon class="size-4" aria-hidden="true" />
+					{m.macos_accessibility_guide_dialog_accessibility()}
+				</Badge>
+				<Button variant="outline" onclick={() => accessibilityGuide.close()}>
+					{m.macos_accessibility_guide_dialog_done()}
+				</Button>
+			{:else}
+				<Button onclick={openSystemSettings}>
+					<SettingsIcon class="size-4" aria-hidden="true" />
+					{m.macos_accessibility_guide_dialog_open_system_settings()}
+				</Button>
+			{/if}
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
