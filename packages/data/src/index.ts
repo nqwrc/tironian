@@ -16,6 +16,14 @@
  * Each opener is called `open` and takes the definition, because its id names
  * the store it opens (ADR-0229). The subpath already says which adapter,
  * so the identifier does not repeat it.
+ *
+ * `AccountStore`, `SyncCapability`, and `SyncFacts` describe the store's other
+ * kind: a replica with a `sync` value rather than `undefined`. `./browser`
+ * dropped its account opener (nothing in this repository dials an authority
+ * from a browser anymore), so today only `./bun`'s account opener produces
+ * one. The types stay exported from this barrel because they are still real
+ * shapes on `./store/store.js`, published for the transport a future consumer
+ * builds against that surface.
  */
 
 export type {
