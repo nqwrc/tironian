@@ -1,7 +1,3 @@
-# Commercially relevant code — requires @braden-w review
-# These paths contain the sync server and protocol (AGPL-3.0).
+# Sync protocol code (AGPL-3.0). Review carefully before merging.
 
-/apps/api/              @braden-w
-/apps/self-host/        @braden-w
-/packages/sync/         @braden-w
-/packages/server/       @braden-w
+/packages/sync/         @nqwrc

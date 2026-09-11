@@ -155,6 +155,3 @@ function create(itemOrItems: T | T[]) {
 }
 ```
 
-## References
-
-- [Full article](../../../../docs/articles/single-or-array-overload-pattern.md) : detailed explanation with more examples

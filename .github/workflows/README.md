@@ -9,7 +9,6 @@ them when sorted: `desktop` for the app build, `ci.{name}` for repo-wide checks.
 |---|---|---|
 | `desktop.yml` | Pull requests, push to `main`, `v*` tags, manual | Builds Tironian on Windows x86_64 (`.msi`, NSIS `.exe`) and macOS Apple Silicon (ad-hoc-signed `.app`). Audits the Windows installers for the transcribe-cpp runtime DLLs. Smoke-tests the macOS app and runs the dictation app and Rust host suites there. On a `v*` tag, collects the installers into a draft GitHub Release. |
 | `ci.format.yml` | Push to `main`, pull requests | The merge gate: `lint:ci`, `typecheck`, `test`, `check:structure`. `bun run check` is the same gate locally. |
-| `ci.runtime-parity.yml` | Push to `main`, pull requests | Boots the Bun runtime port against Postgres and a local S3 and runs the API smoke. Needs Docker, so it runs on a GitHub-hosted runner. |
 
 ## The macOS test
 

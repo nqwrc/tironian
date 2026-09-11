@@ -10,43 +10,24 @@ apps/
                reference for how an app is built
   whispering   transcription SPA
   epicenter    Tauri host for trusted app windows
-  api          hosted personal Cloud Worker (worker/ + ui/)
-  self-host    self-hosted single-partition instance reference
-               (Bun or Cloudflare)
 packages/
-  server       shared Hono library both deployables consume;
-               deployments differ by principal resolver
   data         the store, data definitions, openers, sync, and projection
   ui           shadcn-svelte components
-specs/         planning docs
-docs/          reference materials
 ```
 
 ## Runtime
 
 One runtime: a desktop SPA in a WebView over a client-owned store (ADR-0227). The host serves bundles and brokers credentials and owns no application data (ADR-0226).
 
-ADR-0227 was executed as a clean break, so these are broken on purpose until they are rebuilt against the store: `apps/vocab`, `apps/skills`, `packages/chat`, `packages/skills`, and app-shell's agent chat.
+ADR-0227 was executed as a clean break, so `packages/chat` and app-shell's agent chat are broken on purpose until they are rebuilt against the store, or removed with the rest of Home's chat pane.
 
 `apps/whispering` and `apps/epicenter` are off that list: they were rebuilt. Whispering declares a real workspace with `defineData` (`src/lib/workspace/index.ts:240`), opens the device and account stores and attaches sync (`src/lib/whispering/app.ts`), and its suite runs green. Epicenter compiles, bundles, and serves. Read the remaining names as a list to re-check against the code rather than a standing fact: this file is the first thing an agent reads, and a stale entry here sends it to rebuild something that already works.
 
-Migration reference: `docs/the-store-and-what-it-replaced.md`.
-
-## Deployment seam
-
-One library (`packages/server`), two deployables.
-
-| Deployable | What it is |
-| --- | --- |
-| `apps/api` | hosted personal cloud |
-| `apps/self-host` | self-hosted single-partition instance reference; community-supported, not Epicenter-operated |
-
-- Multi-tenancy (many principals, OAuth, billing) is Cloud-only. An instance resolves every valid bearer to the literal `instance` principal (ADR-0075, amended by ADR-0092).
-- Billing (catalog, routes, Autumn) lives in `apps/api/worker/billing/` and is hosted-only. Never extract it back to a shared package.
+This fork carries no hosted cloud or self-host deployable: `apps/api`, `apps/self-host`, `packages/server`, and `ops/` (upstream's Cloudflare DNS and redirect tooling) were pruned because nothing in the kept apps imports them.
 
 ## License boundary
 
-Apps and `packages/server` are AGPL. The embeddable toolkit packages are MIT.
+Apps are AGPL. The embeddable toolkit packages are MIT.
 
 Moving or copying code from an AGPL package into an MIT one is a relicensing act. `bun run check:licenses` guards dependency edges only and cannot see copied source. Decision procedure: `docs/licensing/licensing-strategy.md`.
 
@@ -58,9 +39,8 @@ Prefer `bun` over npm, yarn, pnpm, and node. Use `bun run`, `bun test`, `bun ins
 
 Start apps from the repo root with `bun dev:<app>`. Do not cd into an app to start it.
 
-- `bun dev:<app>` runs every process the app needs, including the hosted API on `localhost:8787` for apps that talk to it.
+- `bun dev:<app>` runs every process the app needs.
 - `bun dev:<app>:ui` is the frontend alone, where that split exists.
-- `bun dev:api` is the backend alone.
 - Details in the `monorepo` skill.
 
 ## Script suffix convention
@@ -109,7 +89,7 @@ Before changing code, prose, or agent instructions, identify the largest relevan
 
 ## Planning docs and decisions
 
-`docs/adr/`, `docs/CONTEXT.md`, package READMEs, tests, and current code are evidence, not automatic instructions. Start with the user's request and the current implementation.
+`docs/adr/`, `docs/CONTEXT` (create either lazily, only when the first decision or term needs one), package READMEs, tests, and current code are evidence, not automatic instructions. Start with the user's request and the current implementation.
 
 **ADRs.** They describe decisions that were reasonable at the time, but may be stale, scoped to a different problem, or intentionally reopened. Check status, amendments, and actual code before relying on one.
 
@@ -120,8 +100,7 @@ Before changing code, prose, or agent instructions, identify the largest relevan
 **Specs.** In-flight design scaffolding, not current truth. This holds for every `specs/` directory, top-level and per-app or per-package.
 
 - Two states only: `Draft` and `In Progress`. "Done" is deletion, not a terminal status, so a spec still in the tree declaring `Implemented`/`Superseded` is a hygiene smell (`scripts/check-doc-hygiene.ts` flags it).
-- When a design pass settles a durable decision, record it as an ADR (see `docs/adr/README.md`) and delete the now-spent spec. Git keeps the body recoverable.
-- `docs/spec-history.md` is a dated index of past specs. It is history, not truth.
+- When a design pass settles a durable decision, record it as an ADR under `docs/adr/` and delete the now-spent spec. Git keeps the body recoverable.
 
 Treat conflicts among specs, ADRs, code, tests, and user intent as judgment points, not automatic precedence rules.
 

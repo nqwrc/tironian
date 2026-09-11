@@ -139,4 +139,4 @@ cargo test --manifest-path apps/epicenter/src-tauri/Cargo.toml
 - A multi-host SPA selects implementations through build-time `#platform/*` conditions. Runtime checks guard optional capabilities; they do not choose which implementation was bundled.
 - Do not create `apps/epicenter/<app>` source copies. The build must consume the canonical app source directly.
 
-The durable host and trust decision is recorded in [ADR-0118](../../docs/adr/0118-epicenter-is-one-trusted-bun-hosted-spa-origin.md).
+The durable host and trust decision is recorded in ADR-0118.

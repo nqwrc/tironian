@@ -5,7 +5,7 @@ note's prose lives in that note's own independent Yjs document, opened on
 demand at the row's derived address (ADR-0248). The one application running on
 the store today, so it is also the reference for how an app is built.
 
-Design authority: [ADR-0226](../../docs/adr/0226-a-host-serves-bundles-and-brokers-credentials-it-owns-no-application-data.md) (a host serves bundles and brokers credentials and owns no application data), [ADR-0225](../../docs/adr/0225-a-store-authority-is-one-durable-object-per-principal-and-application-and-being-signed-in-is-the-sharing-model.md) (one authority per principal and application; being signed in is the sharing model), [ADR-0248](../../docs/adr/0248-a-row-owns-an-independent-yjs-document-at-a-derived-address.md) (a row owns an independent Yjs document at a derived address), [ADR-0261](../../docs/adr/0261-a-local-account-replica-is-addressed-by-its-application-server-url-and-verified-principal.md) (a retained replica is qualified by its application, server URL, and verified principal), [ADR-0256](../../docs/adr/0256-automatic-folding-is-the-current-maintenance-path-and-manual-workspace-compaction-is-deferred.md) (automatic folding is current; manual workspace compaction is deferred).
+Design authority: ADR-0226 (a host serves bundles and brokers credentials and owns no application data), ADR-0225 (one authority per principal and application; being signed in is the sharing model), ADR-0248 (a row owns an independent Yjs document at a derived address), ADR-0261 (a retained replica is qualified by its application, server URL, and verified principal), ADR-0256 (automatic folding is current; manual workspace compaction is deferred).
 
 ## Two durable documents, and routes open one
 

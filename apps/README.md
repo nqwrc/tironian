@@ -6,10 +6,8 @@ credentials; it owns no application data and constructs no database (ADR-0226).
 Hosted web as a second runtime with a host-owned replica is refused, and so are
 third-party installed apps, for now.
 
-Not every folder here is that. `api` and `self-host` are server deployables,
-`landing` is a public site, `local-books` and `local-mail` are headless mirrors
-with their own CLIs, and `sync-lab` is a throwaway harness for watching a row
-cross the wire. The rest of this page is about the surfaces that hold a person's
+Not every folder here is that: `epicenter` is the Tauri host, not a surface with
+its own data. The rest of this page is about the surfaces that hold a person's
 data.
 
 ## How a surface is put together
@@ -57,9 +55,7 @@ apps/<app>/
 └── package.json                 "exports": { ".": "./src/lib/workspace/index.ts" }
 ```
 
-`honeycrisp` uses that nesting. Follow the existing package shape. The
-application document's physical root grammar is documented in
-`../docs/adr/0257-the-application-document-has-named-kv-and-table-roots.md`.
+`honeycrisp` uses that nesting. Follow the existing package shape.
 
 Where a build genuinely differs, put the difference behind a `#platform/*`
 build-time subpath import rather than a runtime branch. Honeycrisp's
@@ -80,18 +76,15 @@ cannot obtain; storage does not, because it does not differ.
    (ADR-0222).
 4. Open the definition once where the app is acquired and pass the opened data
    handle to ordinary services. Do not spread it through the UI.
-5. Add the app to `docs/licensing/licensing-strategy.md` and, if it needs the
-   hosted API in development, a `dev:<app>` script at the repo root.
+5. Add the app to `docs/licensing/licensing-strategy.md` and a `dev:<app>`
+   script at the repo root.
 
 ## Where each surface stands
 
 `honeycrisp` is the surface built on the store, and its
 [README](honeycrisp/README.md) is the worked example.
 
-`whispering`, `vocab`, `skills`, and `epicenter` do not compile. The superseded
-data stack was deleted before they were migrated, deliberately, because the
-reverse order is impossible: there was nowhere for them to move until the
-refusals landed (ADR-0227). Data those apps held on the old stack is accepted as
-lost; there is no importer and there will not be one. What `vocab` and `skills`
-should look like on the store is an open design question, not a deletion nobody
-got to.
+`whispering` is also built on the store: it declares a real workspace with
+`defineData` (`src/lib/workspace/index.ts`), opens the device and account
+stores, and attaches sync (`src/lib/whispering/app.ts`). `epicenter` is the
+Tauri host, not a data surface; it compiles, bundles, and serves both apps.

@@ -234,8 +234,6 @@ If a function is called both by return-object methods *and* by pre-return initia
 | Private helper (zone 3) | Direct call by name: `helperFn()` |
 | Both zones need it | Keep in zone 3, call by name everywhere |
 
-See [Closures Are Better Privacy Than Keywords](../../../docs/articles/closures-are-better-privacy-than-keywords.md) for the full rationale and real codebase examples.
-
 ## Structural Contracts: Factories That Satisfy External Interfaces
 
 A factory's return object can be designed to **structurally satisfy** an external contract, so it can be passed directly to a platform-agnostic core without an adapter.
@@ -309,16 +307,6 @@ createClient(...)  →  createService(client, ...)  →  service.method(...)
 - **Reusability**: Share clients across multiple services
 - **Flexibility**: Configure each layer independently
 - **Clarity**: Clear ownership of configuration at each level
-
-## References
-
-See the full articles for more details:
-
-- [The Universal Factory Function Signature](../../../docs/articles/universal-factory-signature.md): signature explained in depth
-- [Stop Passing Clients as Arguments](../../../docs/articles/stop-passing-clients-as-arguments.md): practical guide
-- [The Factory Function Pattern](../../../docs/articles/factory-function-pattern.md): detailed explanation
-- [Factory Method Patterns](../../../docs/articles/factory-method-patterns.md): separating options and method patterns
-- [Closures Are Better Privacy Than Keywords](../../../docs/articles/closures-are-better-privacy-than-keywords.md): internal anatomy and why closures beat class keywords
 
 Load on demand:
 

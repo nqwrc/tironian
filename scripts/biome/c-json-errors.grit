@@ -1,25 +1,20 @@
 // Reject hand-rolled error bodies in `c.json(...)` calls.
 //
-// Invariant: every non-2xx response from `apps/api` and `packages/server`
-// must come from a `defineErrors` variant owned by the layer that emits it
-// (for example `AiChatError` in `apps/api/worker/billing/ai-chat-errors.ts`
-// or the route-local `AccountDeletionError`), so the wire shape is the
-// wellcrafted envelope `{ data: null, error: { name, message, ...fields } }`.
-// Hosted-only policy errors stay in `apps/api`; do not move them into an MIT
-// toolkit package to satisfy this rule.
+// Invariant: every non-2xx Hono response (apps/epicenter's Bun host is the
+// current emitter) must come from a `defineErrors` variant owned by the
+// layer that emits it, so the wire shape is the wellcrafted envelope
+// `{ data: null, error: { name, message, ...fields } }`.
 //
 // Matches `c.json({ ... }, <bare 4xx/5xx literal>)` where the body is an
 // inline object literal. Factory-produced bodies (a CallExpression like
-// `AiChatError.UnknownModel(...)`) never match because they aren't object
+// `SomeError.UnknownModel(...)`) never match because they aren't object
 // literals. Success responses don't match because the status regex is
 // anchored to 400-599.
 //
 // Known gap (intentional): `c.json({ ... }, status as 400)` is NOT flagged.
 // Biome's GritQL subset matches `$status` against the source text of the
 // node, so a TypeAssertion like `status as 400` does not match the bare-
-// number regex. The only call of this shape in the repo today is the
-// documented Autumn passthrough in `apps/api/src/billing-routes.ts`, which
-// is intentionally out of scope.
+// number regex.
 //
 // Suppress an intentional exception with a Biome ignore comment on the
 // line before the call:

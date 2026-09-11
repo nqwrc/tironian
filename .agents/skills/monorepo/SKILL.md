@@ -56,20 +56,15 @@ problem in a place nobody looks.
 ## Dev Scripts
 
 Start apps from the repo root, not by cd-ing into the app. Root
-`bun dev:<app>` runs every process the app needs; for apps that talk to the
-hosted API (honeycrisp, vocab, whispering, and the
-api dashboard), it also starts `@epicenter/api` on `localhost:8787` via
-`bun run --filter`. Root `bun dev:<app>:ui` runs the app's frontend
-alone when that split exists; for Tauri apps, it maps to the package's
-`dev:web`. `bun dev:api` runs just the backend. Local Books, Local Mail, and
-Super Chat have their own multi-process flows documented in their READMEs;
-they have no root `dev:*` target.
+`bun dev:<app>` runs every process the app needs. Root `bun dev:<app>:ui` runs
+the app's frontend alone when that split exists; for Tauri apps, it maps to
+the package's `dev:web`.
 
 Inside a single package, the conventions are:
 
 Non-Tauri apps use a single `dev` script that runs the underlying tool
 directly (`vite dev`, `astro dev`, `wrangler dev`). Tauri desktop apps
-(honeycrisp, whispering, matter) have two dev surfaces and name them
+(honeycrisp, whispering) have two dev surfaces and name them
 explicitly: `dev` launches the desktop shell (aliasing `dev:desktop`), and
 `dev:web` runs Vite alone, which each app's `tauri.conf.json` invokes as its
 `beforeDevCommand`. The suffix convention applies primarily to database

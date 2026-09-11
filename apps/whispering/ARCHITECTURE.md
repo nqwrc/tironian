@@ -80,7 +80,7 @@ Tauri-only exports (Whispering's `tauriOnly` namespace in `src/lib/tauri.tauri.t
 
 Services are **testable** (just pass mock parameters), **reusable** (work identically anywhere via the shared contract in `types.ts`), and **maintainable** (no hidden runtime branches).
 
-The codebase distinguishes two kinds of "which implementation" decisions and uses different mechanisms for each. See `docs/articles/20260526T012650-two-switches-build-time-and-runtime.md` for the walkthrough.
+The codebase distinguishes two kinds of "which implementation" decisions and uses different mechanisms for each: a build-time platform switch (`#platform/*`, resolved by Vite before bundling) and a runtime capability switch (a plain `if` on a value like `tauri`, resolved once the bundle is running).
 
 **→ Learn more:** [Services README](./src/lib/services/README.md) | [Constants Organization](./src/lib/constants/README.md)
 

@@ -64,27 +64,23 @@ body:
       options:
         - Audio (recording/playback)
         - UI-App (desktop interface)
-        - UI-Web (web interface)
-        - Backend (API/server)
         - System (shortcuts/permissions)
         - API Provider (OpenAI/Groq/etc)
         - File Upload
         - Settings
         - Transcription
         - Local Models
-        - Sync (sync server/client)
         - CLI
         - Workspace (data layer)
-        - Landing Page
     validations:
       required: true
 
   - type: input
     id: version
     attributes:
-      label: Epicenter Version
+      label: Tironian Version
       description: What version are you using? (Check Settings or About)
-      placeholder: e.g., v7.5.0
+      placeholder: e.g., v7.11.0
     validations:
       required: true
 

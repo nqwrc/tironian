@@ -133,8 +133,6 @@ to zero. The four invariants the test was asserting are now visible in
 ~6 lines of branch logic, type-enforced by `T extends Disposable`, and
 exercised on every app boot.
 
-Article: [Don't Split for the Test](../../../docs/articles/20260513T120000-dont-split-for-the-test.md).
-
 ## Common Forms of the Smell
 
 **Form 1: paired getter/setter.** Helper takes `getX` and `setX` for

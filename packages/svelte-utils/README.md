@@ -67,7 +67,7 @@ $effect(() => {
 settings.value = { theme: 'dark', notifications: false };
 ```
 
-**Note:** For production use, consider wrapping the persisted state in an encapsulated pattern with controlled access methods. See [Encapsulated State Pattern](../../docs/patterns/encapsulated-state-pattern.md) for best practices.
+**Note:** For production use, consider wrapping the persisted state in an encapsulated pattern with controlled access methods.
 
 #### API
 

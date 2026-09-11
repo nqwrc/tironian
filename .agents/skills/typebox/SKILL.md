@@ -63,7 +63,3 @@ metadata, `Static<>`, or schema inspection. Use Arktype for local runtime
 validation, request parsing, env/config parsing, persisted UI state, transforms,
 and branded domain values.
 
-## References
-
-- [TypeBox is a Beast](../../../docs/articles/typebox-is-a-beast.md)
-- [The Schema Wars Just Shifted](../../../docs/articles/20260429T120000-typebox-standard-schema-pivot.md)

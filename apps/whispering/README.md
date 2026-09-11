@@ -116,8 +116,6 @@ bun run --cwd apps/epicenter desktop:build
 
 Tironian stores settings and recording metadata locally first. Audio leaves the device only when the selected transcription provider requires an upload. The browser and Epicenter builds can both use direct provider connections, the hosted Epicenter gateway, or a self-hosted endpoint. On-device transcription is available only through Epicenter because it depends on the native model runtime.
 
-See the repository [trust model](../../docs/trust-model.md) for hosted sync and account boundaries.
-
 ## There is no hosted browser deploy
 
 `wrangler.jsonc` published the static SPA to `whispering.epicenter.so`. ADR-0227 refused that runtime: a browser tab is not a target, so the config and its deploy step are gone. Whatever Cloudflare last published keeps serving until somebody deletes the Worker, because removing the config stops republishing rather than taking anything down.

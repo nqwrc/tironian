@@ -32,7 +32,7 @@ the device database. `/account` gates auth and opens one retained account
 replica. Each route owns one store, and nothing falls back to the other route's
 data.
 The scalar document shape is the shared `app`/`kv`/`tables:<name>` grammar in
-[ADR-0257](../../docs/adr/0257-the-application-document-has-named-kv-and-table-roots.md).
+ADR-0257.
 
 Every build opens its own store, with no platform seam, and reaches one
 authority per signed-in account (ADR-0225/0226). The desktop host serves

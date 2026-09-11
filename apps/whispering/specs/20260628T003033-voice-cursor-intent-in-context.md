@@ -4,7 +4,7 @@
 **Status**: Draft
 **Owner**: Braden
 **Branch**: holding/old-branch-voice-cursor-intent (Phase 0 code exists uncommitted in this worktree)
-**Builds on**: [ADR-0099](../../../docs/adr/0099-replace-transformations-with-a-dictionary-polish-and-a-portable-recipe-library.md) (Dictionary/Polish/Recipe), [ADR-0060](../../../docs/adr/0060-an-inference-connection-is-a-base-url-and-an-optional-bearer-key.md) (connection = base URL + optional key)
+**Builds on**: ADR-0099 (Dictionary/Polish/Recipe), ADR-0060 (connection = base URL + optional key)
 
 ## One Sentence
 

@@ -4,8 +4,7 @@ This repository contains software under multiple licenses. Each package
 under packages/ and apps/ contains its own LICENSE file, and each
 package.json declares its applicable license. This file is the index.
 
-For the reasoning behind the split, see docs/licensing/licensing-strategy.md
-and FINANCIAL_SUSTAINABILITY.md.
+For the reasoning behind the split, see docs/licensing/licensing-strategy.md.
 
 ================================================================================
 1. MIT License
@@ -54,7 +53,7 @@ Epicenter-internal packages.
 You're free to run, modify, and self-host any of these. If you distribute
 a modified version, you share the changes back with the community.
 
-For hosted infrastructure (apps/api, apps/self-host), AGPL
+For hosted infrastructure (none is shipped in this fork today), AGPL
 §13 extends this to network use: running a modified version as a service
 counts as distribution.
 
@@ -63,22 +62,10 @@ trigger, but the underlying GPL distribution clause still applies: anyone
 who forks and distributes a modified binary shares the changes back.
 
   Apps:
-    - apps/api                   (@epicenter/api)        hosted personal
-                                                         cloud Worker
-                                                         (worker + ui)
-    - apps/self-host              (@epicenter/self-host)   self-hosted instance
-                                                         reference Worker
     - apps/whispering            (@epicenter/whispering) desktop transcription
     - apps/honeycrisp            (@epicenter/honeycrisp) notes app
-    - apps/vocab                 (@epicenter/vocab)      mandarin chat
     - apps/tab-manager           (@epicenter/tab-manager) browser extension
-    - apps/skills                (skills)                agent skill editor
-    - apps/reddit                (@epicenter/reddit)     reddit importer
-    - apps/landing               (@epicenter/landing)    public site
-    - apps/posthog-reverse-proxy (@epicenter/posthog-reverse-proxy) analytics
-    - apps/matter                (@epicenter/matter)     markdown grid
     - apps/wiki                  (@epicenter/wiki)       wiki app
-    - apps/local-books           (@epicenter/local-books) quickbooks mirror
 
   Packages:
     - packages/auth              (@epicenter/auth)       auth core (private)
@@ -87,13 +74,8 @@ who forks and distributes a modified binary shares the changes back.
                                                          wrapper (private)
     - packages/app-shell         (@epicenter/app-shell)  shared app shell UI
                                                          (private)
-    - packages/skills            (@epicenter/skills)     workspace skills
     - packages/constants         (@epicenter/constants)  shared constants
-    - packages/server            (@epicenter/server)     shared Hono server
-                                                         library (private)
     - packages/client            (@epicenter/client)     API client (private)
-    - packages/matter-core       (@epicenter/matter-core) markdown to SQLite
-                                                         engine
     - packages/vite-config       (@epicenter/vite-config) shared vite config
 
 ================================================================================

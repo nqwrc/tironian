@@ -10,8 +10,8 @@ One adapter per runtime answers the contract:
 | Entry point | Engine | Consumer |
 | --- | --- | --- |
 | `./bun` | `bun:sqlite` | `@epicenter/data`'s Bun store |
-| `./durable-object` | a Durable Object's SQL storage | `@epicenter/server`'s replica and authority |
-| `./browser` | sqlite.org's WASM build | `apps/sync-lab` |
+| `./durable-object` | a Durable Object's SQL storage | none currently; kept for a future hosted replica |
+| `./browser` | sqlite.org's WASM build | none currently; kept for a future browser-side consumer |
 
 The browser adapter is the odd one, and deliberately so. The browser store
 keeps its durable facts directly in IndexedDB and loads no SQLite at all, so
@@ -20,7 +20,5 @@ the projection takes a handle from its caller rather than initializing WASM
 itself, which keeps that initialization where the application can see it.
 
 Schema and transaction invariants belong to the consuming package. The client
-store lives in `@epicenter/data`; server authority storage lives in
-`@epicenter/server`. An app that keeps a local copy of a provider's data owns
-its own file lifecycle: see `apps/local-mail/src/db-file.ts` and
-`apps/local-books/src/db-file.ts`.
+store lives in `@epicenter/data`. An app that keeps a local copy of a
+provider's data owns its own file lifecycle.

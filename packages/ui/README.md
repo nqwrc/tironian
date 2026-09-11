@@ -21,8 +21,7 @@ styling lives in CSS:
 
 Apps activate the preset with `class="style-vega"` on their root element; the
 `cn-*` rules are scoped under it, so without the class nothing is styled. The
-preset is a one-class swap (e.g. to `style-rhea`). Background and rationale:
-`specs/20260606T160000-ui-shadcn-cn-style-migration-vega.md`.
+preset is a one-class swap (e.g. to `style-rhea`).
 
 ## Design Stance
 

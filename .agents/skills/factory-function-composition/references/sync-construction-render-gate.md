@@ -165,15 +165,9 @@ export async function get(key) { return (await dbPromise).get('keyval', key); }
 export async function set(key, val) { return (await dbPromise).put('keyval', val, key); }
 ```
 
-Use `whenReady` when your client has sync methods that depend on initialized state. Use await-in-every-method when every method is async anyway (like database access). See the [idb await-in-every-method article](/docs/articles/idb-await-every-method-pattern.md) for a deeper comparison.
+Use `whenReady` when your client has sync methods that depend on initialized state. Use await-in-every-method when every method is async anyway (like database access), the sibling pattern for purely async APIs.
 
 ## Related Patterns
 
-- [Lazy Singleton](../../../../docs/articles/lazy-singleton-pattern.md) : when you need race-condition-safe lazy initialization
-- [Don't Use Parallel Maps](../../../../docs/articles/instance-state-attachment-pattern.md) : attach state to instances instead of tracking separately
-
-## References
-
-- [Full article](/docs/articles/sync-construction-async-property-ui-render-gate-pattern.md) : detailed explanation with diagrams
-- [Comprehensive guide](/docs/articles/sync-client-initialization.md) : 480-line deep dive with idb example
-- [idb await-in-every-method](/docs/articles/idb-await-every-method-pattern.md) : the sibling pattern for purely async APIs
+- Lazy Singleton: when you need race-condition-safe lazy initialization
+- Don't Use Parallel Maps: attach state to instances instead of tracking separately

@@ -194,7 +194,7 @@ See the article `docs/articles/yjs-abstraction-leaks-cost-more-than-the-abstract
 - `packages/data/src/store/documents.ts`: the document manager (independent row documents at derived addresses)
 - `packages/data/src/store/log.ts` and `packages/data/src/store/persistence.ts`: the durable update log, outbox, tombstones, and the persistence queue
 - `packages/data/src/sync/`: the Yjs 14 wire (frames, connection, client, authority)
-- [ADR-0248](../../../docs/adr/0248-a-row-owns-an-independent-yjs-document-at-a-derived-address.md): a row owns an independent Yjs document at a derived address
-- [ADR-0221](../../../docs/adr/0221-a-table-names-the-rows-a-commit-touched-and-says-so-after-the-projection-commits.md): what `subscribe` reports and when it fires
-- [ADR-0146](../../../docs/adr/0146-row-documents-use-one-yjs-14-major-and-runtime-native-update-logs.md): Yjs 14-only persistence decision
-- [ADR-0159](../../../docs/adr/0159-row-documents-persist-in-one-owner-side-sqlite-update-log.md): one owner-side SQLite update log and shared attachment seam
+- ADR-0248: a row owns an independent Yjs document at a derived address
+- ADR-0221: what `subscribe` reports and when it fires
+- ADR-0146: Yjs 14-only persistence decision
+- ADR-0159: one owner-side SQLite update log and shared attachment seam
