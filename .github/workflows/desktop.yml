@@ -276,7 +276,7 @@ jobs:
       # The macOS test. Pass means all four hold, checked here rather than read
       # off a green build:
       #   1. the bundled executable is still running 45 s after launch;
-      #   2. the loopback host answers HTTP on 127.0.0.1:39130;
+      #   2. the loopback host answers HTTP on 127.0.0.1:41730;
       #   3. the dictation window (titled "Tironian") is on screen: launch opens
       #      it by default now, not Home;
       #   4. no crash report for it appeared while it ran.
@@ -302,9 +302,9 @@ jobs:
           if kill -0 "$PID" 2>/dev/null; then echo "PASS 1: process $PID alive after 45 s" | tee -a "$OUT/summary.txt"
           else echo "::error::FAIL 1: the app exited within 45 s"; fail=1; fi
 
-          CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:39130/ || true)"
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:41730/ || true)"
           if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then echo "PASS 2: loopback host answered HTTP $CODE" | tee -a "$OUT/summary.txt"
-          else echo "::error::FAIL 2: nothing answered on 127.0.0.1:39130"; fail=1; fi
+          else echo "::error::FAIL 2: nothing answered on 127.0.0.1:41730"; fail=1; fi
 
           # Window owner names need no screen-recording grant; titles might, so a
           # window with no readable title still counts (owner and size alone),
@@ -333,7 +333,7 @@ jobs:
           screencapture -x "$OUT/screen-launch.png" || echo "::warning::screencapture failed (screen recording not granted on this image)"
           # Open the dictation window through the app's own deep link, then
           # capture it. Informational: a runner may not route the scheme.
-          open "epicenter://app/whispering" || true
+          open "tironian://app/whispering" || true
           sleep 10
           screencapture -x "$OUT/screen-dictation.png" || true
 
@@ -343,7 +343,7 @@ jobs:
 
           kill "$PID" 2>/dev/null || true
           sleep 3
-          cp -R "$HOME/Library/Logs/so.epicenter" "$OUT/logs" 2>/dev/null || true
+          cp -R "$HOME/Library/Logs/app.tironian" "$OUT/logs" 2>/dev/null || true
           exit $fail
 
       # The suites, on the platform under test. The host's own TypeScript suite

@@ -93,7 +93,7 @@ test('a boot opens exactly one document', async () => {
 	expect(app.recipes.count).toBe(0);
 
 	const names = (await indexedDB.databases()).map(({ name }) => name);
-	expect(names).toContain(`epicenter/${whisperingDefinition.id}/device`);
+	expect(names).toContain(`tironian/${whisperingDefinition.id}/device`);
 });
 
 test('settings recover application defaults and survive a restart', async () => {

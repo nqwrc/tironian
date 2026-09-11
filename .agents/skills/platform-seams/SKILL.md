@@ -33,7 +33,7 @@ plus a `default`:
 ```jsonc
 "imports": {
   "#platform/auth": {
-    "epicenter-host": "./src/lib/platform/auth.epicenter-host.ts",
+    "tironian-host": "./src/lib/platform/auth.tironian-host.ts",
     "tauri": "./src/lib/platform/auth.tauri.ts",
     "default": "./src/lib/platform/auth.browser.ts"
   }
@@ -55,7 +55,7 @@ resolve: {
 	// Custom conditions REPLACE Vite's defaults, so the
 	// ...defaultClientConditions spread is LOAD-BEARING: drop it and all
 	// dependency resolution breaks.
-	...(isEpicenterSurface && {
+	...(isTironianSurface && {
 		conditions: ['tauri', ...defaultClientConditions],
 	}),
 },
@@ -84,11 +84,11 @@ concrete type and breaks the lockstep that keeps every leaf the same shape.
 ## The two conditions answer different questions (ADR-0190)
 
 `tauri` means **this build runs in a Tauri WebView**, so a leaf may call a native
-command. `epicenter-host` means **the desktop Epicenter host serves this build**,
+command. `tironian-host` means **the desktop Epicenter host serves this build**,
 so a leaf may reach the host for a credential, a deployment choice, or an asset
 base.
 
-They used to be conflated because `epicenter-host` also meant the host owned the
+They used to be conflated because `tironian-host` also meant the host owned the
 build's replica. ADR-0226 removed that, so the condition is now about brokered
 credentials and nothing about data.
 
@@ -98,7 +98,7 @@ other (ADR-0177). Every build owns its own storage, so this is now always true.
 
 ## A dropped leaf fails nothing
 
-This is the one hazard worth remembering. Removing an `epicenter-host` key from
+This is the one hazard worth remembering. Removing a `tironian-host` key from
 a seam breaks no build: resolution falls back silently to `default`, and the
 hosted build quietly runs the browser leaf. `apps/honeycrisp/src/lib/platform-selection.test.ts`
 reads the declarations and names the broken seam, and

@@ -23,12 +23,12 @@ import { homedir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 
 /**
- * The `so.epicenter` bundle identity, which is what names the root on every
+ * The `app.tironian` bundle identity, which is what names the root on every
  * platform. It has to equal `identifier` in
  * `apps/epicenter/src-tauri/tauri.conf.json`, because the desktop host resolves
  * the same directory through Tauri; `app-data.test.ts` pins the two together.
  */
-export const EPICENTER_BUNDLE_IDENTIFIER = 'so.epicenter';
+export const TIRONIAN_BUNDLE_IDENTIFIER = 'app.tironian';
 
 /**
  * The one grammar for an app id, shared with catalog admission.
@@ -86,7 +86,7 @@ export type DataRootSystem = {
 };
 
 /**
- * The one Epicenter application-data root. `EPICENTER_DATA_DIR` wins, for tests
+ * The one Epicenter application-data root. `TIRONIAN_DATA_DIR` wins, for tests
  * and for a person who wants their data elsewhere; an empty value counts as
  * unset and a relative one is refused, for the same reason a relative
  * `XDG_DATA_HOME` is ignored below.
@@ -110,7 +110,7 @@ export function epicenterDataRoot(
 		homeDir: homedir(),
 	},
 ): string {
-	const override = system.env.EPICENTER_DATA_DIR;
+	const override = system.env.TIRONIAN_DATA_DIR;
 	if (override && override.length > 0) {
 		// A relative override would resolve against the working directory, so a CLI
 		// run from two places would see two roots while the desktop host saw a
@@ -119,12 +119,12 @@ export function epicenterDataRoot(
 		// input this function deliberately does not take.
 		if (!isAbsolute(override)) {
 			throw new Error(
-				`EPICENTER_DATA_DIR must be an absolute path, not ${JSON.stringify(override)}.`,
+				`TIRONIAN_DATA_DIR must be an absolute path, not ${JSON.stringify(override)}.`,
 			);
 		}
 		return override;
 	}
-	return join(dataDir(system), EPICENTER_BUNDLE_IDENTIFIER);
+	return join(dataDir(system), TIRONIAN_BUNDLE_IDENTIFIER);
 }
 
 /**
@@ -147,14 +147,14 @@ export function epicenterFolderRoot(
 		homeDir: homedir(),
 	},
 ): string {
-	const override = system.env.EPICENTER_FOLDER_DIR;
+	const override = system.env.TIRONIAN_FOLDER_DIR;
 	if (override && override.length > 0) {
 		// Refused rather than resolved, for the same reason the data root refuses
 		// one: a relative path means the host and a CLI disagree about where the
 		// folder is, which is the drift this function exists to prevent.
 		if (!isAbsolute(override)) {
 			throw new Error(
-				`EPICENTER_FOLDER_DIR must be an absolute path, not ${JSON.stringify(override)}.`,
+				`TIRONIAN_FOLDER_DIR must be an absolute path, not ${JSON.stringify(override)}.`,
 			);
 		}
 		return override;
@@ -174,7 +174,7 @@ function dataDir({ env, platform, homeDir }: DataRootSystem): string {
 		// this fails the same way rather than inventing a fallback.
 		if (!appData || appData.length === 0) {
 			throw new Error(
-				'APPDATA is not set, so the Epicenter data root cannot be resolved. Set EPICENTER_DATA_DIR to name it explicitly.',
+				'APPDATA is not set, so the Epicenter data root cannot be resolved. Set TIRONIAN_DATA_DIR to name it explicitly.',
 			);
 		}
 		return appData;

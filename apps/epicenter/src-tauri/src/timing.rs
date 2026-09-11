@@ -3,7 +3,7 @@
 //! The number we optimize is "user stops speaking -> transcript delivered".
 //! To decide which optimization is worth building (and prove it with real
 //! numbers instead of vibes), the budget components log their wall time on the
-//! `epicenter::whispering::timing` target when `WHISPERING_TIMING` is set in the
+//! `tironian::whispering::timing` target when `WHISPERING_TIMING` is set in the
 //! environment. Unset (the default, including release builds), every helper is
 //! a branch-and-return: no clock read, no allocation, no log line.
 //!
@@ -40,7 +40,7 @@ pub fn measure<T>(label: &str, f: impl FnOnce() -> T) -> T {
     let start = Instant::now();
     let out = f();
     log::info!(
-        target: "epicenter::whispering::timing",
+        target: "tironian::whispering::timing",
         "[timing] {label} {:.2}ms",
         start.elapsed().as_secs_f64() * 1000.0,
     );
@@ -53,11 +53,11 @@ pub fn measure<T>(label: &str, f: impl FnOnce() -> T) -> T {
 /// arguments are only evaluated when timing is on.
 pub fn note(message: std::fmt::Arguments<'_>) {
     if enabled() {
-        log::info!(target: "epicenter::whispering::timing", "[timing] {message}");
+        log::info!(target: "tironian::whispering::timing", "[timing] {message}");
     }
 }
 
-/// `log::info!`-style note on the `epicenter::whispering::timing` target, gated by
+/// `log::info!`-style note on the `tironian::whispering::timing` target, gated by
 /// `WHISPERING_TIMING`. The format arguments are evaluated only when timing
 /// is enabled.
 #[macro_export]

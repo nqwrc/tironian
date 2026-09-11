@@ -16,7 +16,7 @@ import {
 	appDataDir,
 	COMPOSED_APP_IDS,
 	type DataRootSystem,
-	EPICENTER_BUNDLE_IDENTIFIER,
+	TIRONIAN_BUNDLE_IDENTIFIER,
 	epicenterDataRoot,
 	isAppId,
 	partitionDir,
@@ -32,13 +32,13 @@ const system = (overrides: Partial<DataRootSystem> = {}): DataRootSystem => ({
 test('macOS resolves under Application Support', () => {
 	expect(
 		epicenterDataRoot(system({ platform: 'darwin', homeDir: '/Users/person' })),
-	).toBe('/Users/person/Library/Application Support/so.epicenter');
+	).toBe('/Users/person/Library/Application Support/app.tironian');
 });
 
 test('Linux honours an absolute XDG_DATA_HOME', () => {
 	expect(
 		epicenterDataRoot(system({ env: { XDG_DATA_HOME: '/data/share' } })),
-	).toBe('/data/share/so.epicenter');
+	).toBe('/data/share/app.tironian');
 });
 
 test('Linux ignores a relative XDG_DATA_HOME, as dirs does', () => {
@@ -46,18 +46,18 @@ test('Linux ignores a relative XDG_DATA_HOME, as dirs does', () => {
 	// sees two roots while the desktop host sees a third.
 	expect(
 		epicenterDataRoot(system({ env: { XDG_DATA_HOME: 'relative/share' } })),
-	).toBe('/home/person/.local/share/so.epicenter');
+	).toBe('/home/person/.local/share/app.tironian');
 });
 
 test('Linux falls back to ~/.local/share', () => {
 	expect(epicenterDataRoot(system())).toBe(
-		'/home/person/.local/share/so.epicenter',
+		'/home/person/.local/share/app.tironian',
 	);
 });
 
 test('other Unix platforms follow the Linux rules', () => {
 	expect(epicenterDataRoot(system({ platform: 'freebsd' }))).toBe(
-		'/home/person/.local/share/so.epicenter',
+		'/home/person/.local/share/app.tironian',
 	);
 });
 
@@ -73,7 +73,7 @@ test('Windows resolves under roaming APPDATA, not local, and not XDG', () => {
 				},
 			}),
 		),
-	).toBe(join('C:\\Users\\person\\AppData\\Roaming', 'so.epicenter'));
+	).toBe(join('C:\\Users\\person\\AppData\\Roaming', 'app.tironian'));
 });
 
 test('Windows without APPDATA refuses rather than guessing', () => {
@@ -82,14 +82,14 @@ test('Windows without APPDATA refuses rather than guessing', () => {
 	);
 });
 
-test('EPICENTER_DATA_DIR wins on every platform', () => {
+test('TIRONIAN_DATA_DIR wins on every platform', () => {
 	for (const platform of ['darwin', 'linux', 'win32']) {
 		expect(
 			epicenterDataRoot(
 				system({
 					platform,
 					env: {
-						EPICENTER_DATA_DIR: '/tmp/epicenter-test',
+						TIRONIAN_DATA_DIR: '/tmp/epicenter-test',
 						APPDATA: 'C:\\Users\\person\\AppData\\Roaming',
 						XDG_DATA_HOME: '/data/share',
 					},
@@ -99,17 +99,17 @@ test('EPICENTER_DATA_DIR wins on every platform', () => {
 	}
 });
 
-test('an empty EPICENTER_DATA_DIR counts as unset', () => {
-	expect(epicenterDataRoot(system({ env: { EPICENTER_DATA_DIR: '' } }))).toBe(
-		'/home/person/.local/share/so.epicenter',
+test('an empty TIRONIAN_DATA_DIR counts as unset', () => {
+	expect(epicenterDataRoot(system({ env: { TIRONIAN_DATA_DIR: '' } }))).toBe(
+		'/home/person/.local/share/app.tironian',
 	);
 });
 
-test('a relative EPICENTER_DATA_DIR is refused, not resolved', () => {
+test('a relative TIRONIAN_DATA_DIR is refused, not resolved', () => {
 	// Same drift a relative XDG_DATA_HOME is ignored for: two working directories
 	// would be two roots, and the desktop host a third.
 	expect(() =>
-		epicenterDataRoot(system({ env: { EPICENTER_DATA_DIR: 'tmp/data' } })),
+		epicenterDataRoot(system({ env: { TIRONIAN_DATA_DIR: 'tmp/data' } })),
 	).toThrow(/absolute/);
 });
 
@@ -132,7 +132,7 @@ test('the bundle identifier equals the desktop bundle it has to match', () => {
 		),
 	);
 	expect((conf as { identifier: string }).identifier).toBe(
-		EPICENTER_BUNDLE_IDENTIFIER,
+		TIRONIAN_BUNDLE_IDENTIFIER,
 	);
 });
 

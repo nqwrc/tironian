@@ -13,7 +13,7 @@ type Equal<X, Y> =
 type Expect<T extends true> = T;
 
 const definition = defineData({
-	id: 'so.epicenter.definition-types',
+	id: 'app.tironian.definition-types',
 	kv: {
 		status: field.select(['draft', 'published']),
 		labels: field.multiSelect(['a', 'b']),

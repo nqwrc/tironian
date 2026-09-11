@@ -339,26 +339,26 @@ async function openIdbBacking(
  * amending ADR-0233):
  *
  * ```text
- * epicenter/<definition id>/device
+ * tironian/<definition id>/device
  * ```
  *
  * A browser application keeps one device document. It never joins definition
  * sync and holds only local rows.
  *
  * A definition id is dot-separated lowercase labels, so it holds no `/`: the
- * segment after `epicenter/` is always exactly the application, and no address
+ * segment after `tironian/` is always exactly the application, and no address
  * can be read as another one.
  */
 function deviceAddress(databaseId: string): string {
-	return `epicenter/${databaseId}/device`;
+	return `tironian/${databaseId}/device`;
 }
 
 /**
  * Delete the browser storage that came before the device-scoped address.
  *
- * Two superseded shapes, neither of them read: `epicenter-store-<definition id>`,
+ * Two superseded shapes, neither of them read: `tironian-store-<definition id>`,
  * the single definition from before an application had a dedicated device
- * document; and `epicenter-store-<definition id>#private` / `#database`, an
+ * document; and `tironian-store-<definition id>#private` / `#database`, an
  * earlier per-application split. Neither is the final address, so both are
  * deleted rather than renamed, merged, or reinterpreted: the browser-storage
  * twin of the format wipe in ADR-0231's cutover.
@@ -369,10 +369,10 @@ function deviceAddress(databaseId: string): string {
  */
 function deleteSupersededStorage(databaseId: string): Promise<void> {
 	const superseded = [
-		`epicenter-store-${databaseId}`,
-		`epicenter-store-${databaseId}#private`,
-		`epicenter-store-${databaseId}#database`,
-		`epicenter/${databaseId}/private`,
+		`tironian-store-${databaseId}`,
+		`tironian-store-${databaseId}#private`,
+		`tironian-store-${databaseId}#database`,
+		`tironian/${databaseId}/private`,
 	];
 	return Promise.all(
 		superseded.map(

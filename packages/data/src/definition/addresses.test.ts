@@ -9,12 +9,12 @@ import {
 describe('documentAddress (ADR-0248)', () => {
 	test('composes the fixed-depth derived string, deterministically', () => {
 		const address = {
-			databaseId: 'so.epicenter.honeycrisp',
+			databaseId: 'app.tironian.honeycrisp',
 			tableName: 'notes',
 			rowId: 'abc123',
 		};
 		expect(documentAddress(address)).toBe(
-			'so.epicenter.honeycrisp/notes/abc123',
+			'app.tironian.honeycrisp/notes/abc123',
 		);
 		expect(documentAddress(address)).toBe(documentAddress({ ...address }));
 	});

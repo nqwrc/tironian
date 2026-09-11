@@ -3,7 +3,7 @@ import { field } from '@epicenter/data/definition';
  * Browser Store Address Tests
  *
  * A browser application keeps one device document (ADR-0261). These tests pin
- * the address that holds it: `epicenter/<databaseId>/device`, one IndexedDB
+ * the address that holds it: `tironian/<databaseId>/device`, one IndexedDB
  * database and one open claim.
  *
  * Key behaviors:
@@ -27,7 +27,7 @@ import { openMemory } from './bun.js';
 /** One databaseId per concern, so tests share no IndexedDB state. */
 function databaseFor(label: string) {
 	return defineData({
-		id: `so.epicenter.browsertest.${label}`,
+		id: `app.tironian.browsertest.${label}`,
 		kv: {},
 		tables: { notes: { title: field.string() } },
 	});
@@ -47,7 +47,7 @@ function expectOk<TValue, TError>(
 	return result as TValue;
 }
 
-const deviceAddress = (databaseId: string) => `epicenter/${databaseId}/device`;
+const deviceAddress = (databaseId: string) => `tironian/${databaseId}/device`;
 
 const openDeviceData = (definition: ReturnType<typeof databaseFor>) =>
 	openDevice(definition);
@@ -186,7 +186,7 @@ describe('the durable facts live in IndexedDB directly (ADR-0238)', () => {
 		const bytes = author.store.encodeStateSince();
 		await author.store[Symbol.asyncDispose]();
 
-		await seedVersionOne(`epicenter/${database.id}/device`, {
+		await seedVersionOne(`tironian/${database.id}/device`, {
 			updates: [{ seq: 1, bytes }],
 			outbox: [],
 			cursor: 4,
@@ -200,7 +200,7 @@ describe('the durable facts live in IndexedDB directly (ADR-0238)', () => {
 
 	test('the update log folds at the threshold instead of growing forever', async () => {
 		const database = databaseFor('fold');
-		const address = `epicenter/${database.id}/device`;
+		const address = `tironian/${database.id}/device`;
 		const device = expectOk(await openDeviceData(database));
 		for (let index = 0; index < 70; index += 1) {
 			expectOk(device.tables.notes.create({ title: `note ${index}` }));
@@ -243,9 +243,9 @@ describe('the clean break: storage from before the device-scoped address', () =>
 
 	function supersededNames(databaseId: string): string[] {
 		return [
-			`epicenter-store-${databaseId}`,
-			`epicenter-store-${databaseId}#private`,
-			`epicenter-store-${databaseId}#database`,
+			`tironian-store-${databaseId}`,
+			`tironian-store-${databaseId}#private`,
+			`tironian-store-${databaseId}#database`,
 		];
 	}
 
@@ -254,7 +254,7 @@ describe('the clean break: storage from before the device-scoped address', () =>
 		for (const name of supersededNames(database.id)) {
 			await seedSupersededDatabase(name);
 		}
-		const oldDevice = `epicenter/${database.id}/private`;
+		const oldDevice = `tironian/${database.id}/private`;
 		await seedSupersededDatabase(oldDevice);
 		expect(await databaseNames()).toEqual(
 			expect.arrayContaining(supersededNames(database.id)),

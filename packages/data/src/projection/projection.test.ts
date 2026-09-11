@@ -18,7 +18,7 @@ import { type DataOf, syncEngineOf } from '../store/store.js';
 import { createSqliteProjection, type SqliteProjection } from './index.js';
 
 const database = defineData({
-	id: 'so.epicenter.projectionlab',
+	id: 'app.tironian.projectionlab',
 	kv: { theme: field.select(['light', 'dark']), fontSize: field.number() },
 	tables: {
 		notes: {
@@ -185,7 +185,7 @@ describe('a nonconforming row projects raw, so SQL can show what failed', () => 
 		// fact without preventing the write.
 		const older = openMemory(
 			defineData({
-				id: 'so.epicenter.projectionlab',
+				id: 'app.tironian.projectionlab',
 				kv: {},
 				tables: { notes: { title: field.string(), tags: field.string() } },
 			}),

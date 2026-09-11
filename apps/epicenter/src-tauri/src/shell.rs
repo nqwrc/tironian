@@ -12,7 +12,7 @@ use tauri_specta::Event;
 
 use crate::{request_window, BuiltInApp, DesktopAppHandle};
 
-const TRAY_ID: &str = "epicenter-tray";
+const TRAY_ID: &str = "tironian-tray";
 const WHISPERING_WINDOW: &str = "whispering";
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]

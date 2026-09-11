@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { defineData, field, parseData, type RowOf } from './definition.js';
 
 const authored = defineData({
-	id: 'so.epicenter.data',
+	id: 'app.tironian.data',
 	kv: {
 		name: field.string(),
 		color: field.nullable(field.string()),
@@ -90,7 +90,7 @@ describe('data definitions', () => {
 
 	test('declaration defaults are rejected', () => {
 		const result = parseData({
-			id: 'so.epicenter.defaults',
+			id: 'app.tironian.defaults',
 			kv: {},
 			tables: {
 				notes: { title: { type: field.string(), default: 'untitled' } },
@@ -101,7 +101,7 @@ describe('data definitions', () => {
 
 	test('field.json preserves an inner static type at the row boundary', () => {
 		const data = defineData({
-			id: 'so.epicenter.json',
+			id: 'app.tironian.json',
 			kv: {},
 			tables: { rows: { payload: field.json(field.select(['a', 'b'])) } },
 		});

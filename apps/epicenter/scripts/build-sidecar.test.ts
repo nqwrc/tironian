@@ -76,16 +76,16 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 		appDir,
 		'src-tauri',
 		'binaries',
-		`epicenter-host-${triple}`,
+		`tironian-host-${triple}`,
 	);
 	const dataDir = mkdtempSync(join(tmpdir(), 'epicenter-compiled-host-'));
 	const sidecar = Bun.spawn([binary, '--runtime-mode=production'], {
 		env: {
-			EPICENTER_DEV_PORT: '49152',
-			EPICENTER_DATA_DIR: dataDir,
-			EPICENTER_APPS_DIST: join(appDir, 'dist'),
-			EPICENTER_INFERENCE_URL: 'http://127.0.0.1:1/v1',
-			EPICENTER_INFERENCE_MODEL: 'unused-model',
+			TIRONIAN_DEV_PORT: '49152',
+			TIRONIAN_DATA_DIR: dataDir,
+			TIRONIAN_APPS_DIST: join(appDir, 'dist'),
+			TIRONIAN_INFERENCE_URL: 'http://127.0.0.1:1/v1',
+			TIRONIAN_INFERENCE_MODEL: 'unused-model',
 			PATH: '',
 			PORT: '49153',
 		},
@@ -109,7 +109,7 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 			port: PRODUCTION_PORT,
 		});
 		const origin = `http://127.0.0.1:${PRODUCTION_PORT}`;
-		const bootstrap = await fetch(`${origin}/_epicenter/bootstrap`, {
+		const bootstrap = await fetch(`${origin}/_tironian/bootstrap`, {
 			method: 'POST',
 			headers: {
 				authorization: 'Bearer compiled_test_token',

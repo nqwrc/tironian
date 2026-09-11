@@ -95,7 +95,7 @@ export const JSON_SCHEMA_KEYWORD = 'x-json-schema';
  * which is what keeps `reference` mutually exclusive with the bare `string` kind: a plain
  * string carries no marker (so it is never a reference) and a reference always carries one
  * (so it is never a bare string). The target resolves WITHIN one substrate (a sibling
- * Matter folder / a workspace table key); cross-mount links are the `epicenter://` scheme,
+ * Matter folder / a workspace table key); cross-mount links are the `tironian://` scheme,
  * not this keyword.
  */
 export const REFERENCE_KEYWORD = 'x-ref';

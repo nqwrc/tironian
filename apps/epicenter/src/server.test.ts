@@ -320,7 +320,7 @@ describe('createHomeServer', () => {
 		try {
 			const shell = await fetch(HOME_ROUTE.url(server.url.origin));
 			expect(shell.status).toBe(200);
-			expect(await shell.text()).toContain('__EPICENTER_SESSION_READY__');
+			expect(await shell.text()).toContain('__TIRONIAN_SESSION_READY__');
 			expect(shell.headers.get('cache-control')).toBe('no-store');
 			const page = await fetch(HOME_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
@@ -882,9 +882,9 @@ describe('sidecar end-to-end smoke', () => {
 				cwd: queryDir,
 				env: {
 					...process.env,
-					EPICENTER_APPS_DIST: appsDist,
+					TIRONIAN_APPS_DIST: appsDist,
 					// Keep the host's replicas out of the real user data directory.
-					EPICENTER_DATA_DIR: testDataDir(),
+					TIRONIAN_DATA_DIR: testDataDir(),
 				},
 				stdin: 'pipe',
 				stdout: 'pipe',
@@ -903,7 +903,7 @@ describe('sidecar end-to-end smoke', () => {
 
 			const shell = await fetch(HOME_ROUTE.url(origin));
 			expect(shell.status).toBe(200);
-			expect(await shell.text()).toContain('__EPICENTER_SESSION_READY__');
+			expect(await shell.text()).toContain('__TIRONIAN_SESSION_READY__');
 
 			const bootstrap = await fetch(BOOTSTRAP_ROUTE.url(origin), {
 				method: 'POST',
@@ -939,8 +939,8 @@ describe('sidecar end-to-end smoke', () => {
 				cwd: queryDir,
 				env: {
 					...process.env,
-					EPICENTER_APPS_DIST: appsDist,
-					EPICENTER_DATA_DIR: testDataDir(),
+					TIRONIAN_APPS_DIST: appsDist,
+					TIRONIAN_DATA_DIR: testDataDir(),
 				},
 				stdin: 'pipe',
 				stdout: 'pipe',
@@ -978,8 +978,8 @@ describe('sidecar end-to-end smoke', () => {
 				cwd: queryDir,
 				env: {
 					...process.env,
-					EPICENTER_APPS_DIST: appsDist,
-					EPICENTER_DATA_DIR: testDataDir(),
+					TIRONIAN_APPS_DIST: appsDist,
+					TIRONIAN_DATA_DIR: testDataDir(),
 				},
 				stdin: 'pipe',
 				stdout: 'pipe',

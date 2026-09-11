@@ -25,7 +25,7 @@ function asEnvelope(bytes: Uint8Array): Uint8Array {
 }
 
 const database = defineData({
-	id: 'so.epicenter.honeycrisp',
+	id: 'app.tironian.honeycrisp',
 	kv: {},
 	tables: { notes: { title: field.string() } },
 });

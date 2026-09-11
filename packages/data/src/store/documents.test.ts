@@ -17,7 +17,7 @@ import { APP_DOCUMENT } from './log.js';
 import { createAccountStore, syncEngineOf } from './store.js';
 
 const database = defineData({
-	id: 'so.epicenter.doctest',
+	id: 'app.tironian.doctest',
 	kv: {},
 	tables: { notes: { title: field.string() } },
 });

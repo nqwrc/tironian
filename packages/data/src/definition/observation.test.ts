@@ -6,7 +6,7 @@ import {
 	type TableInvalidation,
 } from './observation.js';
 
-const WORKSPACE_ID = 'so.epicenter.test';
+const WORKSPACE_ID = 'app.tironian.test';
 
 function rowId(index: number): string {
 	return `row${String(index).padStart(21, '0')}`;
@@ -54,7 +54,7 @@ test('the same table name in two namespaces is two handles', () => {
 	const mine: TableInvalidation[] = [];
 	const theirs: TableInvalidation[] = [];
 	dispatcher.subscribeTable(WORKSPACE_ID, 'notes', (i) => mine.push(i));
-	dispatcher.subscribeTable('so.epicenter.other', 'notes', (i) =>
+	dispatcher.subscribeTable('app.tironian.other', 'notes', (i) =>
 		theirs.push(i),
 	);
 

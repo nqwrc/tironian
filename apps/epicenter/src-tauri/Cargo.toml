@@ -1,16 +1,16 @@
 [package]
-name = "epicenter"
+name = "tironian"
 version = "0.0.1"
-description = "The Epicenter desktop application host"
-authors = ["Epicenter"]
-repository = "https://github.com/EpicenterHQ/epicenter"
+description = "The Tironian desktop application host"
+authors = ["Nicola Pandolfi"]
+repository = "https://github.com/nqwrc/tironian"
 edition = "2021"
 
 [package.metadata]
 cargo-target-macos-version = "10.15"
 
 [lib]
-name = "epicenter_lib"
+name = "tironian_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

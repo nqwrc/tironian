@@ -5,7 +5,7 @@
 //! expected sample count at 16 kHz mono (within a small slack for codec
 //! priming, pre-skip, and resampler tail effects).
 
-use epicenter_lib::audio::decode_to_pcm16k_mono;
+use tironian_lib::audio::decode_to_pcm16k_mono;
 
 const FIXTURE_SECONDS: usize = 2;
 const TARGET_RATE: usize = 16_000;

@@ -6,19 +6,19 @@
 import staticAdapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
-const isEpicenterHost = process.env.EPICENTER_HOST === '1';
+const isTironianHost = process.env.TIRONIAN_HOST === '1';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
 		adapter: staticAdapter({
-			...(isEpicenterHost && {
+			...(isTironianHost && {
 				pages: '../epicenter/dist/whispering',
 				assets: '../epicenter/dist/whispering',
 			}),
 			fallback: 'index.html', // SPA fallback for dynamic routes
 		}),
-		...(isEpicenterHost && { paths: { base: '/apps/whispering' } }),
+		...(isTironianHost && { paths: { base: '/apps/whispering' } }),
 		alias: {
 			$routes: './src/routes',
 		},

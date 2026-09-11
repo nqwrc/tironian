@@ -18,12 +18,12 @@ import type { DataOf } from '../../../src/store/store.js';
  */
 const workspaces = {
 	vault: defineData({
-		id: 'so.epicenter.durableprobe',
+		id: 'app.tironian.durableprobe',
 		kv: {},
 		tables: { notes: { title: field.string() } },
 	}),
 	'somewhere-else': defineData({
-		id: 'so.epicenter.durableprobe.elsewhere',
+		id: 'app.tironian.durableprobe.elsewhere',
 		kv: {},
 		tables: { notes: { title: field.string() } },
 	}),

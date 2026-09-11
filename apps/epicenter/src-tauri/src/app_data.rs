@@ -13,10 +13,10 @@
 //! identifier constant, exactly as the TypeScript does; it deliberately does not
 //! use Tauri's `app_data_dir()`, whose answer moves with the bundle identifier
 //! and so split dev builds away from the sidecar (see
-//! [`EPICENTER_BUNDLE_IDENTIFIER`]).
+//! [`TIRONIAN_BUNDLE_IDENTIFIER`]).
 //!
 //! The override is part of that equality and not an extra. Rust used to compute
-//! the root and pass it to the sidecar in `EPICENTER_DATA_DIR`, which meant an
+//! the root and pass it to the sidecar in `TIRONIAN_DATA_DIR`, which meant an
 //! ambient value was overwritten and could not split the two. The sidecar now
 //! resolves its own root and honours the variable, so the recorder has to honour
 //! it too: otherwise a person who moved their data would have recordings written
@@ -29,22 +29,22 @@ use anyhow::{bail, Context, Result};
 use tauri::{AppHandle, Manager, Runtime};
 
 /// The one override for the one root, read by the sidecar, every CLI, and here.
-const DATA_ROOT_OVERRIDE: &str = "EPICENTER_DATA_DIR";
+const DATA_ROOT_OVERRIDE: &str = "TIRONIAN_DATA_DIR";
 
-/// Mirrors `EPICENTER_BUNDLE_IDENTIFIER` in `packages/constants/src/app-data.ts`,
+/// Mirrors `TIRONIAN_BUNDLE_IDENTIFIER` in `packages/constants/src/app-data.ts`,
 /// which is the authority on this path.
 ///
 /// Deliberately a constant rather than the running bundle's identifier. Tauri's
 /// `app_data_dir()` is `data_dir()` joined with the *config's* identifier, and
-/// `tauri.dev.conf.json` overrides that identifier to `so.epicenter.dev` so the
+/// `tauri.dev.conf.json` overrides that identifier to `app.tironian.dev` so the
 /// dev build is a separate application (its own window state, webview data and
 /// deep-link registration). The data root is not part of that separation: the
-/// sidecar resolves `so.epicenter` unconditionally, so a dev host built on
+/// sidecar resolves `app.tironian` unconditionally, so a dev host built on
 /// `app_data_dir()` wrote recordings to a `blobs/` the sidecar never served and
 /// every dev dictation 404'd before it could be transcribed. Joining the shared
 /// constant keeps the two implementations equal under every config, which is the
 /// only property that matters here.
-const EPICENTER_BUNDLE_IDENTIFIER: &str = "so.epicenter";
+const TIRONIAN_BUNDLE_IDENTIFIER: &str = "app.tironian";
 
 /// The root this machine's Epicenter stores everything under.
 pub fn epicenter_data_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
@@ -60,7 +60,7 @@ fn platform_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
         .path()
         .data_dir()
         .context("resolve the platform application-data directory")?
-        .join(EPICENTER_BUNDLE_IDENTIFIER))
+        .join(TIRONIAN_BUNDLE_IDENTIFIER))
 }
 
 /// Apply the override rule to a platform root.
@@ -98,12 +98,12 @@ mod tests {
 
     /// An absolute path spelled the way the running platform spells one.
     /// The rule under test is `Path::is_absolute`, and that is per-platform:
-    /// `/tmp/epicenter-test` is a relative path on Windows, so a Unix-only
+    /// `/tmp/tironian-test` is a relative path on Windows, so a Unix-only
     /// literal would test the refusal branch there instead of the override.
     const ABSOLUTE_OVERRIDE: &str = if cfg!(windows) {
-        r"C:\epicenter-test"
+        r"C:\tironian-test"
     } else {
-        "/tmp/epicenter-test"
+        "/tmp/tironian-test"
     };
 
     #[test]
@@ -185,11 +185,11 @@ mod tests {
 
     /// The dev bundle is a separate *application*, not a separate data root.
     ///
-    /// `tauri.dev.conf.json` overrides the identifier to `so.epicenter.dev`. When
+    /// `tauri.dev.conf.json` overrides the identifier to `app.tironian.dev`. When
     /// this resolver was built on `app_data_dir()` that override moved the root
     /// with it, so `bun dev:epicenter` wrote recordings to
-    /// `<data>/so.epicenter.dev/blobs` while the sidecar served
-    /// `<data>/so.epicenter/blobs`, and every dev dictation failed with a 404
+    /// `<data>/app.tironian.dev/blobs` while the sidecar served
+    /// `<data>/app.tironian/blobs`, and every dev dictation failed with a 404
     /// before it could reach transcription. The equality test above could not
     /// catch it: it reads `tauri.conf.json`, so it only ever saw the production
     /// identifier. This pins the property that actually matters, that no config's

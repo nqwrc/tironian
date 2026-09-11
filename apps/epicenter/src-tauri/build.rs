@@ -1,4 +1,4 @@
-//! Epicenter Tauri build script.
+//! Tironian Tauri build script.
 //!
 //! The Whispering build links transcribe-cpp statically on macOS and
 //! aarch64 Windows. Linux and x86_64 Windows use dynamic backends, so their
@@ -18,7 +18,7 @@ fn main() {
 
     let manifest = tauri_build::AppManifest::new().commands(COMMANDS);
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))
-        .expect("failed to build Epicenter's Tauri manifest");
+        .expect("failed to build Tironian's Tauri manifest");
 }
 
 /// Let the Windows test harness start at all.
@@ -74,7 +74,7 @@ fn bake_transcribe_rpath() {
 /// `transcribe-libs/` staging directory used by Tauri's platform bundles.
 ///
 /// `tauri.conf.json` maps this directory to the bundle resource root, so on
-/// Windows every file landed here installs beside `epicenter.exe`, which is
+/// Windows every file landed here installs beside `tironian.exe`, which is
 /// where the loader looks. That mapping is what puts the runtime in the NSIS
 /// installer: the WiX bundler globs the cargo target directory for loose DLLs
 /// and would have found them anyway, but the NSIS bundler only ever adds

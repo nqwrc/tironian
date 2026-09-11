@@ -5,7 +5,7 @@
  */
 
 export const SIDECAR_PROTOCOL_VERSION = 3;
-export const PRODUCTION_PORT = 39_130;
+export const PRODUCTION_PORT = 41_730;
 
 export type SidecarRuntimeMode = 'production' | 'development';
 

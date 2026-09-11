@@ -35,7 +35,7 @@ export const BUILT_IN_ROUTES = {
 
 export type BuiltInRouteId = keyof typeof BUILT_IN_ROUTES;
 
-export const BOOTSTRAP_ROUTE = route('/_epicenter/bootstrap');
+export const BOOTSTRAP_ROUTE = route('/_tironian/bootstrap');
 export const HOME_ROUTE = BUILT_IN_ROUTES.home;
 export const WHISPERING_ROUTE = BUILT_IN_ROUTES.whispering;
 export const LOCAL_BLOB_ROUTE = {

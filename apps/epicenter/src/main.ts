@@ -45,10 +45,10 @@ async function main(): Promise<void> {
 			directory: join(dataRoot, 'blobs'),
 		});
 
-		const appsDist = process.env.EPICENTER_APPS_DIST;
+		const appsDist = process.env.TIRONIAN_APPS_DIST;
 		if (!appsDist) {
 			throw new Error(
-				'EPICENTER_APPS_DIST must name the release-built Epicenter applications directory.',
+				'TIRONIAN_APPS_DIST must name the release-built Epicenter applications directory.',
 			);
 		}
 		const staticAssets = await loadStaticAssets(

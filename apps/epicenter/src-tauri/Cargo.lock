@@ -1404,63 +1404,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "epicenter"
-version = "0.0.1"
-dependencies = [
- "accessibility-sys",
- "anyhow",
- "audiopus",
- "base64 0.22.1",
- "block2",
- "core-foundation 0.9.4",
- "core-foundation-sys",
- "core-graphics 0.22.3",
- "cpal",
- "enigo",
- "getrandom 0.3.4",
- "hf-hub",
- "hound",
- "lazy_static",
- "log",
- "objc2",
- "objc2-app-kit",
- "objc2-av-foundation",
- "objc2-foundation",
- "ogg",
- "rayon",
- "rubato",
- "serde",
- "serde_json",
- "specta",
- "specta-typescript",
- "symphonia",
- "tauri",
- "tauri-build",
- "tauri-nspanel",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-http",
- "tauri-plugin-log",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-single-instance",
- "tauri-specta",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "transcribe-cpp",
- "windows 0.62.2",
- "winreg 0.55.0",
- "zbus",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5979,6 +5922,63 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tironian"
+version = "0.0.1"
+dependencies = [
+ "accessibility-sys",
+ "anyhow",
+ "audiopus",
+ "base64 0.22.1",
+ "block2",
+ "core-foundation 0.9.4",
+ "core-foundation-sys",
+ "core-graphics 0.22.3",
+ "cpal",
+ "enigo",
+ "getrandom 0.3.4",
+ "hf-hub",
+ "hound",
+ "lazy_static",
+ "log",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-av-foundation",
+ "objc2-foundation",
+ "ogg",
+ "rayon",
+ "rubato",
+ "serde",
+ "serde_json",
+ "specta",
+ "specta-typescript",
+ "symphonia",
+ "tauri",
+ "tauri-build",
+ "tauri-nspanel",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-http",
+ "tauri-plugin-log",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-single-instance",
+ "tauri-specta",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "transcribe-cpp",
+ "windows 0.62.2",
+ "winreg 0.55.0",
+ "zbus",
+]
 
 [[package]]
 name = "tokio"

@@ -23,7 +23,7 @@ import {
 } from './store.js';
 
 const database = defineData({
-	id: 'so.epicenter.honeycrisp',
+	id: 'app.tironian.honeycrisp',
 	kv: { theme: field.select(['light', 'dark']), fontSize: field.number() },
 	tables: {
 		notes: {
@@ -213,7 +213,7 @@ describe('deletion', () => {
 
 describe('a nonconforming row is reported, never repaired', () => {
 	const wrongDatabase = defineData({
-		id: 'so.epicenter.honeycrisp',
+		id: 'app.tironian.honeycrisp',
 		kv: {},
 		tables: {
 			notes: {
@@ -696,7 +696,7 @@ describe('a subscription names the rows a commit touched', () => {
 		// implementation that invalidated every subscriber on every commit.
 		const other = openMemory(
 			defineData({
-				id: 'so.epicenter.honeycrisp',
+				id: 'app.tironian.honeycrisp',
 				kv: {},
 				tables: {
 					notes: {
@@ -885,7 +885,7 @@ describe('kv survives a declaration upgrade (ADR-0240)', () => {
 
 		const second = createAccountStore({
 			definition: defineData({
-				id: 'so.epicenter.honeycrisp',
+				id: 'app.tironian.honeycrisp',
 				kv: {
 					theme: field.select(['light', 'dark']),
 					added: field.string(),
@@ -916,7 +916,7 @@ describe('kv survives a declaration upgrade (ADR-0240)', () => {
 
 describe('an undeclared table waits in the CRDT (ADR-0240)', () => {
 	const withScratch = defineData({
-		id: 'so.epicenter.honeycrisp',
+		id: 'app.tironian.honeycrisp',
 		kv: { theme: field.select(['light', 'dark']) },
 		tables: {
 			notes: { title: field.string() },
@@ -924,7 +924,7 @@ describe('an undeclared table waits in the CRDT (ADR-0240)', () => {
 		},
 	});
 	const withoutScratch = defineData({
-		id: 'so.epicenter.honeycrisp',
+		id: 'app.tironian.honeycrisp',
 		kv: {},
 		tables: { notes: { title: field.string() } },
 	});

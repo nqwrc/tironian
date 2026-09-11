@@ -59,6 +59,14 @@ const files = await collectFiles();
 /** Track the current version before updating. */
 let oldVersion: string | null = null;
 
+/**
+ * The Cargo `[package] name`, keyed by the Cargo.toml path it came from. Read
+ * from the file's own content rather than derived from its directory: the
+ * crate name and the directory name are two separate renames (a rename of one
+ * does not imply the other), and `cargo update -p` needs the former.
+ */
+const cargoPackageNames = new Map<string, string>();
+
 for (const { path, type } of files) {
 	const fullPath = join(root, path);
 	const file = Bun.file(fullPath);
@@ -85,6 +93,10 @@ for (const { path, type } of files) {
 				`version = "${newVersion}"`,
 			);
 			await Bun.write(fullPath, updated);
+
+			const nameMatch = content.match(/^\[package\]\s*\nname\s*=\s*"([^"]+)"/m);
+			const packageName = nameMatch?.[1];
+			if (packageName) cargoPackageNames.set(path, packageName);
 			break;
 		}
 	}
@@ -96,7 +108,13 @@ for (const { path, type } of files) {
 const cargoTomls = files.filter((f) => f.type === 'toml');
 for (const { path } of cargoTomls) {
 	const tauriDir = join(root, path, '..');
-	const packageName = path.split('/')[1]!; // apps/{name}/src-tauri/Cargo.toml → {name}
+	const packageName = cargoPackageNames.get(path);
+	if (!packageName) {
+		console.error(
+			`Could not read [package] name from ${path}; skipping its Cargo.lock.`,
+		);
+		continue;
+	}
 	try {
 		console.log(`\nUpdating Cargo.lock for ${packageName}...`);
 		const proc = Bun.spawn(['cargo', 'update', '-p', packageName], {
@@ -104,7 +122,10 @@ for (const { path } of cargoTomls) {
 			stdout: 'inherit',
 			stderr: 'inherit',
 		});
-		await proc.exited;
+		const exitCode = await proc.exited;
+		if (exitCode !== 0) {
+			throw new Error(`cargo update exited with code ${exitCode}`);
+		}
 		console.log(`Updated Cargo.lock for ${packageName}`);
 	} catch (error) {
 		console.error(

@@ -32,13 +32,13 @@ describe('Epicenter-hosted Whispering identity', () => {
 		const vite = read('vite.config.ts');
 		expect(config).toContain("pages: '../epicenter/dist/whispering'");
 		expect(config).toContain("paths: { base: '/apps/whispering' }");
-		expect(vite).toContain("process.env.EPICENTER_HOST === '1'");
+		expect(vite).toContain("process.env.TIRONIAN_HOST === '1'");
 		expect(vite).not.toContain('TAURI_ENV_PLATFORM');
 		expect(vite).not.toContain('TAURI_DEV_HOST');
 		expect(read('src/lib/platform/base-path.browser.ts')).toContain(
 			"WHISPERING_BASE_PATHNAME = ''",
 		);
-		expect(read('src/lib/platform/base-path.epicenter-host.ts')).toContain(
+		expect(read('src/lib/platform/base-path.tironian-host.ts')).toContain(
 			"WHISPERING_BASE_PATHNAME = '/apps/whispering'",
 		);
 		expect(whisperingPath('/')).toBe('/');
@@ -48,14 +48,14 @@ describe('Epicenter-hosted Whispering identity', () => {
 
 	test('the canonical SPA no longer documents the retired native identifier', () => {
 		expect(read('src/lib/services/fs-paths.ts')).not.toContain(
-			'so.epicenter.whispering',
+			'app.tironian.dictation',
 		);
-		expect(read('src/lib/services/fs-paths.ts')).toContain('so.epicenter');
+		expect(read('src/lib/services/fs-paths.ts')).toContain('app.tironian');
 	});
 
 	test('there is no sign-in seam left to build a platform leaf for', () => {
 		expect(
-			existsSync(join(ROOT, 'src/lib/platform/auth.epicenter-host.ts')),
+			existsSync(join(ROOT, 'src/lib/platform/auth.tironian-host.ts')),
 		).toBe(false);
 		expect(existsSync(join(ROOT, 'src/lib/platform/auth.browser.ts'))).toBe(
 			false,

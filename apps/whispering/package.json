@@ -12,7 +12,7 @@
 		"#platform/commands": "./src/lib/commands.tauri.ts",
 		"#platform/analytics": "./src/lib/services/analytics/index.tauri.ts",
 		"#platform/blobs": {
-			"epicenter-host": "./src/lib/services/blobs/index.epicenter-host.ts",
+			"tironian-host": "./src/lib/services/blobs/index.tironian-host.ts",
 			"default": "./src/lib/services/blobs/index.browser.ts"
 		},
 		"#platform/download": "./src/lib/services/download/index.tauri.ts",
@@ -28,7 +28,7 @@
 		"#platform/tauri": "./src/lib/tauri.tauri.ts",
 		"#platform/os-notify": "./src/lib/report/os-notify.tauri.ts",
 		"#platform/base-path": {
-			"epicenter-host": "./src/lib/platform/base-path.epicenter-host.ts",
+			"tironian-host": "./src/lib/platform/base-path.tironian-host.ts",
 			"default": "./src/lib/platform/base-path.browser.ts"
 		},
 		"#platform/window-events": "./src/lib/window-events.tauri.ts"
@@ -37,7 +37,7 @@
 		"dev": "vite dev",
 		"test": "bun test",
 		"build": "NODE_ENV=production vite build",
-		"build:epicenter": "EPICENTER_HOST=1 bun run build",
+		"build:epicenter": "TIRONIAN_HOST=1 bun run build",
 		"check": "bun run typecheck",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

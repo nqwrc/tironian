@@ -15,7 +15,7 @@ them when sorted: `desktop` for the app build, `ci.{name}` for repo-wide checks.
 The smoke step in `desktop.yml` passes only when all four checks hold:
 
 1. The bundled executable is still running 45 seconds after launch.
-2. The loopback host answers HTTP on `127.0.0.1:39130`.
+2. The loopback host answers HTTP on `127.0.0.1:41730`.
 3. At least one on-screen window is owned by the app.
 4. No crash report for it appeared while it ran.
 

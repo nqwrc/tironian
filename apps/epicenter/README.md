@@ -18,7 +18,7 @@ apps/epicenter/ui     -----------> dist/home
 A compiled application is a `dist/<id>` build this release declares, served
 below `/apps/<id>/`. Whispering is the one. It keeps its independently
 deployable browser build, and the variant Epicenter serves is selected at
-build time by the `epicenter-host` resolve condition.
+build time by the `tironian-host` resolve condition.
 
 That condition does not decide where the data lives. Every build opens its own
 local store, with no platform seam (ADR-0226, ADR-0227). The host serves
@@ -79,8 +79,8 @@ action once there is one. The tray and deep links remain shortcuts into the same
 windows:
 
 ```bash
-open 'epicenter://app/whispering'
-open 'epicenter://app/home'
+open 'tironian://app/whispering'
+open 'tironian://app/home'
 ```
 
 ## Build and verify

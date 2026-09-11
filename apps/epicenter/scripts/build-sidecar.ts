@@ -30,7 +30,7 @@ const outfile = join(
 	appDir,
 	'src-tauri',
 	'binaries',
-	`epicenter-host-${targetTriple}`,
+	`tironian-host-${targetTriple}`,
 );
 await mkdir(dirname(outfile), { recursive: true });
 

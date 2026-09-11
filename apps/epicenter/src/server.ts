@@ -28,9 +28,9 @@ export type HomeServerOptions = {
 	blobs: BunBlobStore;
 };
 
-const SESSION_COOKIE = 'epicenter_session';
+const SESSION_COOKIE = 'tironian_session';
 const MAX_BROWSER_SESSIONS = 32;
-const SESSION_SHELL = `<!doctype html><html><head><meta charset="utf-8"><title>Tironian</title><script>window.__EPICENTER_SESSION_READY__.then(() => window.location.reload())</script></head><body></body></html>`;
+const SESSION_SHELL = `<!doctype html><html><head><meta charset="utf-8"><title>Tironian</title><script>window.__TIRONIAN_SESSION_READY__.then(() => window.location.reload())</script></head><body></body></html>`;
 
 export function createHomeServer({
 	origin,

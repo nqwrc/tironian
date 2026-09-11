@@ -55,8 +55,8 @@ apps/<app>/
 
 Where a build genuinely differs, put the difference behind a `#platform/*`
 build-time subpath import rather than a runtime branch. Whispering's
-`#platform/blobs` resolves to `index.epicenter-host.ts` or `index.browser.ts`
-under the `epicenter-host` and default conditions, because the host's blob
+`#platform/blobs` resolves to `index.tironian-host.ts` or `index.browser.ts`
+under the `tironian-host` and default conditions, because the host's blob
 store reaches the host's own filesystem through the WebView and a browser
 build has none.
 

@@ -281,7 +281,7 @@ const settingsKv = {
 } as const;
 
 export const whisperingDefinition = defineData({
-	id: 'so.epicenter.whispering',
+	id: 'app.tironian.dictation',
 	title: 'Tironian',
 	kv: settingsKv,
 	tables: {

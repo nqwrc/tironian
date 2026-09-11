@@ -264,14 +264,17 @@ One product name. No sub-brands, no "Tironian Pro", no capitalized feature names
 - The app is Tironian, and so is the installed bundle: `productName`, the
   installers, window titles, the tray menu and tooltip, and the host's own
   error messages all say Tironian (`apps/epicenter/src-tauri/tauri.conf.json`,
-  `lib.rs`, `shell.rs`). The desktop host keeps upstream's Epicenter name only
-  inside the code: the `apps/epicenter` directory, the Rust crate, and log
-  lines a developer reads.
-- The bundle identifier is still `so.epicenter`. It names the data root on
-  every platform and is pinned equal in Rust, TypeScript and both Tauri configs
-  by a test, so changing it relocates every existing install's recordings. It
-  moves in its own change, with a migration or a stated clean start, not as a
-  side effect of the rename.
+  `lib.rs`, `shell.rs`). The Rust crate, the deep-link scheme, the sidecar
+  binary, the log directory and every `EPICENTER_*` environment variable
+  moved to Tironian names in the runtime-identifier rename; upstream's
+  Epicenter name survives only in the `apps/epicenter` directory itself, the
+  package scope, and the `whispering`-named code identifiers, none of which
+  is renamed yet.
+- The bundle identifier is now `app.tironian` (`app.tironian.dev` for the dev
+  build), moved off `so.epicenter` in the runtime-identifier rename. It names
+  the data root on every platform and is pinned equal in Rust, TypeScript and
+  both Tauri configs by a test. The move carries no migration: nothing has
+  shipped an installed build under the old identifier to migrate.
 - Package identifiers, TypeScript types and import paths keep the `whispering`
   and `@epicenter/` names. See the next section for why.
 

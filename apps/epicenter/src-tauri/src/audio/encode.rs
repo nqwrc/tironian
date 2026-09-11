@@ -131,7 +131,7 @@ fn write_opus_head<W: std::io::Write>(
 /// Write the OpusTags comment packet (page 1, RFC 7845 §5.2). The minimum
 /// valid payload is the magic + vendor string + zero user-comment entries.
 fn write_opus_tags<W: std::io::Write>(writer: &mut PacketWriter<'_, W>) -> Result<(), AudioError> {
-    let vendor = b"epicenter";
+    let vendor = b"tironian";
     let mut tags = Vec::with_capacity(8 + 4 + vendor.len() + 4);
     tags.extend_from_slice(b"OpusTags");
     tags.extend_from_slice(&(vendor.len() as u32).to_le_bytes());

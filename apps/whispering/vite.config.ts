@@ -13,7 +13,7 @@ import { defaultClientConditions, defineConfig, mergeConfig } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
-const isEpicenterHost = process.env.EPICENTER_HOST === '1';
+const isTironianHost = process.env.TIRONIAN_HOST === '1';
 
 export default defineConfig(
 	mergeConfig(workspaceAppViteConfig(APPS.WHISPERING), {
@@ -70,7 +70,7 @@ export default defineConfig(
 		resolve: {
 			// Build-time platform DI over the `#platform/*` subpaths (package.json
 			// "imports"). This build activates both conditions because both are
-			// true of it, and they answer different questions: `epicenter-host`
+			// true of it, and they answer different questions: `tironian-host`
 			// selects the leaves whose owner is the Bun host (its replica,
 			// credential, deployment choice, blob bytes, and asset base), `tauri`
 			// the leaves that call native commands. Whispering has no build where
@@ -80,8 +80,8 @@ export default defineConfig(
 			// code is unresolvable there and fails at vite build time rather than
 			// at user runtime. The `...defaultClientConditions` spread is
 			// load-bearing: custom conditions REPLACE Vite's defaults.
-			...(isEpicenterHost && {
-				conditions: ['epicenter-host', 'tauri', ...defaultClientConditions],
+			...(isTironianHost && {
+				conditions: ['tironian-host', 'tauri', ...defaultClientConditions],
 			}),
 		},
 	}),

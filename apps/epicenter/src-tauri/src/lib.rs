@@ -84,9 +84,9 @@ pub mod overlay;
 pub mod clipboard;
 
 #[cfg(any(not(debug_assertions), test))]
-const PRODUCTION_PORT: u16 = 39_130;
+const PRODUCTION_PORT: u16 = 41_730;
 #[cfg(any(debug_assertions, test))]
-const DEVELOPMENT_PORT: u16 = 39_131;
+const DEVELOPMENT_PORT: u16 = 41_731;
 const PROTOCOL_VERSION: u8 = 3;
 const READY_TIMEOUT: Duration = Duration::from_secs(15);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
@@ -464,13 +464,13 @@ pub fn run() {
         as fn(tauri::ipc::Invoke<tauri::Wry>) -> bool;
     let log_plugin = tauri_plugin_log::Builder::new()
         .level(log::LevelFilter::Info)
-        .level_for("epicenter::transcription", log::LevelFilter::Debug)
+        .level_for("tironian::transcription", log::LevelFilter::Debug)
         .target(tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::Stdout,
         ))
         .target(tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::LogDir {
-                file_name: Some("epicenter".to_string()),
+                file_name: Some("tironian".to_string()),
             },
         ))
         .build();
@@ -661,7 +661,7 @@ fn request_window(app: &DesktopAppHandle, built_in: BuiltInApp) {
     }
 }
 
-/// Resolve `epicenter://app/<id>` to the built-in app it names.
+/// Resolve `tironian://app/<id>` to the built-in app it names.
 ///
 /// The segment is `app` because it is the same ID space as `/apps/<id>/` and
 /// the list Home shows: a person pasting a link names the thing they want, not
@@ -669,7 +669,7 @@ fn request_window(app: &DesktopAppHandle, built_in: BuiltInApp) {
 /// these bare labels (ADR-0210), so widening this to the catalog later needs
 /// no new grammar.
 fn parse_app_deep_link(url: &tauri::Url) -> Option<BuiltInApp> {
-    if url.scheme() != "epicenter"
+    if url.scheme() != "tironian"
         || url.host_str() != Some("app")
         || !url.username().is_empty()
         || url.password().is_some()
@@ -787,11 +787,11 @@ fn launch_host(app: &DesktopAppHandle, port: u16) -> Result<LaunchedHost> {
     // TypeScript function that owns that path (ADR-0201). Do not pass one from
     // here: a Rust-computed root leaves the desktop and every CLI as two
     // implementations of a directory they have to agree on exactly, and it
-    // swallows the ambient `EPICENTER_DATA_DIR` that the host and the
+    // swallows the ambient `TIRONIAN_DATA_DIR` that the host and the
     // recorder's `crate::app_data` both honour.
     let mut command = host_command(app)?;
     command
-        .env("EPICENTER_APPS_DIST", apps_dist(app)?)
+        .env("TIRONIAN_APPS_DIST", apps_dist(app)?)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::from(log.try_clone()?));
@@ -891,9 +891,9 @@ fn host_command(_app: &DesktopAppHandle) -> Result<Command> {
         .parent()
         .context("the Epicenter executable has no parent directory")?;
     let filename = if cfg!(windows) {
-        "epicenter-host.exe"
+        "tironian-host.exe"
     } else {
-        "epicenter-host"
+        "tironian-host"
     };
     let mut command = Command::new(directory.join(filename));
     command.arg("--runtime-mode=production");
@@ -1268,14 +1268,14 @@ fn initialization_script(origin: &str, token: &str) -> Result<String> {
         r#"(() => {{
   const expectedOrigin = {origin};
   if (window.location.origin !== expectedOrigin) return;
-  const sessionReady = fetch('/_epicenter/bootstrap', {{
+  const sessionReady = fetch('/_tironian/bootstrap', {{
     method: 'POST',
     credentials: 'include',
     headers: {{ authorization: `Bearer ${{{token}}}` }},
   }}).then((response) => {{
     if (!response.ok) throw new Error(`Epicenter session bootstrap failed (${{response.status}}).`);
   }});
-  Object.defineProperty(window, '__EPICENTER_SESSION_READY__', {{
+  Object.defineProperty(window, '__TIRONIAN_SESSION_READY__', {{
     value: sessionReady,
     enumerable: false,
     configurable: false,
@@ -1299,7 +1299,7 @@ fn origin(port: u16) -> String {
 
 #[cfg(debug_assertions)]
 fn configured_port() -> Result<u16> {
-    development_port(std::env::var_os("EPICENTER_DEV_PORT").as_deref())
+    development_port(std::env::var_os("TIRONIAN_DEV_PORT").as_deref())
 }
 
 #[cfg(not(debug_assertions))]
@@ -1315,12 +1315,12 @@ fn development_port(value: Option<&std::ffi::OsStr>) -> Result<u16> {
     };
     let value = value
         .to_str()
-        .context("EPICENTER_DEV_PORT must be valid UTF-8")?;
+        .context("TIRONIAN_DEV_PORT must be valid UTF-8")?;
     let port: u16 = value
         .parse()
-        .context("EPICENTER_DEV_PORT must be an integer from 1024 through 65535")?;
+        .context("TIRONIAN_DEV_PORT must be an integer from 1024 through 65535")?;
     if port < 1_024 {
-        bail!("EPICENTER_DEV_PORT must be an integer from 1024 through 65535");
+        bail!("TIRONIAN_DEV_PORT must be an integer from 1024 through 65535");
     }
     Ok(port)
 }
@@ -1344,35 +1344,35 @@ mod tests {
     fn launched_from_autostart_detects_only_its_own_argument() {
         assert!(launched_from_autostart(&["--hidden".to_string()]));
         assert!(launched_from_autostart(&[
-            "epicenter.exe".to_string(),
+            "tironian.exe".to_string(),
             "--hidden".to_string(),
         ]));
         assert!(!launched_from_autostart(&[]));
-        assert!(!launched_from_autostart(&["epicenter.exe".to_string()]));
+        assert!(!launched_from_autostart(&["tironian.exe".to_string()]));
         assert!(!launched_from_autostart(&[
-            "epicenter://app/whispering".to_string()
+            "tironian://app/whispering".to_string()
         ]));
     }
 
     #[test]
     fn production_port_is_stable() {
-        assert_eq!(PRODUCTION_PORT, 39_130);
+        assert_eq!(PRODUCTION_PORT, 41_730);
     }
 
     #[test]
     fn parses_only_the_expected_v3_ready_frame() {
         read_ready_frame(
-            &mut Cursor::new(b"{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130}\n"),
+            &mut Cursor::new(b"{\"type\":\"ready\",\"protocolVersion\":3,\"port\":41730}\n"),
             PRODUCTION_PORT,
         )
         .unwrap();
 
         for invalid in [
             "preamble\n",
-            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39130}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39131}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130,\"extra\":true}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130}",
+            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":41730}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":41731}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":41730,\"extra\":true}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":41730}",
         ] {
             assert!(read_ready_frame(&mut Cursor::new(invalid), PRODUCTION_PORT).is_err());
         }
@@ -1381,8 +1381,8 @@ mod tests {
     #[test]
     fn navigation_allows_only_the_exact_active_origin_without_credentials() {
         for allowed in [
-            "http://127.0.0.1:39130/apps/home/",
-            "http://127.0.0.1:39130/another/path?query=ok#fragment",
+            "http://127.0.0.1:41730/apps/home/",
+            "http://127.0.0.1:41730/another/path?query=ok#fragment",
         ] {
             assert!(is_allowed_navigation(
                 &allowed.parse().unwrap(),
@@ -1391,11 +1391,11 @@ mod tests {
         }
 
         for denied in [
-            "https://127.0.0.1:39130/apps/home/",
-            "http://localhost:39130/apps/home/",
-            "http://127.0.0.1:39131/apps/home/",
-            "http://user@127.0.0.1:39130/apps/home/",
-            "http://user:secret@127.0.0.1:39130/apps/home/",
+            "https://127.0.0.1:41730/apps/home/",
+            "http://localhost:41730/apps/home/",
+            "http://127.0.0.1:41731/apps/home/",
+            "http://user@127.0.0.1:41730/apps/home/",
+            "http://user:secret@127.0.0.1:41730/apps/home/",
         ] {
             assert!(!is_allowed_navigation(
                 &denied.parse().unwrap(),
@@ -1449,7 +1449,7 @@ mod tests {
             "hello http",
             "héllo",
             "hello-http",
-            "so.epicenter.hello",
+            "app.tironian.hello",
             "never-admitted",
             // Reserved windows Home does not list: the shell itself.
             "home",
@@ -1892,29 +1892,29 @@ mod tests {
     #[test]
     fn deep_links_accept_only_the_closed_built_in_app_table() {
         for (url, expected) in [
-            ("epicenter://app/home", BuiltInApp::Home),
-            ("epicenter://app/whispering", BuiltInApp::Whispering),
+            ("tironian://app/home", BuiltInApp::Home),
+            ("tironian://app/whispering", BuiltInApp::Whispering),
         ] {
             assert_eq!(parse_app_deep_link(&url.parse().unwrap()), Some(expected));
         }
 
         for denied in [
             // Both retired spellings. Neither is kept as a compatibility alias.
-            "epicenter://surface/home",
-            "epicenter://window/home",
-            "epicenter://app/unknown",
+            "tironian://surface/home",
+            "tironian://window/home",
+            "tironian://app/unknown",
             // Honeycrisp, Mail, and Books are gone: a single-app product admits
             // no other apps, so these no longer resolve to anything.
-            "epicenter://app/honeycrisp",
-            "epicenter://app/mail",
-            "epicenter://app/books",
-            "epicenter://app/home/",
-            "epicenter://app/home/extra",
-            "epicenter://app/home?mode=other",
-            "epicenter://app/home#other",
-            "epicenter://user@app/home",
-            "epicenter://user:secret@app/home",
-            "epicenter://other/query",
+            "tironian://app/honeycrisp",
+            "tironian://app/mail",
+            "tironian://app/books",
+            "tironian://app/home/",
+            "tironian://app/home/extra",
+            "tironian://app/home?mode=other",
+            "tironian://app/home#other",
+            "tironian://user@app/home",
+            "tironian://user:secret@app/home",
+            "tironian://other/query",
             "https://app/home",
         ] {
             assert_eq!(parse_app_deep_link(&denied.parse().unwrap()), None);
@@ -1924,11 +1924,11 @@ mod tests {
     #[test]
     fn forwarded_arguments_extract_valid_unique_app_links() {
         let arguments = [
-            "/Applications/Epicenter.app/Contents/MacOS/Epicenter",
-            "epicenter://app/whispering",
-            "epicenter://app/unknown",
-            "epicenter://app/whispering",
-            "epicenter://app/home",
+            "/Applications/Tironian.app/Contents/MacOS/Tironian",
+            "tironian://app/whispering",
+            "tironian://app/unknown",
+            "tironian://app/whispering",
+            "tironian://app/home",
         ]
         .map(String::from);
         assert_eq!(
@@ -1943,19 +1943,19 @@ mod tests {
         let json = boot_frame_json(&token, PRODUCTION_PORT).unwrap();
         assert_eq!(
             json,
-            format!("{{\"type\":\"boot\",\"protocolVersion\":3,\"token\":\"{token}\",\"port\":39130}}")
+            format!("{{\"type\":\"boot\",\"protocolVersion\":3,\"token\":\"{token}\",\"port\":41730}}")
         );
         assert!(!token.contains('='));
     }
 
     #[test]
     fn initialization_script_guards_origin_and_exposes_only_ready_promise() {
-        let script = initialization_script("http://127.0.0.1:39130", "safe_token").unwrap();
+        let script = initialization_script("http://127.0.0.1:41730", "safe_token").unwrap();
         assert!(script.contains("window.location.origin !== expectedOrigin"));
-        assert!(script.contains("/_epicenter/bootstrap"));
-        assert!(script.contains("__EPICENTER_SESSION_READY__"));
-        assert!(!script.contains("__EPICENTER_WHISPERING_AUTH_READY__"));
-        assert!(!script.contains("__EPICENTER_WHISPERING_AUTH_BOOTSTRAP__"));
+        assert!(script.contains("/_tironian/bootstrap"));
+        assert!(script.contains("__TIRONIAN_SESSION_READY__"));
+        assert!(!script.contains("__TIRONIAN_WHISPERING_AUTH_READY__"));
+        assert!(!script.contains("__TIRONIAN_WHISPERING_AUTH_BOOTSTRAP__"));
         assert!(!script.contains("keyring_read"));
         assert!(!script.contains("localStorage"));
         assert!(!script.contains("sessionStorage"));

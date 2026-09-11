@@ -4,13 +4,13 @@
  * `appDataDir()` is an IPC call into Tauri's `PathResolver::app_data_dir`, the
  * same function the native recorder resolves `<root>/blobs` through, so this
  * names the host's directory rather than computing a second one. With the
- * `so.epicenter` identifier that is:
- *   macOS:   ~/Library/Application Support/so.epicenter/
- *   Windows: %APPDATA%/so.epicenter/
- *   Linux:   ~/.local/share/so.epicenter/
+ * `app.tironian` identifier that is:
+ *   macOS:   ~/Library/Application Support/app.tironian/
+ *   Windows: %APPDATA%/app.tironian/
+ *   Linux:   ~/.local/share/app.tironian/
  *
  * It is not the whole rule, and the gap is worth knowing about.
- * `EPICENTER_DATA_DIR` moves that root; the Bun host and the native recorder
+ * `TIRONIAN_DATA_DIR` moves that root; the Bun host and the native recorder
  * both honour it, Tauri's resolver does not, and a WebView cannot read the
  * process environment to make up the difference. Under an override this opens
  * the platform default while the recordings are somewhere else. Closing it is

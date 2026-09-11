@@ -61,7 +61,7 @@ export async function loadStaticAssets(
 ): Promise<EpicenterStaticAssets> {
 	if (appsDist.trim() === '') {
 		throw new Error(
-			'EPICENTER_APPS_DIST must name the built applications directory.',
+			'TIRONIAN_APPS_DIST must name the built applications directory.',
 		);
 	}
 
