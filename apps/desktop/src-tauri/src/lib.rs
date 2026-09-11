@@ -203,9 +203,10 @@ struct HostState {
     pending_apps: Mutex<Vec<BuiltInApp>>,
     shutting_down: AtomicBool,
     starting: AtomicBool,
-    /// Set the first time a host generation reaches window creation. Guards
-    /// `suppress_default_window`: only that first generation may still be the
-    /// one the OS launched with `--hidden` at login.
+    /// Set by the first `start_once` attempt, before any fallible step, whether
+    /// or not that attempt reaches window creation. Guards
+    /// `suppress_default_window`: only that first attempt may honor the
+    /// `--hidden` the OS passed at login, so a Retry always opens a window.
     first_generation_started: AtomicBool,
 }
 

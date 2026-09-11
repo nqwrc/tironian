@@ -111,7 +111,7 @@ impl ModelCache {
             return Err(Unavailable {
                 reason: UnavailableReason::NoActiveModel,
                 message: "No local transcription model is active on this device. \
-                          Choose one in Tironian Home."
+                          Choose one in Model settings."
                     .to_string(),
             });
         };
@@ -127,7 +127,7 @@ impl ModelCache {
             _ => Err(Unavailable {
                 reason: UnavailableReason::ActiveModelUnavailable,
                 message: "The active local transcription model is not available on this \
-                          device. Open Tironian Home to download it or choose another."
+                          device. Open Model settings to download it or choose another."
                     .to_string(),
             }),
         }
@@ -609,7 +609,7 @@ mod tests {
         let (reason, message) = unavailable_of(&cache_with("none", None).readiness());
         assert_eq!(reason, UnavailableReason::NoActiveModel);
         assert!(
-            message.contains("Tironian Home"),
+            message.contains("Model settings"),
             "the message must name the one place that can fix it: {message}"
         );
     }
