@@ -1,18 +1,29 @@
 /**
- * Fail when a wire URL path the Bun-owned host serves is hardcoded outside
- * the module that owns it.
- *
- * Every wire URL path lives in one place: apps/desktop/src/routes.ts
- * (BOOTSTRAP_ROUTE, BUILT_IN_ROUTES, LOCAL_BLOB_ROUTE), which composes the
- * local blob path from its own source of truth, packages/blobs/src/webview.ts
+ * Fail when a hardcoded literal reproduces one of the two host-infrastructure
+ * wire paths owned by apps/desktop/src/routes.ts: BOOTSTRAP_ROUTE
+ * (`/_tironian/bootstrap`) and LOCAL_BLOB_ROUTE, which composes the local
+ * blob path from its own source of truth, packages/blobs/src/webview.ts
  * (LOCAL_BLOB_PATH). Consumers import from there instead of writing the
  * string again.
  *
+ * Out of scope: BUILT_IN_ROUTES' `/apps/<id>/` page-routing prefix. One
+ * known literal mirror already exists outside routes.ts:
+ * apps/tironian/src/lib/platform/base-path.tironian-host.ts:2
+ * (`DICTATION_BASE_PATHNAME = '/apps/dictation'`), in @tironian/app, which
+ * has no dependency on @tironian/desktop, so it cannot import from
+ * apps/desktop/src/routes.ts today. Widening HARDCODED_PATH to cover
+ * `/apps/<id>/` would need an allowlist entry for that file, not a straight
+ * ban. Nothing here enforces that either literal stays in sync with
+ * BUILT_IN_ROUTES.
+ *
  * Excluded:
- *   - The modules that own these paths (they ARE the source of truth):
- *     apps/desktop/src/routes.ts and packages/blobs/src/webview.ts.
+ *   - The modules that own the two checked paths (they ARE the source of
+ *     truth): apps/desktop/src/routes.ts and packages/blobs/src/webview.ts.
  *   - *.test.ts / *.test.tsx (mock URL matchers may reference paths verbatim).
  *   - JSDoc/comment lines (descriptive prose, not constructions).
+ *   - *.svelte files: isScannedFile only matches .ts/.tsx, so a literal in a
+ *     Svelte component is never checked. Pre-existing limit, not specific to
+ *     the two paths this check covers.
  *
  * A straight port of the grep pipeline that used to live inline in
  * .github/workflows/ci.format.yml, so the rule is locally runnable:
@@ -101,8 +112,8 @@ for (const record of violations) {
 	console.error(`  ${record}`);
 }
 console.error(
-	'\n::error::Hardcoded API path literal found. Import BOOTSTRAP_ROUTE,\n' +
-		'BUILT_IN_ROUTES or LOCAL_BLOB_ROUTE from apps/desktop/src/routes.ts\n' +
-		'(or LOCAL_BLOB_PATH from @tironian/blobs/webview) instead.',
+	'\n::error::Hardcoded API path literal found. Import BOOTSTRAP_ROUTE or\n' +
+		'LOCAL_BLOB_ROUTE from apps/desktop/src/routes.ts (or LOCAL_BLOB_PATH\n' +
+		'from @tironian/blobs/webview) instead.',
 );
 process.exit(1);

@@ -51,7 +51,8 @@ test('flags a hardcoded API path literal with file and line', () => {
 		expect(status).toBe(1);
 		expect(output).toContain('packages/thing/src/client.ts:1:');
 		expect(output).toContain('::error::Hardcoded API path literal found');
-		expect(output).toContain('BUILT_IN_ROUTES');
+		expect(output).toContain('BOOTSTRAP_ROUTE');
+		expect(output).toContain('LOCAL_BLOB_ROUTE');
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
 	}

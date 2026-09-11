@@ -113,6 +113,16 @@ fn launched_from_autostart(arguments: &[String]) -> bool {
 /// example the person clicking Retry on the error dialog) is not the OS
 /// starting Tironian at login, so it must not suppress the window a second
 /// time: only the first generation may honor it.
+///
+/// That "first generation" is decided by `HostState::take_first_generation`,
+/// called at the top of `start_once` before its first fallible step. A start
+/// attempt that fails early, on `port()`, `launch_host`, or the "already
+/// managed" bail, still consumed that one call: `start_until_ready` takes the
+/// failure branch, shows the dialog, and a Retry runs `start_once` again with
+/// `take_first_generation` now returning `false`. So a Retry after any
+/// failed attempt, not only after a generation that reached window creation,
+/// sees `is_first_generation` as `false` here and does not suppress the
+/// window a second time.
 const fn suppress_default_window(is_first_generation: bool, launched_from_autostart: bool) -> bool {
     is_first_generation && launched_from_autostart
 }
@@ -258,6 +268,20 @@ impl HostState {
             .expect("active token lock poisoned")
             .as_deref()
             == Some(token)
+    }
+
+    /// Whether this is the first host generation this process has attempted
+    /// to start, consumed exactly once.
+    ///
+    /// Called at the top of every `start_once` attempt, including the ones
+    /// that fail before a generation reaches window creation: a launch that
+    /// dies on `port()`, `launch_host`, or the "already managed" bail still
+    /// consumed the one attempt `--hidden` gets to apply to. Retrying after
+    /// that failure is a person choosing to open the app, not the OS starting
+    /// it at login, so it must not find `suppress_default_window` still
+    /// honoring autostart.
+    fn take_first_generation(&self) -> bool {
+        !self.first_generation_started.swap(true, Ordering::AcqRel)
     }
 }
 
@@ -756,6 +780,11 @@ fn start_until_ready(app: DesktopAppHandle, mut failure: Option<String>) {
 
 fn start_once(app: &DesktopAppHandle) -> Result<()> {
     let state = app.state::<HostState>();
+    // Consumed before any fallible step below: a failed attempt has still
+    // spent the one chance `--hidden` gets to suppress the window, so a
+    // later Retry must not find it still available (see
+    // `HostState::take_first_generation`).
+    let is_first_generation = state.take_first_generation();
     let port = state.port()?;
     let launched = launch_host(app, port)?;
     let generation = state.next_generation.fetch_add(1, Ordering::Relaxed);
@@ -782,7 +811,6 @@ fn start_once(app: &DesktopAppHandle) -> Result<()> {
 
     state.activate(&token);
     let mut built_ins = state.take_pending_apps();
-    let is_first_generation = !state.first_generation_started.swap(true, Ordering::AcqRel);
     if built_ins.is_empty()
         && !suppress_default_window(
             is_first_generation,
@@ -1384,6 +1412,14 @@ mod tests {
         assert!(!suppress_default_window(false, true));
         assert!(!suppress_default_window(true, false));
         assert!(!suppress_default_window(false, false));
+    }
+
+    #[test]
+    fn take_first_generation_is_true_once_then_false() {
+        let state = HostState::new(Ok(PRODUCTION_PORT));
+        assert!(state.take_first_generation());
+        assert!(!state.take_first_generation());
+        assert!(!state.take_first_generation());
     }
 
     #[test]
