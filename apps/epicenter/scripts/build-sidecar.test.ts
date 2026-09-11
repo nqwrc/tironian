@@ -128,7 +128,7 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 		const whispering = await fetch(`${origin}/apps/whispering/`, session);
 		expect(whispering.status).toBe(200);
 		const whisperingPage = await whispering.text();
-		expect(whisperingPage).toContain('<title>Whispering</title>');
+		expect(whisperingPage).toContain('<title>Tironian</title>');
 		const entryPath = whisperingPage.match(
 			/\/apps\/whispering\/_app\/[^" ]+\.js/,
 		)?.[0];
