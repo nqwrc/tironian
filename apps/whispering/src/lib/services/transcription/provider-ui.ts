@@ -8,7 +8,6 @@
  */
 import deepgramIcon from '$lib/constants/icons/deepgram.svg?raw';
 import elevenlabsIcon from '$lib/constants/icons/elevenlabs.svg?raw';
-import epicenterIcon from '$lib/constants/icons/epicenter.svg?raw';
 import ggmlIcon from '$lib/constants/icons/ggml.svg?raw';
 import groqIcon from '$lib/constants/icons/groq.svg?raw';
 import mistralIcon from '$lib/constants/icons/mistral.svg?raw';
@@ -21,7 +20,6 @@ import {
 } from './providers';
 
 export const PROVIDER_ICONS = {
-	epicenter: { icon: epicenterIcon, invertInDarkMode: false },
 	OpenAI: { icon: openaiIcon, invertInDarkMode: true },
 	Groq: { icon: groqIcon, invertInDarkMode: false },
 	ElevenLabs: { icon: elevenlabsIcon, invertInDarkMode: true },
@@ -63,14 +61,13 @@ export const TRANSCRIPTION_PROVIDERS = (
  * the setup catalog shows and the short badge it tags each family with. Declaration
  * order is display order, so the setup catalog renders on-device first
  * (privacy-forward, matching the recorder switcher's `[...onDevice, ...remote]`),
- * then Epicenter, then keyed providers, then a custom server. `satisfies
- * Record<ProviderAccess, ...>` makes a new access member a compile error here, so a
- * family can never be silently dropped from the catalog the way `session` once was.
- * Group *membership* lives in the registry (`access`); this map owns only presentation.
+ * then keyed providers, then a custom server. `satisfies Record<ProviderAccess,
+ * ...>` makes a new access member a compile error here, so a family can never be
+ * silently dropped from the catalog. Group *membership* lives in the registry
+ * (`access`); this map owns only presentation.
  */
 export const ACCESS_GROUPS = {
 	onDevice: { heading: 'On your device', badge: 'Local' },
-	session: { heading: 'Epicenter', badge: 'Hosted' },
 	key: { heading: 'Provider API', badge: 'API' },
 	endpoint: { heading: 'Custom server', badge: 'Self-Hosted' },
 } as const satisfies Record<ProviderAccess, { heading: string; badge: string }>;

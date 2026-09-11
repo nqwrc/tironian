@@ -66,7 +66,6 @@ export const PREFERENCE_CATEGORY_KEYS: Record<
 	recording: [
 		'recordingTrigger',
 		'recordingPausePlayback',
-		'recordingAutoUpload',
 		'recordingOverlayXAnchor',
 		'recordingOverlayXMarginPx',
 		'recordingOverlayYAnchor',

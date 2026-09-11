@@ -1,4 +1,3 @@
-import { auth } from '#platform/auth';
 import { tauri } from '#platform/tauri';
 import {
 	TRANSCRIPTION_PROVIDERS,
@@ -62,10 +61,6 @@ export function isTranscriptionServiceConfigured(
 	service: TranscriptionProviderEntry,
 ): boolean {
 	switch (service.access) {
-		case 'session':
-			// No key to configure: the credential is the signed-in session, so
-			// "configured" is "signed in". Metering and top-up live on the deployment.
-			return auth.state.status === 'signed-in';
 		case 'key':
 			return secrets.get(service.apiKeyConfigKey).status === 'available';
 		case 'endpoint':
@@ -120,7 +115,6 @@ export function getTranscriptionPreflightBlocker(
 	if (isTranscriptionServiceConfigured(service)) return null;
 
 	return {
-		session: 'Sign in to Epicenter to use hosted transcription.',
 		key: `Add your ${service.label} API key.`,
 		endpoint: `Set your ${service.label} endpoint and model ID.`,
 	}[service.access];

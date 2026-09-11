@@ -10,7 +10,6 @@ const BUDGET = WHISPER_PROMPT_CHAR_BUDGET;
 
 describe('recognizerPromptCharBudget', () => {
 	test('bounds the routes that decode this string as a Whisper prompt', () => {
-		expect(recognizerPromptCharBudget('epicenter', null)).toBe(BUDGET);
 		expect(recognizerPromptCharBudget('Groq', null)).toBe(BUDGET);
 		expect(recognizerPromptCharBudget('local', null)).toBe(BUDGET);
 		expect(recognizerPromptCharBudget('speaches', null)).toBe(BUDGET);

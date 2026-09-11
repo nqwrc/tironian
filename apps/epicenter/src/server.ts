@@ -1,26 +1,18 @@
 /**
- * The Bun-owned Epicenter origin: trusted SPA documents, the account broker,
- * and local blob storage. The launch credential can only mint short-lived
- * browser sessions at the bootstrap route; it never appears in a URL or
- * durable browser storage.
+ * The Bun-owned Epicenter origin: trusted SPA documents and local blob
+ * storage. The launch credential can only mint short-lived browser sessions
+ * at the bootstrap route; it never appears in a URL or durable browser
+ * storage.
  */
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { getProfileVia } from '@epicenter/auth';
-import { type BlobId, type BlobRemote, parseBlobId } from '@epicenter/blobs';
+import { parseBlobId } from '@epicenter/blobs';
 import type { BunBlobStore } from '@epicenter/blobs/bun';
 import { type Context, Hono, type Next } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import type { DesktopAuthAuthority } from './desktop-auth-authority.ts';
-import { createDesktopAuthorityFetch } from './desktop-authority-fetch.ts';
 import {
-	ACCOUNT_INSTANCE_ROUTE,
-	ACCOUNT_PROFILE_ROUTE,
-	ACCOUNT_SIGN_IN_ROUTE,
-	ACCOUNT_SIGN_OUT_ROUTE,
 	BOOTSTRAP_ROUTE,
 	BUILT_IN_ROUTES,
-	LOCAL_BLOB_REMOTE_ROUTES,
 	LOCAL_BLOB_ROUTE,
 } from './routes.ts';
 import type { EpicenterStaticAssets } from './static-assets.ts';
@@ -34,15 +26,6 @@ export type HomeServerOptions = {
 	staticAssets: EpicenterStaticAssets;
 	/** Canonical device-local bytes shared by every trusted app window. */
 	blobs: BunBlobStore;
-	/** One credential owner for every compiled desktop window. */
-	desktopAuth: DesktopAuthAuthority;
-	/**
-	 * Host-owned remote copy capability over the same local bytes, or `null`
-	 * when this signed-out process generation has none. The composition root
-	 * builds it from the desktop authority, so these routes never see a
-	 * credential or a destination URL.
-	 */
-	blobRemote: BlobRemote | null;
 };
 
 const SESSION_COOKIE = 'epicenter_session';
@@ -54,8 +37,6 @@ export function createHomeServer({
 	launchToken,
 	staticAssets,
 	blobs,
-	desktopAuth,
-	blobRemote,
 }: HomeServerOptions) {
 	if (launchToken === '') {
 		throw new Error('Epicenter refuses to serve without a launch token.');
@@ -63,21 +44,13 @@ export function createHomeServer({
 	const activeUrl = validateOrigin(origin);
 	const activeHost = activeUrl.host;
 	const sessionHashes = new Set<string>();
-	const homePage = injectAuthBootstrap(
-		staticAssets.homePage,
-		desktopAuth.bootSnapshot,
-	);
+	const homePage = staticAssets.homePage;
 	// A compiled application is a built SPA below `/apps/<id>/` whose document
-	// the host stamps, gates, and hashes.
-	const servedApps = staticAssets.applications.map((application) => ({
-		id: application.id,
-		page: injectAuthBootstrap(application.page, desktopAuth.bootSnapshot),
-		resolve: application.resolve,
-	}));
+	// the host serves gated behind the browser session.
+	const servedApps = staticAssets.applications;
 	const csp = contentSecurityPolicy(
 		[homePage, ...servedApps.map(({ page }) => page), SESSION_SHELL].join('\n'),
 	);
-	const deploymentFetch = createDesktopAuthorityFetch(desktopAuth);
 	const app = new Hono();
 
 	app.use('*', async (c, next) => {
@@ -129,62 +102,6 @@ export function createHomeServer({
 		if (!hasBrowserSession(c)) return c.text('Unauthorized', 401);
 		await next();
 	};
-	const requirePrivateBroker = async (c: Context, next: Next) => {
-		if (!hasBrowserSession(c)) return c.text('Unauthorized', 401);
-		if (c.req.header('origin') !== origin) return c.text('Forbidden', 403);
-		await next();
-	};
-	// The account broker carries only host-owned identity commands and the
-	// profile projection. There is deliberately no authorize/bearer-grant
-	// route: no credential ever crosses into a WebView, so the windows keep
-	// the loopback-only CSP. The read-only profile GET is session-guarded
-	// without the origin check because a browser omits the Origin header on
-	// same-origin GETs.
-	app.use('/_epicenter/account/*', async (c, next) => {
-		if (c.req.method === 'GET') return requireBrowserSession(c, next);
-		return requirePrivateBroker(c, next);
-	});
-
-	app.get(ACCOUNT_PROFILE_ROUTE.pattern, async (c) => {
-		const profile = await getProfileVia(deploymentFetch, desktopAuth.baseURL);
-		if (profile.error !== null) return c.text('Profile unavailable', 502);
-		return c.json(profile.data);
-	});
-	app.post(ACCOUNT_SIGN_IN_ROUTE.pattern, async (c) => {
-		const result = await desktopAuth.startSignIn();
-		if (result.error) return c.text('Sign-in failed', 502);
-		return c.body(null, 202);
-	});
-	app.post(ACCOUNT_SIGN_OUT_ROUTE.pattern, async (c) => {
-		const result = await desktopAuth.signOut();
-		if (result.error) return c.text('Sign-out failed', 500);
-		return c.body(null, 202);
-	});
-	app.post(ACCOUNT_INSTANCE_ROUTE.pattern, async (c) => {
-		const input = await readJsonObject(c.req.raw);
-		if (
-			input === null ||
-			Object.keys(input).some((key) => key !== 'baseURL' && key !== 'token') ||
-			typeof input.baseURL !== 'string' ||
-			typeof input.token !== 'string'
-		) {
-			return c.text('Bad Request', 400);
-		}
-		try {
-			await desktopAuth.selectInstance({
-				baseURL: input.baseURL,
-				token: input.token,
-			});
-			return c.body(null, 202);
-		} catch {
-			return c.text('Invalid instance', 400);
-		}
-	});
-	app.delete(ACCOUNT_INSTANCE_ROUTE.pattern, async (c) => {
-		await desktopAuth.selectHosted();
-		return c.body(null, 202);
-	});
-
 	// Home: one document, no asset tree behind it.
 	app.get(BUILT_IN_ROUTES.home.pattern, (c) => {
 		c.header('cache-control', 'no-store');
@@ -320,82 +237,7 @@ export function createHomeServer({
 		return c.body(null, 204);
 	});
 
-	// Remote copy operations: the blob id in the path is the only input. The
-	// host's own deployment authority supplies the target and credential, so
-	// no request body, destination URL, or authorization header is read.
-	const requireBlobRemote = (
-		operate: (
-			remote: BlobRemote,
-			id: BlobId,
-		) => Promise<
-			| Awaited<ReturnType<BlobRemote['upload']>>
-			| Awaited<ReturnType<BlobRemote['download']>>
-			| Awaited<ReturnType<BlobRemote['purge']>>
-		>,
-	) => {
-		return async (c: Context) => {
-			const id = parseBlobId(c.req.param('blobId'));
-			if (id === undefined) return c.text('Invalid blob id', 400);
-			if (blobRemote === null) {
-				return c.text('Remote storage unavailable', 503);
-			}
-			const result = await operate(blobRemote, id);
-			if (result.error === null) return c.body(null, 204);
-			switch (result.error.name) {
-				case 'BlobNotFound':
-				case 'RemoteBlobNotFound':
-					return c.text(result.error.message, 404);
-				case 'BlobStoreFailed':
-					return c.text('Blob store failed', 500);
-				case 'BlobRemoteFailed':
-					return c.text('Remote operation failed', 502);
-				default:
-					return result.error satisfies never;
-			}
-		};
-	};
-	app.post(
-		LOCAL_BLOB_REMOTE_ROUTES.upload.pattern,
-		requireBlobRemote((remote, id) => remote.upload(id)),
-	);
-	app.post(
-		LOCAL_BLOB_REMOTE_ROUTES.download.pattern,
-		requireBlobRemote((remote, id) => remote.download(id)),
-	);
-	app.post(
-		LOCAL_BLOB_REMOTE_ROUTES.purge.pattern,
-		requireBlobRemote((remote, id) => remote.purge(id)),
-	);
-
 	return app;
-}
-
-/**
- * Stamp one served page with the one-shot auth bootstrap.
- *
- * This is the only thing the host injects. An app window parses the bootstrap
- * and then removes it, because it carries an identity snapshot that has no
- * business sitting in the DOM afterwards, and nothing else may read it: which
- * replica an app window opens is decided by which build the host serves, not by
- * what survives in its `<head>`.
- */
-function injectAuthBootstrap(
-	page: string,
-	snapshot: DesktopAuthAuthority['bootSnapshot'],
-): string {
-	const serialized = JSON.stringify(snapshot).replaceAll('<', '\\u003c');
-	const element = `<script id="epicenter-auth-bootstrap" type="application/json">${serialized}</script>`;
-	const head = page.search(/<\/head\s*>/i);
-	if (head !== -1) return `${page.slice(0, head)}${element}${page.slice(head)}`;
-	// A document with no `</head>` and no `<body` used to come back unstamped,
-	// which is the worst of the three outcomes: the app loads, finds no
-	// snapshot, and boots signed out with nothing anywhere saying why. The
-	// element is inert JSON read by id, so where it lands does not matter and
-	// prepending always works. Position is a preference; stamping is not.
-	const body = page.search(/<body\b/i);
-	return body === -1
-		? `${element}${page}`
-		: `${page.slice(0, body)}${element}${page.slice(body)}`;
 }
 
 function blobResponseHeaders(contentType: string): Record<string, string> {
@@ -506,17 +348,4 @@ function contentSecurityPolicy(page: string): string {
 		"base-uri 'self'",
 		"frame-ancestors 'none'",
 	].join('; ');
-}
-
-async function readJsonObject(
-	request: Request,
-): Promise<Record<string, unknown> | null> {
-	try {
-		const value: unknown = await request.json();
-		return typeof value === 'object' && value !== null && !Array.isArray(value)
-			? (value as Record<string, unknown>)
-			: null;
-	} catch {
-		return null;
-	}
 }

@@ -18,7 +18,6 @@
 	import { onDestroy } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { createLogger } from 'wellcrafted/logger';
-	import { auth } from '#platform/auth';
 	import DictationIndicator from '#platform/dictation-indicator';
 	import { whisperingDependencies } from '$lib/whispering/dependencies';
 	import WhisperingUiSessionProvider from '$lib/whispering/WhisperingUiSessionProvider.svelte';
@@ -93,7 +92,6 @@
 		</p>
 		<div class="flex gap-2">
 			<Button onclick={() => location.reload()}>{m.app_reload()}</Button>
-			<Button variant="outline" onclick={() => auth.signOut()}>{m.app_sign_out()}</Button>
 		</div>
 	</div>
 {/await}

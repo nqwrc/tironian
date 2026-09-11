@@ -13,7 +13,7 @@
  * `getTranscriptionReadiness`, not by making the route disappear.
  *
  * Reactive by construction: the getters it reads (`settings`, `secrets`,
- * `auth`, `deviceConfig`) are all reactive, so calling this inside a `$derived`
+ * `deviceConfig`) are all reactive, so calling this inside a `$derived`
  * re-runs it when any source changes.
  */
 import {
@@ -34,7 +34,7 @@ import {
 export type Transcriber = {
 	/** Stable list/cmdk key: the provider id. */
 	key: string;
-	access: 'session' | 'key' | 'endpoint' | 'onDevice';
+	access: 'key' | 'endpoint' | 'onDevice';
 	/** Brand glyph markup from the provider registry. */
 	icon: string;
 	invertInDarkMode: boolean;
@@ -80,15 +80,6 @@ function toTranscriber(
 		select: () => app.settings.set('transcriptionService', entry.id),
 	};
 	switch (entry.access) {
-		case 'session':
-			// Fixed wire model, metered by duration: the provider name is the whole
-			// story, no model shown.
-			return {
-				...base,
-				access: 'session',
-				title: entry.label,
-				keywords: `${entry.id} ${entry.label} epicenter hosted account credits`,
-			};
 		case 'key': {
 			// The provider is the route identity; the committed model remains visible
 			// as exact context in the expanded row.

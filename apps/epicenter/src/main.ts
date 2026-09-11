@@ -6,18 +6,11 @@
 
 import { join } from 'node:path';
 import { createBunBlobStore } from '@epicenter/blobs/bun';
-import { createBunBlobRemote, createEpicenterClient } from '@epicenter/client';
 import { epicenterDataRoot } from '@epicenter/constants/app-data';
 import { extractErrorMessage } from 'wellcrafted/error';
 import { COMPILED_APPLICATIONS } from './applications.ts';
-import {
-	createDesktopAuthAuthority,
-	type DesktopAuthAuthority,
-} from './desktop-auth-authority.ts';
-import { createDesktopAuthorityFetch } from './desktop-authority-fetch.ts';
 import { createHomeServer } from './server.ts';
 import {
-	createNativeAuthPort,
 	createReadyFrame,
 	parseBootFrame,
 	parseRuntimeMode,
@@ -28,19 +21,12 @@ import { loadStaticAssets } from './static-assets.ts';
 
 async function main(): Promise<void> {
 	const parentPipe = watchParentPipe(Bun.stdin.stream());
-	let desktopAuth: DesktopAuthAuthority | undefined;
 	let server: ReturnType<typeof Bun.serve> | undefined;
 	let lifecycleOwnsResources = false;
 
 	try {
 		const runtimeMode = parseRuntimeMode(Bun.argv);
 		const boot = parseBootFrame(await parentPipe.bootLine, runtimeMode);
-		const nativeAuthPort = createNativeAuthPort({ parentPipe });
-		const auth = createDesktopAuthAuthority({
-			authCell: boot.authCell,
-			nativeAuthPort,
-		});
-		desktopAuth = auth;
 
 		// The one Epicenter root, resolved here rather than received. A desktop
 		// host and a CLI that each computed this path would have to agree on it
@@ -58,20 +44,6 @@ async function main(): Promise<void> {
 		const blobs = createBunBlobStore({
 			directory: join(dataRoot, 'blobs'),
 		});
-		// Identity is immutable per process generation, so remote availability
-		// is a boot-time fact: a signed-in generation composes the streaming
-		// remote over the authority's own deployment fetch, a signed-out one
-		// has none until sign-in relaunches the app.
-		const blobRemote =
-			auth.bootSnapshot.state.status === 'signed-in'
-				? createBunBlobRemote({
-						store: blobs,
-						client: createEpicenterClient({
-							baseURL: auth.baseURL,
-							fetch: createDesktopAuthorityFetch(auth),
-						}),
-					})
-				: null;
 
 		const appsDist = process.env.EPICENTER_APPS_DIST;
 		if (!appsDist) {
@@ -89,8 +61,6 @@ async function main(): Promise<void> {
 			launchToken: boot.token,
 			staticAssets,
 			blobs,
-			desktopAuth: auth,
-			blobRemote,
 		});
 
 		server = Bun.serve({
@@ -101,21 +71,16 @@ async function main(): Promise<void> {
 		});
 		process.stdout.write(`${JSON.stringify(createReadyFrame(boot.port))}\n`);
 		lifecycleOwnsResources = true;
-		const ownedDesktopAuth = auth;
 		await superviseSidecar({
 			server,
 			host: {
-				async [Symbol.asyncDispose]() {
-					ownedDesktopAuth[Symbol.dispose]();
-				},
+				async [Symbol.asyncDispose]() {},
 			},
 			parentPipe,
-			protocol: nativeAuthPort,
 		});
 	} finally {
 		if (!lifecycleOwnsResources) {
 			if (server) await server.stop(true);
-			desktopAuth?.[Symbol.dispose]();
 			await parentPipe.cancel();
 		}
 	}

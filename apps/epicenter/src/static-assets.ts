@@ -26,11 +26,10 @@ export type StaticAsset = {
  * from.
  *
  * `page` is held in memory rather than streamed off disk because the host has
- * three things to do to it that a file cannot carry: gate it behind an
- * established browser session, stamp the auth bootstrap into it, and hash its
- * inline scripts into the one Content-Security-Policy this origin sends. That
- * stamp is what lets a build open the host-owned replica instead of one of its
- * own, and the hash is what lets its own boot script run at all.
+ * two things to do to it that a file cannot carry: gate it behind an
+ * established browser session, and hash its inline scripts into the one
+ * Content-Security-Policy this origin sends. The hash is what lets its own
+ * boot script run at all.
  */
 type ServedSpa = {
 	id: string;

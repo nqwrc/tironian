@@ -127,24 +127,6 @@ async function runRecordingPipeline(
 		// a fresh recording is `pending` with no completion and no error.
 	});
 
-	if (app.settings.get('recordingAutoUpload')) {
-		// One new row earns one best-effort attempt. Manual upload calls the same
-		// workflow; there is no history scan, queue, persisted failure, or retry.
-		void app.recordings
-			.uploadAudio(recording.id)
-			.then(({ error }) => {
-				if (error !== null) {
-					report.info({
-						title: m.pipeline_recording_kept_on_this_device(),
-						description: error.message,
-					});
-				}
-			})
-			.catch((cause) => {
-				report.error({ title: m.pipeline_automatic_upload_failed(), cause });
-			});
-	}
-
 	// File import has no pill, so it keeps a progress toast; the dictation path is
 	// driven by the lifecycle markers above (the pill), with no toast.
 	const transcribeLoading = isDictation

@@ -46,9 +46,6 @@ mock.module('$lib/operations/transcription-target', () => ({
 mock.module('$lib/state/device-config.svelte', () => ({
 	deviceConfig: { get: () => ({}) },
 }));
-mock.module('#platform/auth', () => ({
-	auth: { connection: { baseURL: '' } },
-}));
 
 const { runPolish } = await import('./run-polish.js');
 const { UNTRUSTED_REQUEST_TAG } = buildSystemPrompt;

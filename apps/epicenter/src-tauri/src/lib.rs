@@ -63,9 +63,6 @@ use delivery::{
 mod foreground;
 use foreground::get_foreground_context;
 
-mod keyring_storage;
-use keyring_storage::{read_auth_cell, write_auth_cell};
-
 pub mod media;
 use media::{pause_playback, resume_playback};
 
@@ -90,8 +87,7 @@ pub mod clipboard;
 const PRODUCTION_PORT: u16 = 39_130;
 #[cfg(any(debug_assertions, test))]
 const DEVELOPMENT_PORT: u16 = 39_131;
-const PROTOCOL_VERSION: u8 = 2;
-const HOSTED_AUTH_ORIGIN: &str = "https://api.epicenter.so";
+const PROTOCOL_VERSION: u8 = 3;
 const READY_TIMEOUT: Duration = Duration::from_secs(15);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 /// The argument the autostart login item is registered with. Its presence
@@ -160,7 +156,6 @@ struct BootFrame<'a> {
     protocol_version: u8,
     token: &'a str,
     port: u16,
-    auth_cell: Option<&'a str>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -169,37 +164,6 @@ struct ReadyFrame {
     r#type: String,
     protocol_version: u8,
     port: u16,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
-enum BunToRustAuthFrame {
-    StoreAuth {
-        #[serde(rename = "requestId")]
-        request_id: String,
-        serialized: Option<String>,
-    },
-    OpenAuthUrl {
-        #[serde(rename = "requestId")]
-        request_id: String,
-        url: String,
-    },
-    Relaunch {},
-}
-
-#[derive(Debug, Serialize)]
-#[serde(tag = "type", rename_all = "kebab-case")]
-enum RustToBunAuthFrame<'a> {
-    NativeResult {
-        #[serde(rename = "requestId")]
-        request_id: &'a str,
-        status: &'static str,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<&'a str>,
-    },
-    OauthCallback {
-        url: &'a str,
-    },
 }
 
 struct ManagedChild {
@@ -214,7 +178,6 @@ struct HostState {
     process: Mutex<Option<ManagedChild>>,
     active_token: Mutex<Option<String>>,
     pending_apps: Mutex<Vec<BuiltInApp>>,
-    pending_oauth_callback: Mutex<Option<String>>,
     shutting_down: AtomicBool,
     starting: AtomicBool,
 }
@@ -227,7 +190,6 @@ impl HostState {
             process: Mutex::new(None),
             active_token: Mutex::new(None),
             pending_apps: Mutex::new(Vec::new()),
-            pending_oauth_callback: Mutex::new(None),
             shutting_down: AtomicBool::new(false),
             starting: AtomicBool::new(false),
         }
@@ -249,20 +211,6 @@ impl HostState {
 
     fn take_pending_apps(&self) -> Vec<BuiltInApp> {
         std::mem::take(&mut *self.pending_apps.lock().expect("pending app lock poisoned"))
-    }
-
-    fn queue_oauth_callback(&self, url: String) {
-        *self
-            .pending_oauth_callback
-            .lock()
-            .expect("pending OAuth callback lock poisoned") = Some(url);
-    }
-
-    fn take_oauth_callback(&self) -> Option<String> {
-        self.pending_oauth_callback
-            .lock()
-            .expect("pending OAuth callback lock poisoned")
-            .take()
     }
 
     fn activate(&self, token: &str) {
@@ -611,9 +559,6 @@ pub fn run() {
             let mut opened_window = false;
             if let Some(urls) = current {
                 for url in &urls {
-                    if let Some(callback) = parse_oauth_callback(url) {
-                        queue_or_send_oauth_callback(app.handle(), callback);
-                    }
                     if let Some(built_in) = parse_app_deep_link(url) {
                         request_window(app.handle(), built_in);
                         opened_window = true;
@@ -647,14 +592,6 @@ pub fn run() {
 
 fn open_forwarded_deep_links(app: &DesktopAppHandle, arguments: &[String]) {
     let built_ins = apps_from_arguments(arguments);
-    for argument in arguments {
-        let Ok(url) = tauri::Url::parse(argument) else {
-            continue;
-        };
-        if let Some(callback) = parse_oauth_callback(&url) {
-            queue_or_send_oauth_callback(app, callback);
-        }
-    }
     if built_ins.is_empty() {
         if !launched_from_autostart(arguments) {
             request_window(app, BuiltInApp::Whispering);
@@ -684,50 +621,9 @@ fn apps_from_arguments(arguments: &[String]) -> Vec<BuiltInApp> {
 
 fn open_deep_links(app: &DesktopAppHandle, urls: &[tauri::Url]) {
     for url in urls {
-        if let Some(callback) = parse_oauth_callback(url) {
-            queue_or_send_oauth_callback(app, callback);
-        }
         if let Some(built_in) = parse_app_deep_link(url) {
             request_window(app, built_in);
         }
-    }
-}
-
-fn parse_oauth_callback(url: &tauri::Url) -> Option<String> {
-    if url.scheme() != "epicenter"
-        || url.host_str() != Some("auth")
-        || url.path() != "/callback"
-        || !url.username().is_empty()
-        || url.password().is_some()
-        || url.port().is_some()
-        || url.fragment().is_some()
-        || !(url.query_pairs().any(|(key, _)| key == "code")
-            || url.query_pairs().any(|(key, _)| key == "error"))
-    {
-        return None;
-    }
-    Some(url.to_string())
-}
-
-fn queue_or_send_oauth_callback(app: &DesktopAppHandle, url: String) {
-    let state = app.state::<HostState>();
-    let generation = state
-        .process
-        .lock()
-        .expect("host state lock poisoned")
-        .as_ref()
-        .map(|process| process.generation);
-    let Some(generation) = generation else {
-        state.queue_oauth_callback(url);
-        return;
-    };
-    if let Err(error) = send_auth_frame(
-        &state,
-        generation,
-        &RustToBunAuthFrame::OauthCallback { url: &url },
-    ) {
-        state.queue_oauth_callback(url);
-        append_parent_log(app, &format!("deliver OAuth callback: {error:#}"));
     }
 }
 
@@ -769,9 +665,9 @@ fn request_window(app: &DesktopAppHandle, built_in: BuiltInApp) {
 ///
 /// The segment is `app` because it is the same ID space as `/apps/<id>/` and
 /// the list Home shows: a person pasting a link names the thing they want, not
-/// the frame it arrives in. `epicenter://auth/...` stays disjoint by segment,
-/// and an admitted app's dotted ID cannot collide with these bare labels
-/// (ADR-0210), so widening this to the catalog later needs no new grammar.
+/// the frame it arrives in. An admitted app's dotted ID cannot collide with
+/// these bare labels (ADR-0210), so widening this to the catalog later needs
+/// no new grammar.
 fn parse_app_deep_link(url: &tauri::Url) -> Option<BuiltInApp> {
     if url.scheme() != "epicenter"
         || url.host_str() != Some("app")
@@ -866,15 +762,6 @@ fn start_once(app: &DesktopAppHandle) -> Result<()> {
         });
     }
 
-    if let Some(callback) = state.take_oauth_callback() {
-        send_auth_frame(
-            &state,
-            generation,
-            &RustToBunAuthFrame::OauthCallback { url: &callback },
-        )
-        .context("deliver the queued OAuth callback")?;
-    }
-
     state.activate(&token);
     let mut built_ins = state.take_pending_apps();
     if built_ins.is_empty() && !launched_from_autostart(&std::env::args().collect::<Vec<_>>()) {
@@ -915,10 +802,9 @@ fn launch_host(app: &DesktopAppHandle, port: u16) -> Result<LaunchedHost> {
     // and Windows answers by allocating a fresh one: a command prompt opened
     // beside the app and sat there for as long as the host lived. Say the child
     // gets no console instead. This does not touch the pipes above, which is
-    // the whole protocol with the host (the boot frame, the auth frames, and
-    // stderr into the log file); a console is only ever where a console
-    // program's output goes when nobody has redirected it, and everything here
-    // is redirected.
+    // the whole protocol with the host (the boot frame and stderr into the log
+    // file); a console is only ever where a console program's output goes when
+    // nobody has redirected it, and everything here is redirected.
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -932,8 +818,7 @@ fn launch_host(app: &DesktopAppHandle, port: u16) -> Result<LaunchedHost> {
     let mut stdin = child.stdin.take().context("capture Bun stdin")?;
     let stdout = child.stdout.take().context("capture Bun stdout")?;
     let token = launch_token()?;
-    let auth_cell = read_auth_cell().context("read the desktop auth cell")?;
-    let frame = boot_frame_json(&token, port, auth_cell.as_deref())?;
+    let frame = boot_frame_json(&token, port)?;
 
     if let Err(error) = writeln!(stdin, "{frame}").and_then(|()| stdin.flush()) {
         stop_starting_child(child, stdin);
@@ -1015,25 +900,23 @@ fn host_command(_app: &DesktopAppHandle) -> Result<Command> {
     Ok(command)
 }
 
+/// After the ready frame, Bun's stdout carries no protocol: nothing is
+/// expected to arrive on it again. This thread's only job is noticing when
+/// that stream ends, which is how a crashed sidecar is detected. Any byte
+/// that does arrive is itself a protocol violation, not something to parse.
 fn monitor_host(app: DesktopAppHandle, generation: u64, mut stdout: BufReader<ChildStdout>) {
     let (stdout_sender, stdout_receiver) = mpsc::sync_channel(1);
-    thread::spawn(move || loop {
+    thread::spawn(move || {
         let mut line = String::new();
-        let event = match stdout.read_line(&mut line) {
-            Ok(0) => Err("Bun closed stdout after readiness".to_string()),
+        let message = match stdout.read_line(&mut line) {
+            Ok(0) => "Bun closed stdout after readiness".to_string(),
             Ok(_) if !line.ends_with('\n') => {
-                Err("Bun closed stdout during an auth frame".to_string())
+                "Bun closed stdout mid-line after readiness".to_string()
             }
-            Ok(_) => {
-                serde_json::from_str::<BunToRustAuthFrame>(line.trim_end_matches(['\r', '\n']))
-                    .map_err(|error| format!("Bun emitted an invalid auth frame: {error}"))
-            }
-            Err(error) => Err(format!("failed to monitor Bun stdout: {error}")),
+            Ok(_) => format!("Bun sent unexpected output after readiness: {line}"),
+            Err(error) => format!("failed to monitor Bun stdout: {error}"),
         };
-        let terminal = event.is_err();
-        if stdout_sender.send(event).is_err() || terminal {
-            return;
-        }
+        let _ = stdout_sender.send(message);
     });
 
     thread::spawn(move || loop {
@@ -1045,23 +928,9 @@ fn monitor_host(app: DesktopAppHandle, generation: u64, mut stdout: BufReader<Ch
             return;
         }
 
-        if let Ok(event) = stdout_receiver.recv_timeout(Duration::from_millis(150)) {
-            match event {
-                Ok(frame) => {
-                    if let Err(error) = handle_auth_frame(&app, generation, frame) {
-                        fail_generation(
-                            &app,
-                            generation,
-                            format!("handle Bun auth frame: {error:#}"),
-                        );
-                        return;
-                    }
-                }
-                Err(message) => {
-                    fail_generation(&app, generation, message);
-                    return;
-                }
-            }
+        if let Ok(message) = stdout_receiver.recv_timeout(Duration::from_millis(150)) {
+            fail_generation(&app, generation, message);
+            return;
         }
 
         let status = {
@@ -1096,100 +965,6 @@ fn monitor_host(app: DesktopAppHandle, generation: u64, mut stdout: BufReader<Ch
             }
         }
     });
-}
-
-fn handle_auth_frame(
-    app: &DesktopAppHandle,
-    generation: u64,
-    frame: BunToRustAuthFrame,
-) -> Result<()> {
-    match frame {
-        BunToRustAuthFrame::StoreAuth {
-            request_id,
-            serialized,
-        } => {
-            let result = write_auth_cell(serialized);
-            send_native_result(app, generation, &request_id, result)
-        }
-        BunToRustAuthFrame::OpenAuthUrl { request_id, url } => {
-            let result = validate_hosted_auth_url(&url).and_then(|()| {
-                app.opener()
-                    .open_url(url, None::<String>)
-                    .map_err(Into::into)
-            });
-            send_native_result(app, generation, &request_id, result)
-        }
-        BunToRustAuthFrame::Relaunch {} => app.restart(),
-    }
-}
-
-fn send_native_result<E: std::fmt::Display>(
-    app: &DesktopAppHandle,
-    generation: u64,
-    request_id: &str,
-    result: std::result::Result<(), E>,
-) -> Result<()> {
-    if request_id.is_empty() {
-        bail!("native requestId must be non-empty");
-    }
-    let state = app.state::<HostState>();
-    match result {
-        Ok(()) => send_auth_frame(
-            &state,
-            generation,
-            &RustToBunAuthFrame::NativeResult {
-                request_id,
-                status: "ok",
-                message: None,
-            },
-        ),
-        Err(error) => {
-            let message = error.to_string();
-            send_auth_frame(
-                &state,
-                generation,
-                &RustToBunAuthFrame::NativeResult {
-                    request_id,
-                    status: "error",
-                    message: Some(&message),
-                },
-            )
-        }
-    }
-}
-
-fn send_auth_frame(
-    state: &HostState,
-    generation: u64,
-    frame: &RustToBunAuthFrame<'_>,
-) -> Result<()> {
-    let line = serde_json::to_string(frame).context("serialize the native auth frame")?;
-    let mut process = state.process.lock().expect("host state lock poisoned");
-    let process = process
-        .as_mut()
-        .filter(|process| process.generation == generation)
-        .context("the target Bun generation is no longer active")?;
-    let stdin = process
-        .stdin
-        .as_mut()
-        .context("the target Bun generation has no command pipe")?;
-    writeln!(stdin, "{line}").and_then(|()| stdin.flush())?;
-    Ok(())
-}
-
-fn validate_hosted_auth_url(value: &str) -> Result<()> {
-    let url = tauri::Url::parse(value).context("parse the hosted authorization URL")?;
-    if url.scheme() != "https"
-        || url.host_str() != Some("api.epicenter.so")
-        || url.port().is_some()
-        || !url.username().is_empty()
-        || url.password().is_some()
-        || url.fragment().is_some()
-        || !url.path().starts_with("/auth/")
-    {
-        bail!("authorization URL must stay under {HOSTED_AUTH_ORIGIN}/auth/");
-    }
-    Ok(())
 }
 
 fn fail_generation(app: &DesktopAppHandle, generation: u64, message: String) {
@@ -1441,13 +1216,12 @@ fn launch_token() -> Result<String> {
     Ok(URL_SAFE_NO_PAD.encode(bytes))
 }
 
-fn boot_frame_json(token: &str, port: u16, auth_cell: Option<&str>) -> Result<String> {
+fn boot_frame_json(token: &str, port: u16) -> Result<String> {
     serde_json::to_string(&BootFrame {
         r#type: "boot",
         protocol_version: PROTOCOL_VERSION,
         token,
         port,
-        auth_cell,
     })
     .context("serialize the Bun boot frame")
 }
@@ -1586,19 +1360,19 @@ mod tests {
     }
 
     #[test]
-    fn parses_only_the_expected_v2_ready_frame() {
+    fn parses_only_the_expected_v3_ready_frame() {
         read_ready_frame(
-            &mut Cursor::new(b"{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39130}\n"),
+            &mut Cursor::new(b"{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130}\n"),
             PRODUCTION_PORT,
         )
         .unwrap();
 
         for invalid in [
             "preamble\n",
-            "{\"type\":\"ready\",\"protocolVersion\":1,\"port\":39130}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39131}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39130,\"extra\":true}\n",
-            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39130}",
+            "{\"type\":\"ready\",\"protocolVersion\":2,\"port\":39130}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39131}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130,\"extra\":true}\n",
+            "{\"type\":\"ready\",\"protocolVersion\":3,\"port\":39130}",
         ] {
             assert!(read_ready_frame(&mut Cursor::new(invalid), PRODUCTION_PORT).is_err());
         }
@@ -2148,71 +1922,6 @@ mod tests {
     }
 
     #[test]
-    fn oauth_deep_links_accept_only_the_exact_callback_route() {
-        for url in [
-            "epicenter://auth/callback?code=code&state=state",
-            "epicenter://auth/callback?error=access_denied&state=state",
-        ] {
-            assert_eq!(
-                parse_oauth_callback(&url.parse().unwrap()),
-                Some(url.to_string())
-            );
-        }
-
-        for denied in [
-            "epicenter://auth/callback",
-            "epicenter://auth/callback?state=state",
-            "epicenter://auth/callback/extra?code=code",
-            "epicenter://auth/callback?code=code#fragment",
-            "epicenter://user@auth/callback?code=code",
-            "https://api.epicenter.so/auth/callback?code=code",
-        ] {
-            assert_eq!(parse_oauth_callback(&denied.parse().unwrap()), None);
-        }
-    }
-
-    #[test]
-    fn system_browser_accepts_only_hosted_auth_urls() {
-        for allowed in [
-            "https://api.epicenter.so/auth/oauth2/authorize?client_id=desktop",
-            "https://api.epicenter.so/auth/sign-in",
-        ] {
-            validate_hosted_auth_url(allowed).unwrap();
-        }
-        for denied in [
-            "http://api.epicenter.so/auth/sign-in",
-            "https://api.epicenter.so.evil.test/auth/sign-in",
-            "https://api.epicenter.so/not-auth",
-            "https://user@api.epicenter.so/auth/sign-in",
-            "https://api.epicenter.so/auth/sign-in#fragment",
-        ] {
-            assert!(validate_hosted_auth_url(denied).is_err());
-        }
-    }
-
-    #[test]
-    fn bun_auth_frames_are_closed_and_exact() {
-        assert_eq!(
-            serde_json::from_str::<BunToRustAuthFrame>(
-                "{\"type\":\"store-auth\",\"requestId\":\"one\",\"serialized\":null}"
-            )
-            .unwrap(),
-            BunToRustAuthFrame::StoreAuth {
-                request_id: "one".to_string(),
-                serialized: None,
-            }
-        );
-        assert!(serde_json::from_str::<BunToRustAuthFrame>(
-            "{\"type\":\"execute\",\"command\":\"shell\"}"
-        )
-        .is_err());
-        assert!(serde_json::from_str::<BunToRustAuthFrame>(
-            "{\"type\":\"relaunch\",\"extra\":true}"
-        )
-        .is_err());
-    }
-
-    #[test]
     fn forwarded_arguments_extract_valid_unique_app_links() {
         let arguments = [
             "/Applications/Epicenter.app/Contents/MacOS/Epicenter",
@@ -2229,14 +1938,12 @@ mod tests {
     }
 
     #[test]
-    fn boot_frame_is_strict_v2_and_carries_the_opaque_auth_cell() {
+    fn boot_frame_is_strict_v3() {
         let token = URL_SAFE_NO_PAD.encode([7_u8; 32]);
-        let json = boot_frame_json(&token, PRODUCTION_PORT, Some("opaque")).unwrap();
+        let json = boot_frame_json(&token, PRODUCTION_PORT).unwrap();
         assert_eq!(
             json,
-            format!(
-                "{{\"type\":\"boot\",\"protocolVersion\":2,\"token\":\"{token}\",\"port\":39130,\"authCell\":\"opaque\"}}"
-            )
+            format!("{{\"type\":\"boot\",\"protocolVersion\":3,\"token\":\"{token}\",\"port\":39130}}")
         );
         assert!(!token.contains('='));
     }

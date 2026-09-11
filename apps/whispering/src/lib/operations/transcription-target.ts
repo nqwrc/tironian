@@ -43,35 +43,14 @@ type TranscriptionEndpointKey = Extract<
 export function resolveTranscriptionLocalityFromConfig({
 	service,
 	getDeviceConfig,
-	sessionBaseUrl,
 }: {
 	service: TranscriptionServiceId;
 	getDeviceConfig: (key: TranscriptionEndpointKey) => string;
-	/**
-	 * The bonded server origin (`auth.connection.baseURL`). Read only for the `session`
-	 * (Epicenter) access: a loopback origin means the bonded deployment is this
-	 * machine (a self-host instance bonded at localhost), so session audio stays
-	 * on-device. The pure module classifies the host itself rather than importing
-	 * auth, mirroring how the endpoint branch reads its configured
-	 * `providers.*.endpoint`.
-	 */
-	sessionBaseUrl: string;
 }): TranscriptionLocality {
 	const provider = PROVIDERS[service];
 	// Local transcription runs in-process; audio never becomes a network request.
 	if (provider.access === 'onDevice') {
 		return { onDevice: true, name: provider.label };
-	}
-	// `session` (Epicenter) serves audio from the bonded deployment reached at the
-	// auth base URL. A loopback base URL is this machine (a self-host instance
-	// bonded at localhost), so audio never leaves the device; a remote base URL
-	// keeps the "sent to Epicenter" copy. This is the session twin of the endpoint
-	// loopback branch below.
-	if (provider.access === 'session') {
-		return {
-			onDevice: isLoopbackBaseUrl(sessionBaseUrl),
-			name: provider.label,
-		};
 	}
 	// `key` and `endpoint` providers upload audio to an endpoint. A configured
 	// loopback endpoint keeps it on-device regardless of the provider label. The
@@ -94,16 +73,13 @@ export function resolveTranscriptionLocalityFromConfig({
 		return { onDevice: false, name: `your ${provider.label} server` };
 	}
 	// `key` providers not pointed at loopback land here: audio leaves the device,
-	// named by the provider. (`session` resolved above; `onDevice` and `endpoint`
-	// resolved earlier.)
+	// named by the provider. (`onDevice` and `endpoint` resolved earlier.)
 	return { onDevice: false, name: provider.label };
 }
 
 export function describeTranscriptionDestinationFromConfig(args: {
 	service: TranscriptionServiceId;
 	getDeviceConfig: (key: TranscriptionEndpointKey) => string;
-	/** Bonded session origin; see {@link resolveTranscriptionLocalityFromConfig}. */
-	sessionBaseUrl: string;
 }): TranscriptionDestination {
 	const { onDevice, name } = resolveTranscriptionLocalityFromConfig(args);
 	if (onDevice) return { onDevice, summary: 'Audio stays on this device.' };

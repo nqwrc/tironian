@@ -39,20 +39,14 @@ type CloudModel = { name: string; description: string; cost: string };
  *
  *   - `key`      the user's own API key (a secret)         -> OpenAI, Groq, ...
  *   - `endpoint` a server URL + model id the user runs     -> Speaches
- *   - `session`  a signed-in session; the Epicenter        -> Epicenter
- *                deployment you are bonded to is the key
  *   - `onDevice` nothing but the device: an on-device       -> Local
  *                model file, no network
  *
  * `key` and `endpoint` are the matched pair: both hand a `{ baseUrl, apiKey? }` to
  * an external OpenAI-compatible box, differing only in whether the user brings a
- * key (the vendor's compute) or an endpoint (their own box). `session` is the
- * platform relationship: it follows the STAR-vs-SERVICES split (ADR-0068/0069/0070),
- * reaching the Epicenter deployment that also holds your synced data over your
- * session, on that deployment's house key. Hosted deployments meter it (AI credits);
- * self-host deployments proxy it unmetered. `key`/`endpoint` are external services.
+ * key (the vendor's compute) or an endpoint (their own box).
  */
-export type ProviderAccess = 'key' | 'endpoint' | 'session' | 'onDevice';
+export type ProviderAccess = 'key' | 'endpoint' | 'onDevice';
 
 type KeyProvider = {
 	access: Extract<ProviderAccess, 'key'>;
@@ -104,48 +98,9 @@ type EndpointProvider = {
 	modelIdConfigKey: DeviceConfigKey;
 };
 
-/**
- * The `session` access member: transcription through the Epicenter deployment
- * (the platform "star", ADR-0068/0069/0070) this install is bonded to. Unlike a
- * `key` provider it carries no key or endpoint config; the transport is the
- * signed-in session's audience-scoped fetch (`auth.fetch`), resolved in the
- * dispatcher against `auth.connection.baseURL` (the hosted cloud by default, or a self-host
- * instance if the user pointed there), and the gateway pins its own house model
- * server-side (ADR-0100). So the only fact this entry holds is the single `model`
- * string the wire requires. "Configured" means signed in, not "has a key" (see
- * `transcription-validation.ts`).
- *
- * The same `/v1/audio/transcriptions` gateway runs on every deployment (both
- * deployables mount it on the deployment's house key), so this is deployment-neutral.
- * Whether a call spends AI credits is a property of the deployment, surfaced at
- * runtime: a hosted deployment meters it (402 when out of credits); a self-host
- * deployment proxies it unmetered (or 503 until the operator sets a house key).
- * Never fixed here.
- */
-type SessionProvider = {
-	access: Extract<ProviderAccess, 'session'>;
-	label: string;
-	description: string;
-	capabilities: Capabilities;
-	/** The fixed model sent on the wire; the gateway meters by duration, not by
-	 *  model, so there is no user-selectable list. */
-	model: string;
-};
-
-type TranscriptionProvider =
-	| KeyProvider
-	| OnDeviceProvider
-	| EndpointProvider
-	| SessionProvider;
+type TranscriptionProvider = KeyProvider | OnDeviceProvider | EndpointProvider;
 
 export const PROVIDERS = {
-	epicenter: {
-		access: 'session',
-		label: 'Epicenter',
-		description: m.providers_transcription_through_your_connected(),
-		capabilities: { supportsPrompt: true, supportsLanguage: true },
-		model: 'whisper-1',
-	},
 	OpenAI: {
 		access: 'key',
 		label: 'OpenAI',

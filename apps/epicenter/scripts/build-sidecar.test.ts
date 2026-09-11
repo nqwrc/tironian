@@ -100,7 +100,6 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 				protocolVersion: SIDECAR_PROTOCOL_VERSION,
 				token: 'compiled_test_token',
 				port: PRODUCTION_PORT,
-				authCell: null,
 			})}\n`,
 		);
 		await sidecar.stdin.flush();

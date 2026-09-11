@@ -246,9 +246,8 @@
 	 * keys. Keys are secrets, so they route through the credential facade
 	 * (`secrets`), never raw `deviceConfig`; endpoints, base URLs, and model IDs are
 	 * not secrets and stay on `deviceConfig`. There are deliberately no vault
-	 * lifecycle controls here (ADR-0074): with no auth the facade is device-local,
-	 * and when auth lands enabling sync is instant (the session carries the
-	 * server-derived keyring), so there is no passphrase prompt to build.
+	 * lifecycle controls here (ADR-0074): this product has no account and no sync,
+	 * so the facade is device-local plaintext with no passphrase prompt to build.
 	 */
 
 	/**

@@ -1,8 +1,7 @@
 <!--
-	Account and data: who you are signed in as, what leaves this machine, and the
-	files that carry your setup to another one. It absorbed the old Import &
-	Export and Analytics pages, which were the same subject split across three
-	menu entries.
+	Data: what leaves this machine, and the files that carry your setup to
+	another one. It absorbed the old Import & Export and Analytics pages, which
+	were the same subject split across three menu entries.
 -->
 <script lang="ts">
 	import { PRODUCT_NAME } from '$lib/constants/brand';
@@ -11,19 +10,13 @@
 	import { Button } from '@epicenter/ui/button';
 	import * as Field from '@epicenter/ui/field';
 	import { Link } from '@epicenter/ui/link';
-	import { toastOnError } from '@epicenter/ui/sonner';
-	import { Spinner } from '@epicenter/ui/spinner';
 	import { createMutation } from '@tanstack/svelte-query';
 	import DownloadIcon from '@lucide/svelte/icons/download';
-	import LogOut from '@lucide/svelte/icons/log-out';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { resultMutationOptions } from 'wellcrafted/query';
-	import { auth } from '#platform/auth';
-	import { tauri } from '#platform/tauri';
 	import { SettingSwitch } from '$lib/components/settings';
 	import { logAnalyticsEvent } from '$lib/operations/analytics';
 	import { report } from '$lib/report';
-	import { recordingActive } from '$lib/state/recording-active.svelte';
 	import { getWhisperingApp } from '$lib/whispering/context';
 	import { exportRecordingsMarkdown } from '$lib/whispering/recordings-markdown-export';
 	import { exportSettingsBundle } from '$lib/whispering/settings-bundle-export';
@@ -43,32 +36,6 @@
 	import CategoryCheckboxList from './CategoryCheckboxList.svelte';
 
 	const app = getWhisperingApp();
-
-	// ── Account ─────────────────────────────────────────────────────────────
-
-	// Identity (email) is shown by the footer AccountPopover, which owns the
-	// /api/session query. This page is for the sign in / sign out actions, so it
-	// reads auth.state directly and does not re-fetch the profile.
-	const isSignedIn = $derived(auth.state.status === 'signed-in');
-
-	// Sign in/out reloads the page (Option A) and a reload kills an in-flight
-	// browser recording, so block account changes while a capture is active.
-	const accountLocked = $derived(recordingActive.current);
-
-	const startSignIn = createMutation(() =>
-		resultMutationOptions({
-			mutationKey: ['account', 'startSignIn'],
-			mutationFn: () => auth.startSignIn(),
-		}),
-	);
-
-	const signOut = createMutation(() =>
-		resultMutationOptions({
-			mutationKey: ['account', 'signOut'],
-			mutationFn: () => auth.signOut(),
-			onError: (error) => toastOnError(error, 'Failed to sign out'),
-		}),
-	);
 
 	// ── Export ──────────────────────────────────────────────────────────────
 
@@ -240,81 +207,6 @@
 	</Field.Description>
 	<Field.Separator />
 	<Field.Group>
-		<Field.Set id="account" class="scroll-mt-20">
-			<Field.Legend variant="label">{m.account_account()}</Field.Legend>
-			<Field.Description>
-				{m.account_sign_in_to_your_epicenter_account_tironian({ productName: PRODUCT_NAME })}
-			</Field.Description>
-			<Field.Group>
-				{#if accountLocked}
-					<Field.Description class="text-muted-foreground">
-						{m.account_stop_recording_to_change_your_account()}
-					</Field.Description>
-				{/if}
-				{#if isSignedIn}
-					<Field.Field orientation="horizontal">
-						<Field.Content>
-							<Field.Label>{m.transcription_runtime_config_signed_in()}</Field.Label>
-							<Field.Description>
-								{m.account_your_epicenter_account_is_connected_on_this()}
-							</Field.Description>
-						</Field.Content>
-						<Button
-							variant="outline"
-							onclick={() => signOut.mutate()}
-							disabled={signOut.isPending || accountLocked}
-						>
-							{#if signOut.isPending}
-								<Spinner class="size-4" />
-							{:else}
-								<LogOut class="size-4" />
-							{/if}
-							Sign out
-						</Button>
-					</Field.Field>
-				{:else}
-					<Field.Field>
-						{#if startSignIn.error}
-							<Field.Description class="text-destructive">
-								{startSignIn.error.message}
-							</Field.Description>
-						{/if}
-						<Button
-							class="w-full sm:w-auto sm:self-start"
-							onclick={() => startSignIn.mutate()}
-							disabled={startSignIn.isPending || accountLocked}
-						>
-							{#if startSignIn.isPending}
-								<Spinner class="size-4" />
-								Signing in...
-							{:else if auth.state.status === 'reauth-required'}
-								Reconnect
-							{:else}
-								Sign in with Epicenter
-							{/if}
-						</Button>
-					</Field.Field>
-				{/if}
-
-				<Field.Field>
-					<Field.Label>{m.account_sync()}</Field.Label>
-					<Field.Description>
-						{#if tauri}
-							On the desktop, your recordings and settings stay on this computer
-							for now; signing in powers hosted transcription. Use Tironian in
-							the browser to sync them across devices.
-						{:else}
-							While signed in, your recordings, transcripts, and settings sync
-							across your devices. Audio files stay on the device that recorded
-							them. Live sync status shows in the account menu in the sidebar.
-						{/if}
-					</Field.Description>
-				</Field.Field>
-			</Field.Group>
-		</Field.Set>
-
-		<Field.Separator />
-
 		<Field.Set id="data" class="scroll-mt-20">
 			<Field.Legend variant="label">{m.account_export()}</Field.Legend>
 			<Field.Description>

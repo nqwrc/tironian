@@ -15,14 +15,13 @@ import { afterEach, expect, mock, test } from 'bun:test';
 type ProviderFixture = {
 	id: string;
 	label: string;
-	access: 'session' | 'key' | 'endpoint' | 'onDevice';
+	access: 'key' | 'endpoint' | 'onDevice';
 	apiKeyConfigKey?: string;
 	endpointConfigKey?: string;
 	modelIdConfigKey?: string;
 };
 
 const PROVIDERS: ProviderFixture[] = [
-	{ id: 'epicenter', label: 'Epicenter', access: 'session' },
 	{
 		id: 'OpenAI',
 		label: 'OpenAI',
@@ -39,18 +38,10 @@ const PROVIDERS: ProviderFixture[] = [
 	{ id: 'local', label: 'Local', access: 'onDevice' },
 ];
 
-let authStatus = 'signed-out';
 let storedSecrets: Record<string, string> = {};
 let storedConfig: Record<string, string> = {};
 let hostBlocker: string | null = null;
 
-mock.module('#platform/auth', () => ({
-	auth: {
-		get state() {
-			return { status: authStatus };
-		},
-	},
-}));
 // The platform seam is an import-time constant, so a single module instance
 // cannot be both builds; the web case has its own file beside this one.
 mock.module('#platform/tauri', () => ({ tauri: {} }));
@@ -90,7 +81,6 @@ function appWith(transcriptionService: string): WhisperingApp {
 }
 
 afterEach(() => {
-	authStatus = 'signed-out';
 	storedSecrets = {};
 	storedConfig = {};
 	hostBlocker = null;
@@ -109,20 +99,6 @@ test('a key provider asks for its key, by name, until one is stored', () => {
 
 	storedSecrets['OpenAI.apiKey'] = 'sk-test';
 	expect(getTranscriptionPreflightBlocker(appWith('OpenAI'))).toBeNull();
-});
-
-test('the hosted provider asks for a sign-in until there is one', () => {
-	expect(getTranscriptionPreflightBlocker(appWith('epicenter'))).toBe(
-		'Sign in to Epicenter to use hosted transcription.',
-	);
-
-	authStatus = 'reauth-required';
-	expect(getTranscriptionPreflightBlocker(appWith('epicenter'))).toBe(
-		'Sign in to Epicenter to use hosted transcription.',
-	);
-
-	authStatus = 'signed-in';
-	expect(getTranscriptionPreflightBlocker(appWith('epicenter'))).toBeNull();
 });
 
 test('a self-hosted provider needs both an endpoint and a model', () => {

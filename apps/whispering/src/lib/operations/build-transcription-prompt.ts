@@ -69,8 +69,6 @@ const TERM_SEPARATOR = ', ';
  * it is, which is the decision that was wrong when this bound was global.
  */
 const PROMPT_SHAPE = {
-	/** The gateway pins `whisper-1` server-side (ADR-0100). */
-	epicenter: 'whisper',
 	/** `whisper-1` beside the two `gpt-4o-transcribe` models. */
 	OpenAI: 'by-model',
 	/** Every model on the Groq menu is `whisper-large-v3`. */

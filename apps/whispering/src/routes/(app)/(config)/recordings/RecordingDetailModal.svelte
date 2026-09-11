@@ -21,7 +21,6 @@
 	import { createCopyFn } from '$lib/utils/createCopyFn';
 	import DownloadRecordingButton from './actions/DownloadRecordingButton.svelte';
 	import TranscribeRecordingButton from './actions/TranscribeRecordingButton.svelte';
-	import RecordingStorageAction from './RecordingStorageAction.svelte';
 	import RecordingStorageBadge from './RecordingStorageBadge.svelte';
 	import {
 		getWhisperingApp,
@@ -174,20 +173,14 @@
 		<div class="space-y-4 p-4">
 			<div class="flex items-center gap-2">
 				<RecordingStorageBadge {recording} />
-				<RecordingStorageAction {recording} />
 			</div>
 
-			{#if audioAvailabilityQuery.data === 'local-only' ||
-				audioAvailabilityQuery.data === 'local-and-remote'}
+			{#if audioAvailabilityQuery.data === 'available'}
 				<AudioBlobPlayer
 					id={recording.audioBlobId}
 					enabled={isDialogOpen}
 					class="h-9 w-full"
 				/>
-			{:else if audioAvailabilityQuery.data === 'remote-only'}
-				<p class="text-muted-foreground text-sm">
-					{m.recording_detail_modal_download_the_audio_to_play_it()}
-				</p>
 			{:else if audioAvailabilityQuery.data === 'unavailable'}
 				<p class="text-destructive text-sm">
 					{m.recording_detail_modal_the_audio_is_no_longer()}

@@ -27,14 +27,6 @@
 		"#platform/manual-recorder-config": "./src/lib/state/manual-recorder-config.tauri.ts",
 		"#platform/tauri": "./src/lib/tauri.tauri.ts",
 		"#platform/os-notify": "./src/lib/report/os-notify.tauri.ts",
-		"#platform/auth": {
-			"epicenter-host": "./src/lib/platform/auth.epicenter-host.ts",
-			"default": "./src/lib/platform/auth.browser.ts"
-		},
-		"#platform/instance": {
-			"epicenter-host": "./src/lib/platform/instance.epicenter-host.ts",
-			"default": "./src/lib/platform/instance.browser.ts"
-		},
 		"#platform/base-path": {
 			"epicenter-host": "./src/lib/platform/base-path.epicenter-host.ts",
 			"default": "./src/lib/platform/base-path.browser.ts"
@@ -83,8 +75,6 @@
 		"@aptabase/web": "^0.4.3",
 		"@fontsource-variable/instrument-sans": "^5.2.6",
 		"@fontsource/ibm-plex-mono": "^5.2.6",
-		"@epicenter/app-shell": "workspace:*",
-		"@epicenter/auth": "workspace:*",
 		"@epicenter/blobs": "workspace:*",
 		"@epicenter/client": "workspace:*",
 		"@epicenter/constants": "workspace:*",
@@ -92,7 +82,6 @@
 		"@epicenter/field": "workspace:*",
 		"@epicenter/recorder": "workspace:*",
 		"@epicenter/svelte": "workspace:*",
-		"@epicenter/sync": "workspace:*",
 		"@mistralai/mistralai": "^1.9.18",
 		"@sqlite.org/sqlite-wasm": "catalog:",
 		"@standard-schema/spec": "catalog:",

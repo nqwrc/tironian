@@ -1,11 +1,8 @@
 import {
 	type BlobAlreadyExists,
 	type BlobId,
-	type BlobNotFound,
-	type BlobRemoteFailed,
 	type BlobStoreFailed,
 	generateBlobId,
-	type RemoteBlobNotFound,
 } from '@epicenter/blobs';
 import type { NonconformingRow } from '@epicenter/data';
 import { defineErrors, type InferErrors } from 'wellcrafted/error';
@@ -28,21 +25,18 @@ export const RecordingDeletionError = defineErrors({
 	DeletionFailed: ({
 		recordingId,
 		deletedRecordingIds,
-		stage,
 		cause,
 	}: {
 		recordingId: Recording['id'];
 		deletedRecordingIds: Recording['id'][];
-		stage: 'online-copy' | 'device-copy';
 		cause: unknown;
 	}) => ({
 		message:
 			deletedRecordingIds.length === 0
-				? `Could not delete this recording's ${stage}.`
-				: `Deleted ${deletedRecordingIds.length} recording(s), then could not delete the next ${stage}.`,
+				? "Could not delete this recording's device copy."
+				: `Deleted ${deletedRecordingIds.length} recording(s), then could not delete the next device copy.`,
 		recordingId,
 		deletedRecordingIds,
-		stage,
 		cause,
 	}),
 });
@@ -52,8 +46,6 @@ export type WhisperingRecordings = {
 	readonly sorted: Recording[];
 	readonly count: number;
 	readonly nonconforming: NonconformingRow[];
-	/** Whether the environment currently has an online audio copy capability. */
-	readonly remoteAvailable: boolean;
 	get(id: Recording['id']): Recording | undefined;
 	/** Mint an opaque id and commit captured bytes before any row exists. */
 	storeAudio(
@@ -71,47 +63,21 @@ export type WhisperingRecordings = {
 	): Recording;
 	delete(
 		toDelete: Recording['id'] | Recording['id'][],
-	): Promise<Result<void, RecordingAudioError | RecordingDeletionError>>;
+	): Promise<Result<void, RecordingDeletionError>>;
 	audioAvailability(
 		id: Recording['id'],
 	): Promise<
 		Result<RecordingAudioAvailability, BlobStoreFailed | RecordingAudioError>
-	>;
-	uploadAudio(
-		id: Recording['id'],
-	): Promise<
-		Result<
-			void,
-			BlobNotFound | BlobStoreFailed | BlobRemoteFailed | RecordingAudioError
-		>
-	>;
-	downloadAudio(
-		id: Recording['id'],
-	): Promise<
-		Result<
-			void,
-			| RemoteBlobNotFound
-			| BlobStoreFailed
-			| BlobRemoteFailed
-			| RecordingAudioError
-		>
-	>;
-	removeLocalAudio(
-		id: Recording['id'],
-	): Promise<
-		Result<
-			void,
-			BlobNotFound | BlobStoreFailed | BlobRemoteFailed | RecordingAudioError
-		>
 	>;
 	subscribe(listener: () => void): () => void;
 };
 
 /**
  * The recordings domain: the hydrated row cache plus every workflow that must
- * keep a recording row and its audio blob consistent. This module is the only
- * writer of `uploadedAt` (through the audio workflows), and `delete` is the
- * one deletion path: online copy, then device copy, then row.
+ * keep a recording row and its audio blob consistent. `delete` is the one
+ * deletion path: device copy, then row. A stored `uploadedAt` is historical
+ * bookkeeping from before this build stopped writing it; deletion never reads
+ * it, so a row that carries one is exactly as deletable as any other.
  */
 export function createWhisperingRecordings({
 	table,
@@ -128,17 +94,7 @@ export function createWhisperingRecordings({
 		for (const listener of listeners) listener();
 	};
 
-	const audio = createRecordingAudio({
-		blobs,
-		updateUploadedAt: async (id, uploadedAt) => {
-			const written = table.update(id, { uploadedAt });
-			// The marker is in the document the moment this returns, so a delete
-			// that immediately follows an upload sees the uploaded state and
-			// purges the online copy instead of orphaning it. `subscribe` refreshes
-			// the cache on the same commit.
-			return written;
-		},
-	});
+	const audio = createRecordingAudio({ blobs });
 
 	/**
 	 * Re-read the table whole.
@@ -171,9 +127,8 @@ export function createWhisperingRecordings({
 	}
 
 	/**
-	 * Resolve the current row for one audio workflow so blob state (especially
-	 * `uploadedAt`) is read from the cache at execution time, not from a caller
-	 * snapshot that may predate a concurrent upload.
+	 * Resolve the current row for one audio workflow so its state is read from
+	 * the cache at execution time, not from a caller snapshot that may be stale.
 	 */
 	function withRecording<TValue, TError>(
 		id: Recording['id'],
@@ -192,30 +147,13 @@ export function createWhisperingRecordings({
 
 	async function deleteResolved(
 		selected: Recording[],
-	): Promise<Result<void, RecordingAudioError | RecordingDeletionError>> {
-		// Remote availability is preflighted for the whole selection. Each
-		// recording then commits sequentially: online copy, device copy, row. If a
-		// later item fails, earlier rows are already truthfully gone and the typed
-		// error reports the completed prefix.
-		const firstUploaded = selected.find(
-			({ uploadedAt }) => uploadedAt !== null,
-		);
-		if (firstUploaded && blobs.remote === null) {
-			return RecordingAudioError.RemoteUnavailable({
-				recordingId: firstUploaded.id,
-			});
-		}
+	): Promise<Result<void, RecordingDeletionError>> {
+		// Each recording commits sequentially: device copy, then row. If a later
+		// item fails, earlier rows are already truthfully gone and the typed
+		// error reports the completed prefix. Deleting bytes that are already
+		// gone is idempotent, so a stale `uploadedAt` changes nothing here.
 		const deletedRecordingIds: Recording['id'][] = [];
 		for (const recording of selected) {
-			const { error: purgeError } = await audio.purge(recording);
-			if (purgeError !== null) {
-				return RecordingDeletionError.DeletionFailed({
-					recordingId: recording.id,
-					deletedRecordingIds,
-					stage: 'online-copy',
-					cause: purgeError,
-				});
-			}
 			const { error: blobError } = await blobs.local.delete(
 				recording.audioBlobId,
 			);
@@ -223,7 +161,6 @@ export function createWhisperingRecordings({
 				return RecordingDeletionError.DeletionFailed({
 					recordingId: recording.id,
 					deletedRecordingIds,
-					stage: 'device-copy',
 					cause: blobError,
 				});
 			}
@@ -251,9 +188,6 @@ export function createWhisperingRecordings({
 		get nonconforming() {
 			return nonconforming;
 		},
-		get remoteAvailable() {
-			return blobs.remote !== null;
-		},
 		get(id) {
 			return resolve(id);
 		},
@@ -276,8 +210,8 @@ export function createWhisperingRecordings({
 		},
 		patch(id, partial) {
 			// Structural typing lets a whole row flow in as the partial, so drop
-			// the protected keys at runtime: the audio workflows stay the only
-			// writer of uploadedAt and audio identity stays immutable.
+			// the protected keys at runtime: `uploadedAt` is historical bookkeeping
+			// nothing writes any more, and audio identity stays immutable.
 			const {
 				id: _id,
 				audioBlobId: _audioBlobId,
@@ -311,15 +245,6 @@ export function createWhisperingRecordings({
 		},
 		audioAvailability(id) {
 			return withRecording(id, audio.availability);
-		},
-		uploadAudio(id) {
-			return withRecording(id, audio.upload);
-		},
-		downloadAudio(id) {
-			return withRecording(id, audio.download);
-		},
-		removeLocalAudio(id) {
-			return withRecording(id, audio.removeLocal);
 		},
 		subscribe(listener) {
 			listeners.add(listener);

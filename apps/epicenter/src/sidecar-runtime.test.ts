@@ -13,7 +13,6 @@
 import { describe, expect, test } from 'bun:test';
 import { EventEmitter } from 'node:events';
 import {
-	createNativeAuthPort,
 	createReadyFrame,
 	type ParentPipe,
 	PRODUCTION_PORT,
@@ -32,7 +31,6 @@ function bootFrame(overrides: Record<string, unknown> = {}): string {
 		protocolVersion: SIDECAR_PROTOCOL_VERSION,
 		token: TOKEN,
 		port: PRODUCTION_PORT,
-		authCell: null,
 		...overrides,
 	});
 }
@@ -106,7 +104,6 @@ describe('boot protocol', () => {
 					type: 'boot',
 					protocolVersion: SIDECAR_PROTOCOL_VERSION,
 					token: TOKEN,
-					authCell: null,
 				}),
 				'production',
 			),
@@ -117,9 +114,10 @@ describe('boot protocol', () => {
 	});
 
 	test('unknown protocol versions are rejected', () => {
+		const unsupported = SIDECAR_PROTOCOL_VERSION + 1;
 		expect(() =>
-			parseBootFrame(bootFrame({ protocolVersion: 3 }), 'production'),
-		).toThrow('Unsupported boot protocol version: 3');
+			parseBootFrame(bootFrame({ protocolVersion: unsupported }), 'production'),
+		).toThrow(`Unsupported boot protocol version: ${unsupported}`);
 	});
 
 	test('invalid token types and non-base64url tokens are rejected', () => {
@@ -159,20 +157,9 @@ describe('boot protocol', () => {
 	test('ready frames contain exactly the versioned readiness contract', () => {
 		expect(createReadyFrame(PRODUCTION_PORT)).toEqual({
 			type: 'ready',
-			protocolVersion: 2,
+			protocolVersion: SIDECAR_PROTOCOL_VERSION,
 			port: PRODUCTION_PORT,
 		});
-	});
-
-	test('auth cell accepts only an opaque string or null', () => {
-		expect(
-			parseBootFrame(bootFrame({ authCell: 'opaque' }), 'production').authCell,
-		).toBe('opaque');
-		for (const authCell of [false, 12, {}, []]) {
-			expect(() =>
-				parseBootFrame(bootFrame({ authCell }), 'production'),
-			).toThrow('string or null');
-		}
 	});
 });
 
@@ -210,107 +197,6 @@ describe('parent pipe', () => {
 	});
 });
 
-describe('native auth port', () => {
-	test('correlates fixed native requests and forwards one queued OAuth callback', async () => {
-		let controller!: ReadableStreamDefaultController<string>;
-		const parentPipe: ParentPipe = {
-			bootLine: Promise.resolve(bootFrame()),
-			frames: new ReadableStream<string>({
-				start(nextController) {
-					controller = nextController;
-				},
-			}),
-			closed: new Promise(() => undefined),
-			async cancel() {},
-		};
-		const writes: string[] = [];
-		const native = createNativeAuthPort(
-			{ parentPipe },
-			{
-				createRequestId: () => 'request-1',
-				writeLine: (line) => writes.push(line),
-			},
-		);
-
-		const stored = native.storeAuth('opaque-cell');
-		expect(JSON.parse(writes[0] ?? '')).toEqual({
-			type: 'store-auth',
-			serialized: 'opaque-cell',
-			requestId: 'request-1',
-		});
-		controller.enqueue(
-			JSON.stringify({
-				type: 'native-result',
-				requestId: 'request-1',
-				status: 'ok',
-			}),
-		);
-		await stored;
-
-		controller.enqueue(
-			JSON.stringify({
-				type: 'oauth-callback',
-				url: 'epicenter://auth/callback?code=code&state=state',
-			}),
-		);
-		await Promise.resolve();
-		const callbacks: string[] = [];
-		native.onOAuthCallback((url) => callbacks.push(url));
-		expect(callbacks).toEqual([
-			'epicenter://auth/callback?code=code&state=state',
-		]);
-		controller.close();
-		await native.completed;
-	});
-
-	test('native errors reject their matching request', async () => {
-		let controller!: ReadableStreamDefaultController<string>;
-		const parentPipe: ParentPipe = {
-			bootLine: Promise.resolve(bootFrame()),
-			frames: new ReadableStream<string>({
-				start(nextController) {
-					controller = nextController;
-				},
-			}),
-			closed: new Promise(() => undefined),
-			async cancel() {},
-		};
-		const native = createNativeAuthPort(
-			{ parentPipe },
-			{ createRequestId: () => 'request-2', writeLine() {} },
-		);
-		const opened = native.openAuthUrl('https://api.epicenter.so/auth');
-		controller.enqueue(
-			JSON.stringify({
-				type: 'native-result',
-				requestId: 'request-2',
-				status: 'error',
-				message: 'denied',
-			}),
-		);
-		await expect(opened).rejects.toThrow('denied');
-		controller.close();
-		await native.completed;
-	});
-
-	test('unknown frames fail the protocol generation', async () => {
-		let controller!: ReadableStreamDefaultController<string>;
-		const parentPipe: ParentPipe = {
-			bootLine: Promise.resolve(bootFrame()),
-			frames: new ReadableStream<string>({
-				start(nextController) {
-					controller = nextController;
-				},
-			}),
-			closed: new Promise(() => undefined),
-			async cancel() {},
-		};
-		const native = createNativeAuthPort({ parentPipe }, { writeLine() {} });
-		controller.enqueue(JSON.stringify({ type: 'execute', command: 'shell' }));
-		await expect(native.completed).rejects.toThrow('Unknown native auth frame');
-	});
-});
-
 describe('shutdown', () => {
 	test('SIGTERM stops the server, disposes the host, and releases stdin in order', async () => {
 		const { events, host, parentPipe, server, signals } = setup();
@@ -339,21 +225,6 @@ describe('shutdown', () => {
 		parentClosed.resolve();
 		await supervised;
 
-		expect(events).toEqual(['server.stop:true', 'host.dispose', 'pipe.cancel']);
-	});
-
-	test('a protocol failure disposes every owner before it propagates', async () => {
-		const { events, host, parentPipe, server, signals } = setup();
-		const failure = Promise.reject(new Error('invalid native frame'));
-		const supervised = superviseSidecar({
-			server,
-			host,
-			parentPipe,
-			protocol: { completed: failure },
-			signals,
-		});
-
-		await expect(supervised).rejects.toThrow('invalid native frame');
 		expect(events).toEqual(['server.stop:true', 'host.dispose', 'pipe.cancel']);
 	});
 });

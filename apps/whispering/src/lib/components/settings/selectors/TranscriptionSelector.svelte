@@ -17,7 +17,6 @@
 		getSelectedTranscriptionService,
 		getTranscriptionReadiness,
 	} from '$lib/settings/transcription-validation';
-	import { auth } from '#platform/auth';
 	import { tauri } from '#platform/tauri';
 	import TranscriberRow from './TranscriberRow.svelte';
 	import { getWhisperingApp } from '$lib/whispering/context';
@@ -45,8 +44,8 @@
 	} = $props();
 
 	// The ready transcribers: downloaded on-device GGUFs unioned with configured
-	// session, keyed, and endpoint providers. Each transcriber owns its own title,
-	// so the trigger just reads the active one.
+	// keyed and endpoint providers. Each transcriber owns its own title, so the
+	// trigger just reads the active one.
 	const transcribers = $derived(readyTranscribers(app));
 	const activeTranscriber = $derived(
 		transcribers.find((transcriber) => transcriber.isActive),
@@ -182,12 +181,10 @@
 				</Empty.Media>
 				<Empty.Title>{m.transcription_selector_set_up_transcription()}</Empty.Title>
 				<Empty.Description>
-					{m.transcription_selector_sign_in_to_epicenter_or_add_an()}
+					{m.transcription_selector_add_an_api_key_or_set_up()}
 				</Empty.Description>
 				<Empty.Content class="flex flex-col gap-2">
-					<Button onclick={() => auth.startSignIn()}>{m.transcription_selector_sign_in_to_epicenter()}</Button>
 					<Button
-						variant="outline"
 						onclick={() => {
 							goto(whisperingPath('/settings/processing'));
 							combobox.closeAndFocusTrigger();

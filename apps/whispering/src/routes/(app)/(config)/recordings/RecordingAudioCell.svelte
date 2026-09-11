@@ -13,7 +13,7 @@
 	);
 </script>
 
-{#if availability.data === 'local-only' || availability.data === 'local-and-remote'}
+{#if availability.data === 'available'}
 	<RenderAudioUrl id={recording.id} audioBlobId={recording.audioBlobId} />
 {:else if availability.data}
 	<span class="text-muted-foreground text-sm">{m.recording_audio_cell_not_on_this_device()}</span>

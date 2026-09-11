@@ -29,10 +29,11 @@ reasoning is in the brand document under "Rename tiers".
 
 ## Hosting
 
-The same browser-hostable Svelte SPA serves two hosts:
-
-- The browser build, served as static assets.
-- The Epicenter Tauri host, which runs it under `/apps/whispering`.
+Tironian ships desktop only. The Svelte SPA is written to be browser-hostable
+(it still builds and typechecks under the default `#platform/*` condition,
+which is what local `bun test` and the plain tsconfig resolve), but the only
+deployed host is the Epicenter Tauri host, which runs it under
+`/apps/whispering`.
 
 Tironian does not own a native shell. Epicenter owns the only Tauri runtime at
 `apps/epicenter/src-tauri`.
@@ -41,14 +42,18 @@ Tironian does not own a native shell. Epicenter owns the only Tauri runtime at
 
 ```text
 apps/whispering/src
-|-- browser condition --> apps/whispering/build --> Cloudflare static assets
+|-- browser condition --> apps/whispering/build   (local build, not deployed)
 `-- tauri condition ----> apps/epicenter/dist/whispering
                                       |
                                       `--> apps/epicenter/src-tauri
                                            native commands and windows
 ```
 
-The browser is a real product target, not a desktop fallback. It owns browser recording, IndexedDB blobs, browser auth redirects, and web-safe shortcuts. The Epicenter build selects native implementations for system shortcuts, OS permissions, local model transcription, native windows, and app-data files.
+The browser condition exists for local typecheck and test, not as a shipped
+product target: it owns browser recording, IndexedDB blobs, and web-safe
+shortcuts, none of which reach a user. The Epicenter build selects native
+implementations for system shortcuts, OS permissions, local model
+transcription, native windows, and app-data files.
 
 Selection happens at build time through the `#platform/*` imports in `package.json`:
 
@@ -63,11 +68,8 @@ Epicenter's asset build sets `EPICENTER_HOST=1`, which activates the `tauri` mod
 Start apps from the repository root.
 
 ```bash
-# Hosted browser app plus its local API
+# Browser build, local only (not deployed)
 bun dev:whispering
-
-# Browser UI only
-bun dev:whispering:ui
 
 # Epicenter desktop with Whispering as a native app window
 bun dev:epicenter
@@ -114,10 +116,10 @@ bun run --cwd apps/epicenter desktop:build
 
 ## Data boundary
 
-Tironian stores settings and recording metadata locally first. Audio leaves the device only when the selected transcription provider requires an upload. The browser and Epicenter builds can both use direct provider connections, the hosted Epicenter gateway, or a self-hosted endpoint. On-device transcription is available only through Epicenter because it depends on the native model runtime.
+Tironian stores settings and recording metadata locally first. Audio leaves the device only when the selected transcription provider requires an upload: a direct connection to a provider you bring a key for, or a self-hosted endpoint you point at. There is no hosted Epicenter gateway and no account: nothing is uploaded unless you configured a cloud provider yourself.
 
 ## There is no hosted browser deploy
 
-`wrangler.jsonc` published the static SPA to `whispering.epicenter.so`. ADR-0227 refused that runtime: a browser tab is not a target, so the config and its deploy step are gone. Whatever Cloudflare last published keeps serving until somebody deletes the Worker, because removing the config stops republishing rather than taking anything down.
+Tironian ships desktop only. `wrangler.jsonc`, which used to publish the static SPA to `whispering.epicenter.so`, is gone (ADR-0227 refused that runtime: a browser tab is not a target). `static/_headers`, the Cloudflare Workers Static Assets header rules that survived that first cut, is gone too, along with sign-in, sync, and every hosted-inference call. Nothing in this repo publishes the browser build anywhere; whatever Cloudflare last served before these cuts keeps answering until somebody deletes the Worker, because removing repo config only stops republishing.
 
 ADR-0227 says what would reopen this, which is trying-before-installing turning out to matter more than the capability seams cost.

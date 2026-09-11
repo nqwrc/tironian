@@ -24,11 +24,6 @@ export function createRecordings({
 			invalidate();
 			return recordings.nonconforming;
 		},
-		// Availability follows the platform's reactive auth state, which the
-		// underlying getter reads on every access; no record subscription needed.
-		get remoteAvailable() {
-			return recordings.remoteAvailable;
-		},
 		get(id: Recording['id']) {
 			invalidate();
 			return recordings.get(id);
@@ -38,9 +33,6 @@ export function createRecordings({
 		patch: recordings.patch,
 		delete: recordings.delete,
 		audioAvailability: recordings.audioAvailability,
-		uploadAudio: recordings.uploadAudio,
-		downloadAudio: recordings.downloadAudio,
-		removeLocalAudio: recordings.removeLocalAudio,
 		subscribe: recordings.subscribe,
 	};
 }

@@ -9,17 +9,13 @@
 	import { Input } from '@epicenter/ui/input';
 	import { Link } from '@epicenter/ui/link';
 	import * as Select from '@epicenter/ui/select';
-	import { Spinner } from '@epicenter/ui/spinner';
 	import { Textarea } from '@epicenter/ui/textarea';
 	import { cn } from '@epicenter/ui/utils';
-	import { createMutation } from '@tanstack/svelte-query';
-	import { resultMutationOptions } from 'wellcrafted/query';
 	import CopyablePre from '$lib/components/copyable/CopyablePre.svelte';
 	import {
 		SUPPORTED_LANGUAGES_OPTIONS,
 		type SupportedLanguage,
 	} from '$lib/constants/languages';
-	import { whisperingPath } from '$lib/constants/urls';
 	import { describeTranscriptionDestinationFromConfig } from '$lib/operations/transcription-target';
 	import {
 		ACCESS_GROUPS,
@@ -33,9 +29,7 @@
 	import { deviceConfig } from '$lib/state/device-config.svelte';
 	import { getLocalRouteBlocker } from '$lib/settings/transcription-validation';
 	import { localRoute } from '$lib/state/local-route.svelte';
-	import { recordingActive } from '$lib/state/recording-active.svelte';
 	import { createCopyFn } from '$lib/utils/createCopyFn';
-	import { auth } from '#platform/auth';
 	import { tauri } from '#platform/tauri';
 	import AdvancedDisclosure from './AdvancedDisclosure.svelte';
 	import ProviderConfigFields from './ProviderConfigFields.svelte';
@@ -44,8 +38,8 @@
 	const app = getWhisperingApp();
 
 	// The Audio stage of the capture pipeline: the transcription setup catalog.
-	// Unlike the recorder switcher, this surface only *sets things up* (sign in,
-	// add a key and pick a model, download a GGUF, enter a custom server); you pick
+	// Unlike the recorder switcher, this surface only *sets things up* (add a
+	// key and pick a model, download a GGUF, enter a custom server); you pick
 	// which route is active in the recorder popover. So no section writes
 	// `transcriptionService`; each just persists its own provider config. The
 	// active route is reflected read-only as an "Active" badge for orientation.
@@ -61,9 +55,6 @@
 		describeTranscriptionDestinationFromConfig({
 			service: activeService,
 			getDeviceConfig: deviceConfig.get,
-			// Session locality follows the bonded deployment. Sign-in status decides
-			// usability elsewhere; locality only needs the base URL.
-			sessionBaseUrl: auth.connection.baseURL,
 		}),
 	);
 
@@ -108,18 +99,6 @@
 	const KEY_ENTRIES = TRANSCRIPTION_PROVIDERS.filter(
 		(entry): entry is KeyEntry => entry.access === 'key',
 	);
-
-	// Signing in redirects/reloads (Option A), which kills an in-flight browser
-	// recording, so lock the action while a capture is active. Account settings
-	// owns sign-out; this section only makes the hosted transcription route ready.
-	const isSignedIn = $derived(auth.state.status === 'signed-in');
-	const accountLocked = $derived(recordingActive.current);
-	const startSignIn = createMutation(() =>
-		resultMutationOptions({
-			mutationKey: ['transcription-setup', 'startSignIn'],
-			mutationFn: () => auth.startSignIn(),
-		}),
-	);
 </script>
 
 {#snippet renderServiceIcon(entry: TranscriptionProviderEntry)}
@@ -148,8 +127,6 @@
 
 			{#if section.access === 'onDevice'}
 				{@render onDeviceSection()}
-			{:else if section.access === 'session'}
-				{@render epicenterSection()}
 			{:else if section.access === 'key'}
 				<div class="space-y-4">
 					{#each KEY_ENTRIES as entry (entry.id)}
@@ -199,48 +176,6 @@
 			</Button>
 		{/if}
 	</Field.Field>
-{/snippet}
-
-{#snippet epicenterSection()}
-	{#if isSignedIn}
-		<Field.Field orientation="horizontal">
-			<Field.Content>
-				<Field.Label>{m.transcription_runtime_config_signed_in()}</Field.Label>
-				<Field.Description>
-					{m.transcription_runtime_config_your_epicenter_account()}
-					<Link href={whisperingPath('/settings/account')}>{m.transcription_runtime_config_account_settings()}</Link>.
-				</Field.Description>
-			</Field.Content>
-			<Badge variant="secondary" class="text-xs">{m.transcription_runtime_config_ready()}</Badge>
-		</Field.Field>
-	{:else}
-		<Field.Field>
-			{#if startSignIn.error}
-				<Field.Description class="text-destructive">
-					{startSignIn.error.message}
-				</Field.Description>
-			{/if}
-			{#if accountLocked}
-				<Field.Description class="text-muted-foreground">
-					{m.transcription_runtime_config_stop_recording_to_sign()}
-				</Field.Description>
-			{/if}
-			<Button
-				class="w-full sm:w-auto sm:self-start"
-				onclick={() => startSignIn.mutate()}
-				disabled={startSignIn.isPending || accountLocked}
-			>
-				{#if startSignIn.isPending}
-					<Spinner class="size-4" />
-					Signing in...
-				{:else if auth.state.status === 'reauth-required'}
-					Reconnect
-				{:else}
-					Sign in with Epicenter
-				{/if}
-			</Button>
-		</Field.Field>
-	{/if}
 {/snippet}
 
 {#snippet keyProviderCard(entry: KeyEntry)}

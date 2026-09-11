@@ -20,9 +20,6 @@ const PROVIDERS = [
 	},
 ];
 
-mock.module('#platform/auth', () => ({
-	auth: { state: { status: 'signed-out' } },
-}));
 mock.module('#platform/tauri', () => ({ tauri: null }));
 mock.module('$lib/services/transcription/provider-ui', () => ({
 	TRANSCRIPTION_PROVIDERS: PROVIDERS,

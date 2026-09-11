@@ -36,22 +36,8 @@ export const BUILT_IN_ROUTES = {
 export type BuiltInRouteId = keyof typeof BUILT_IN_ROUTES;
 
 export const BOOTSTRAP_ROUTE = route('/_epicenter/bootstrap');
-export const ACCOUNT_SIGN_IN_ROUTE = route('/_epicenter/account/sign-in');
-export const ACCOUNT_SIGN_OUT_ROUTE = route('/_epicenter/account/sign-out');
-export const ACCOUNT_INSTANCE_ROUTE = route('/_epicenter/account/instance');
-export const ACCOUNT_PROFILE_ROUTE = route('/_epicenter/account/profile');
 export const HOME_ROUTE = BUILT_IN_ROUTES.home;
 export const WHISPERING_ROUTE = BUILT_IN_ROUTES.whispering;
 export const LOCAL_BLOB_ROUTE = {
 	pattern: `${LOCAL_BLOB_PATH}/:blobId`,
-} as const;
-/**
- * Host-owned remote copy operations for one local blob. The id is the only
- * input: no route accepts a destination URL, transfer header, or body, so the
- * host's own deployment authority is the only reachable target.
- */
-export const LOCAL_BLOB_REMOTE_ROUTES = {
-	upload: { pattern: `${LOCAL_BLOB_PATH}/:blobId/upload` },
-	download: { pattern: `${LOCAL_BLOB_PATH}/:blobId/download` },
-	purge: { pattern: `${LOCAL_BLOB_PATH}/:blobId/purge` },
 } as const;

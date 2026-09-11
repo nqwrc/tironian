@@ -10,7 +10,7 @@
 	let {
 		recording,
 	}: {
-		recording: Pick<Recording, 'id' | 'audioBlobId' | 'uploadedAt'>;
+		recording: Pick<Recording, 'id' | 'audioBlobId'>;
 	} = $props();
 
 	const availability = createQuery(
@@ -18,9 +18,7 @@
 	);
 
 	const labels = {
-		'local-only': 'On this device',
-		'local-and-remote': 'Device + online',
-		'remote-only': 'Online only',
+		available: 'On this device',
 		unavailable: 'Audio missing',
 	} as const;
 </script>

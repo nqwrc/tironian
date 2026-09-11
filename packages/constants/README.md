@@ -8,39 +8,25 @@ This is a floor, not a junk drawer. A fact belongs here only when more than one 
 
 ### `@epicenter/constants/apps`
 
-The app origin and port registry (`APPS`), plus the origin helpers CORS and OAuth redirect allowlists derive from it (`localUrl`, `appOrigins`, `prodOrigins`) and the Node API-base default (`EPICENTER_API_URL`). Everything about "where an app answers" is derived from `APPS`.
+The app dev-port and, where an app still has one, canonical production-URL registry (`APPS`). Tironian ships no hosted deployment of its own, so `APPS.WHISPERING` carries only the dev port `workspaceAppViteConfig` binds to.
 
 ```typescript
-import { APPS, appOrigins } from '@epicenter/constants/apps';
+import { APPS } from '@epicenter/constants/apps';
 ```
 
-### `@epicenter/constants/vite`
+### `@epicenter/constants/app-data`
 
-Flat `APP_URLS` resolved at Vite build time (dev localhost vs prod origin, via `import.meta.env.MODE`). For Vite-bundled apps (SvelteKit, Astro, Tauri, WXT).
-
-```typescript
-import { APP_URLS } from '@epicenter/constants/vite';
-
-const apiUrl = APP_URLS.API; // dev: http://localhost:8787 · prod: https://api.epicenter.so
-```
-
-### `@epicenter/constants/api-routes`
-
-`API_ROUTES`: the shared home for API route contracts whose domain has no dedicated shared package (the session projection, the blob store, the `/v1` inference gateways). Each leaf carries the server `pattern`, an optional server-only `prefixPattern` mount helper, and the client `url(...)` builder. Not a registry of every route: routes whose domain owns a shared package live there. `@epicenter/sync` owns the store sync route (`STORE_SYNC_ROUTE`), because a browser replica builds that URL and has no business importing a server to learn it.
-
-### `@epicenter/constants/oauth-routes` and `@epicenter/constants/oauth-clients`
-
-The OAuth endpoints Epicenter clients call (`OAUTH_ROUTES`) and the public first-party client ids and scopes every app presents at sign-in (`oauth-clients`). Shared by `@epicenter/auth` (the clients) and `@epicenter/server` (the authorization server).
-
-### `@epicenter/constants/oauth-seed`
-
-`buildTrustedOAuthClients` / `projectTrustedOAuthClientToRow`: project the first-party clients (composed from `APPS` and `oauth-clients`) into the Better Auth `oauth_client` rows. Shared by the server's auth plugin and the `apps/api` deploy seed script, neither of which can own it without a backwards dependency, so it stays on the floor beside its inputs.
+Where Epicenter stores things on a machine: the application-data root and the naming grammar below it (ADR-0201). Pure functions over strings; no store, handle, or lifecycle.
 
 ### `@epicenter/constants/ai-providers`
 
-The sellable-model catalog (`AI_MODELS`) and its derivations (`AiProvider`, `MODELS_BY_ID`, `providerLabel`, `toHostedCatalog`). Shared by the server inference gateway (routing), the billing layer (pricing), and the chat apps (model pickers).
+The sellable-model catalog (`AI_MODELS`) and its derivations (`AiProvider`, `MODELS_BY_ID`, `providerLabel`, `toHostedCatalog`).
+
+### `@epicenter/constants/provider-credentials`
+
+Third-party provider credential resolution (ADR-0105): one pure resolver plus the `ProviderCredentialSpec` type and an `.env.example` formatter.
 
 ## Adding a new app
 
-1. Add an entry to `APPS` in `src/apps.ts` with `port` and `url`.
+1. Add an entry to `APPS` in `src/apps.ts` with `port` (and `url`, if it has a hosted deployment).
 2. Every consumer picks it up automatically: TypeScript enforces completeness.

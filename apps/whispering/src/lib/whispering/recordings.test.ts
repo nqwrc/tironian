@@ -4,7 +4,6 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-	type BlobRemote,
 	type BlobStore,
 	BlobStoreError,
 	generateBlobId,
@@ -50,21 +49,6 @@ function stubLocalStore(overrides: Partial<BlobStore> = {}): BlobStore {
 	};
 }
 
-function stubRemote(overrides: Partial<BlobRemote> = {}): BlobRemote {
-	return {
-		async upload() {
-			return Ok(undefined);
-		},
-		async download() {
-			return Ok(undefined);
-		},
-		async purge() {
-			return Ok(undefined);
-		},
-		...overrides,
-	};
-}
-
 function recording(overrides: Partial<NewRecording> = {}): NewRecording {
 	return {
 		audioBlobId: generateBlobId(),
@@ -92,11 +76,9 @@ function storedRow(row: NewRecording) {
 
 async function setup({
 	local = stubLocalStore(),
-	remote = stubRemote(),
 	seed = [],
 }: {
 	local?: BlobStore;
-	remote?: BlobRemote | null;
 	seed?: ReturnType<typeof recording>[];
 } = {}) {
 	const root = mkdtempSync(join(tmpdir(), 'whispering-recordings-'));
@@ -107,7 +89,7 @@ async function setup({
 	for (const row of seed) expectOk(table.create(storedRow(row)));
 	const domain = createWhisperingRecordings({
 		table,
-		blobs: { local, remote },
+		blobs: { local },
 	});
 	return {
 		table,
@@ -169,27 +151,7 @@ test('every seeded recording loads, newest first', async () => {
 	}
 });
 
-test('upload writes uploadedAt only after the remote copy succeeds', async () => {
-	let uploaded = false;
-	const context = await setup({
-		remote: stubRemote({
-			async upload() {
-				uploaded = true;
-				return Ok(undefined);
-			},
-		}),
-	});
-	try {
-		const row = context.recordings.create(recording());
-		expectOk(await context.recordings.uploadAudio(row.id));
-		expect(uploaded).toBe(true);
-		expect(context.recordings.get(row.id)?.uploadedAt).not.toBeNull();
-	} finally {
-		await context.dispose();
-	}
-});
-
-test('deletion removes remote, local, then row', async () => {
+test('deletion removes local bytes, then the row', async () => {
 	const order: string[] = [];
 	const context = await setup({
 		local: stubLocalStore({
@@ -198,9 +160,29 @@ test('deletion removes remote, local, then row', async () => {
 				return Ok(undefined);
 			},
 		}),
-		remote: stubRemote({
-			async purge() {
-				order.push('remote');
+	});
+	try {
+		const row = expectOk(context.table.create(storedRow(recording())));
+		expectOk(await context.recordings.delete(row.id as RecordingId));
+		order.push(
+			expectOk(context.table.get(row.id)) === undefined ? 'row' : 'live',
+		);
+		expect(order).toEqual(['local', 'row']);
+	} finally {
+		await context.dispose();
+	}
+});
+
+test('a row with a historical uploadedAt stays deletable from local bytes alone', async () => {
+	// `uploadedAt` is bookkeeping from a since-removed replica-upload workflow.
+	// Nothing writes it any more, but an old row can still carry one, and
+	// deletion must not treat that as a reason to reach for a remote that no
+	// longer exists.
+	let localDeletes = 0;
+	const context = await setup({
+		local: stubLocalStore({
+			async delete() {
+				localDeletes += 1;
 				return Ok(undefined);
 			},
 		}),
@@ -213,47 +195,8 @@ test('deletion removes remote, local, then row', async () => {
 			}),
 		);
 		expectOk(await context.recordings.delete(row.id as RecordingId));
-		order.push(
-			expectOk(context.table.get(row.id)) === undefined ? 'row' : 'live',
-		);
-		expect(order).toEqual(['remote', 'local', 'row']);
-	} finally {
-		await context.dispose();
-	}
-});
-
-test('deletion preflights remote availability for the whole selection', async () => {
-	let localDeletes = 0;
-	const context = await setup({
-		remote: null,
-		local: stubLocalStore({
-			async delete() {
-				localDeletes += 1;
-				return Ok(undefined);
-			},
-		}),
-	});
-	try {
-		// One local-only recording and one with an online copy. `uploadedAt` is
-		// written through the table rather than the domain, because the audio
-		// workflows are its only writer and there is no remote to upload to here.
-		expectOk(context.table.create(storedRow(recording())));
-		expectOk(
-			context.table.create({
-				...storedRow(recording()),
-				uploadedAt: InstantString.now(),
-			}),
-		);
-		const error = expectErr(
-			await context.recordings.delete(
-				context.recordings.sorted.map(({ id }) => id),
-			),
-		);
-		expect(error.name).toBe('RemoteUnavailable');
-		// Nothing is deleted: the whole selection is preflighted first, so one
-		// unreachable online copy stops the batch before any local byte goes.
-		expect(localDeletes).toBe(0);
-		expect(context.recordings.count).toBe(2);
+		expect(localDeletes).toBe(1);
+		expect(context.recordings.count).toBe(0);
 	} finally {
 		await context.dispose();
 	}

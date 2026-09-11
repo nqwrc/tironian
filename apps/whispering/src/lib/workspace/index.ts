@@ -37,14 +37,19 @@ export type SnippetId = string;
 
 const recordingsTable = {
 	/**
-	 * Opaque local and remote identity for this recording's immutable audio.
+	 * Opaque identity for this recording's immutable audio in the local blob
+	 * store.
 	 *
 	 * The pattern survives; the `BlobId` brand does not, because `RowOf` yields
 	 * the field's own type and a brand is a TypeScript fiction the CRDT never
 	 * saw. Re-brand with `parseBlobId` where a row meets the blob store.
 	 */
 	audioBlobId: field.string({ pattern: '^blob_[a-z0-9]{21}$' }),
-	/** Set only after an explicit replica upload succeeds. */
+	/**
+	 * Historical: set only by a since-removed replica-upload workflow. Nothing
+	 * writes it any more; kept so a row from before the cut still conforms
+	 * instead of losing its other fields to the diagnostic.
+	 */
 	uploadedAt: field.nullable(field.instant()),
 	title: field.string(),
 	recordedAt: field.instant(),
@@ -181,7 +186,6 @@ const settingsKv = {
 
 	recordingTrigger: field.select(['vad', 'manual']),
 	recordingPausePlayback: field.boolean(),
-	recordingAutoUpload: field.boolean(),
 
 	/**
 	 * Where the floating recording pill sits, as a 3x3 anchor grid with a margin
@@ -194,7 +198,6 @@ const settingsKv = {
 	recordingOverlayYMarginPx: field.number(),
 
 	transcriptionService: field.select([
-		'epicenter',
 		'OpenAI',
 		'Groq',
 		'ElevenLabs',

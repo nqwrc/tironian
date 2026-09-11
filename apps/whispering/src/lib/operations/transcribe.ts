@@ -4,12 +4,10 @@ import {
 	resolveConnection,
 	transcribe,
 } from '@epicenter/client';
-import { API_ROUTES } from '@epicenter/constants/api-routes';
 import { containsSpeech } from '@epicenter/recorder';
 import { type AnyTaggedError, defineErrors } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';
 import { Err, Ok, type Result } from 'wellcrafted/result';
-import { auth } from '#platform/auth';
 import { WHISPERING_BASE_PATHNAME } from '#platform/base-path';
 import { customFetch } from '#platform/http';
 import { tauri } from '#platform/tauri';
@@ -67,13 +65,6 @@ export type TranscriptionError = AnyTaggedError;
 export type { TranscriptionSuccess } from '$lib/operations/transcription-history';
 
 const TranscriptionOperationError = defineErrors({
-	/** The hosted Epicenter gateway answered 402 (`InsufficientCredits`, ADR-0100):
-	 *  the wallet could not cover this transcription. Surfaced as a credit-aware
-	 *  message instead of the raw provider envelope, so the user knows the one thing
-	 *  that fixes it. */
-	InsufficientCredits: () => ({
-		message: m.transcribe_you_re_out_of_epicenter_ai_credits_add(),
-	}),
 	LocalTranscriptionUnavailableOnWeb: () => ({
 		message: m.transcribe_local_transcription_is_only_available_in(),
 	}),
@@ -95,9 +86,8 @@ const TranscriptionOperationError = defineErrors({
  *
  * The transport is a `resolve` thunk, not static connection data, so each wire entry
  * owns how it becomes a transport (ADR-0060): a `key`/`endpoint` entry resolves a
- * `{ baseUrl, apiKey }` over `customFetch`, while the `session` Epicenter entry closes
- * over the signed-in session `fetch` (never connection data). The switch
- * therefore never branches on what kind of transport it got.
+ * `{ baseUrl, apiKey }` over `customFetch`. The switch therefore never branches on
+ * what kind of transport it got.
  *
  * A bespoke entry closes over its own key and model (from the literal `PROVIDERS.X`
  * pointers, the SSOT) rather than letting the caller read `PROVIDERS[id]`, because
@@ -123,8 +113,7 @@ type UploadDispatch =
 /**
  * Read a provider API key through the credential facade (ADR-0074): the key when
  * set, undefined when missing. A provider key is a secret, so it routes through
- * `secrets`, never raw `deviceConfig`, which is what makes the user-global vault
- * cover transcription once auth lands. Device-local plaintext today.
+ * `secrets`, never raw `deviceConfig`. Device-local plaintext.
  */
 function secretApiKey(key: SecretKey): string | undefined {
 	const read = secrets.get(key);
@@ -146,19 +135,6 @@ function secretApiKey(key: SecretKey): string | undefined {
  */
 const uploadDispatch = (app: WhisperingApp) =>
 	({
-		// Epicenter (`session`) STT: the transport is the signed-in session fetch against
-		// the server you are bonded to (`auth.connection.baseURL`, so a self-hosted instance's own
-		// gateway is used when connected to one), never a stored key. Both deployables mount
-		// this gateway on their house key; a hosted deployment meters it (ADR-0100), a
-		// self-host deployment does not. The model is fixed by the gateway.
-		epicenter: {
-			kind: 'wire',
-			resolve: () => ({
-				fetch: auth.fetch,
-				baseURL: API_ROUTES.ai.baseUrl(auth.connection.baseURL),
-			}),
-			model: () => PROVIDERS.epicenter.model,
-		},
 		OpenAI: {
 			kind: 'wire',
 			resolve: () =>
@@ -584,23 +560,11 @@ async function transcribeViaUpload(
 		case 'wire': {
 			const model = entry.model();
 			const prompt = recognizerPrompt(app, selectedService, model);
-			const result = await transcribe(audio, entry.resolve(), {
+			return await transcribe(audio, entry.resolve(), {
 				model,
 				language: spokenLanguage === 'auto' ? undefined : spokenLanguage,
 				prompt: prompt || undefined,
 			});
-			// Only the `session` wire can meter credits, and only when bonded to a hosted
-			// deployment, so a 402 there is `InsufficientCredits` (ADR-0100). Remap it to
-			// a credit-aware message; every other wire's 402 (none expected) stays a raw
-			// RequestFailed. A self-host deployment never meters, so it never 402s here.
-			if (
-				selectedService === 'epicenter' &&
-				result.error?.name === 'RequestFailed' &&
-				result.error.status === 402
-			) {
-				return TranscriptionOperationError.InsufficientCredits();
-			}
-			return result;
 		}
 		case 'bespoke':
 			return entry.transcribe(audio, {

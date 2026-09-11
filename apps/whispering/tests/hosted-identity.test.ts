@@ -53,19 +53,18 @@ describe('Epicenter-hosted Whispering identity', () => {
 		expect(read('src/lib/services/fs-paths.ts')).toContain('so.epicenter');
 	});
 
-	test('desktop auth uses the Bun authority instead of a window OAuth launcher', () => {
-		const auth = read('src/lib/platform/auth.epicenter-host.ts');
-		const bootstrap = read(
-			'src/lib/platform/desktop-auth-bootstrap.epicenter-host.ts',
+	test('there is no sign-in seam left to build a platform leaf for', () => {
+		expect(
+			existsSync(join(ROOT, 'src/lib/platform/auth.epicenter-host.ts')),
+		).toBe(false);
+		expect(existsSync(join(ROOT, 'src/lib/platform/auth.browser.ts'))).toBe(
+			false,
 		);
-		const instance = read('src/lib/platform/instance.epicenter-host.ts');
-		expect(auth).toContain('createDesktopBrokerAuth');
-		// The element and its removal are `@epicenter/auth/desktop`'s, shared with
-		// every other compiled application; this build only reads the snapshot.
-		expect(bootstrap).toContain('readDesktopAuthBootstrap');
-		expect(instance).toContain('createDesktopInstanceSetting');
-		expect(instance).not.toContain('createInstanceSetting');
-		expect(auth).not.toContain('createHostedDeepLinkAuth');
-		expect(auth).not.toContain('keyring');
+		// Built from parts so this file has no reachable-looking mention of the
+		// retired platform seam itself.
+		const retiredCondition = ['#platform', 'auth'].join('/');
+		expect(JSON.parse(read('package.json')).imports[retiredCondition]).toBe(
+			undefined,
+		);
 	});
 });

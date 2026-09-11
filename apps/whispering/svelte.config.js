@@ -1,6 +1,7 @@
-// Both hosts consume static SPA assets. The browser build stays at `build/`
-// for Cloudflare Workers + Assets; Epicenter's build writes into its packaged
-// asset tree and serves the SPA below its stable loopback route.
+// Tironian ships desktop only (Epicenter's build writes into its packaged
+// asset tree and serves the SPA below its stable loopback route). The
+// browser build still exists at `build/` for local typecheck and test, not
+// for deployment: there is no hosted Cloudflare target any more.
 // See: https://v2.tauri.app/start/frontend/sveltekit/ for more info
 import staticAdapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
@@ -21,16 +22,10 @@ const config = {
 		alias: {
 			$routes: './src/routes',
 		},
-		// No `csp` block here on purpose. adapter-static prerenders every page,
-		// and SvelteKit's prerender path only ever emits the *enforcing*
-		// `<meta http-equiv="content-security-policy">` tag: `reportOnly` is
-		// never read when `state.prerendering` is true (see
-		// @sveltejs/kit/src/runtime/server/page/render.js). There is no way to
-		// get a Report-Only trial out of `kit.csp` for this app. The CSP for
-		// this deploy is delivered entirely via `static/_headers` (a real
-		// `Content-Security-Policy-Report-Only` HTTP header on Cloudflare
-		// Workers Static Assets) instead. Epicenter likewise owns CSP in its
-		// outer Bun host. See `static/_headers` and the Epicenter server policy.
+		// No `csp` block here on purpose. The browser build is not deployed
+		// (Tironian ships desktop only), so it needs no CSP header of its own.
+		// Epicenter owns CSP for the loopback host it actually serves; see the
+		// Epicenter server policy.
 	},
 
 	// Consult https://svelte.dev/docs/kit/integrations

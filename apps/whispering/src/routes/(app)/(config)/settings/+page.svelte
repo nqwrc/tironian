@@ -116,14 +116,6 @@
 					description={m.settings_tironian_pauses_media_playing_on_your({ productName: PRODUCT_NAME })}
 				/>
 
-				{#if app.recordings.remoteAvailable}
-					<SettingSwitch
-						key="recordingAutoUpload"
-						label={m.settings_upload_new_recordings()}
-						description={m.settings_after_saving_a_new_recording_on_this_device()}
-					/>
-				{/if}
-
 				{#if app.settings.get('recordingTrigger') === 'vad'}
 					{#if os.isLinux}
 						<Alert.Root variant="destructive">
