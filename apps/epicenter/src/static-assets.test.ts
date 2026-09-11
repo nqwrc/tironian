@@ -339,7 +339,7 @@ describe('home server catalog routes', () => {
 			const whisperingDocument = await (
 				await fetch(`${origin}/apps/whispering/`, { headers: { cookie } })
 			).text();
-			expect(whisperingDocument).toContain('Whispering test application');
+			expect(whisperingDocument).toContain('Tironian test application');
 			expect(whisperingDocument).toContain('epicenter-auth-bootstrap');
 		} finally {
 			await server.stop(true);

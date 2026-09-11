@@ -88,7 +88,7 @@ const MCP_FIXTURE = new URL(
 const PAGE = '<!doctype html><html><body>Home test page</body></html>';
 const applicationPage = (title: string) =>
 	`<!doctype html><html><body>${title} test application</body></html>`;
-const WHISPERING_PAGE = applicationPage('Whispering');
+const WHISPERING_PAGE = applicationPage('Tironian');
 
 /** Parse a Content-Security-Policy header into directive name to its token list. */
 function cspDirectives(header: string | null): Map<string, string[]> {
