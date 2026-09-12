@@ -16,6 +16,7 @@ stale-after-days: 30
 
 ## next
 - Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
+- `feature/home-brand-tokens`: Home loads the dictation window's brand layer, `apps/tironian/src/brand.css`, through the `@tironian/app/brand.css` export; built Home body computes `oklch(0.2 0.006 65)` (was shadcn navy `oklch(0.129 0.042 264.695)`). Fonts stay out of Home: its CSP has no `font-src`, so the 11 Geist `data:` fonts the single-file build already inlines are refused.
 - Follow-ups, not defects: ADR-number citations in comments name design records that no longer ship; the `packages/sqlite` browser adapter has no consumer; seven sound files have no recorded provenance; no generated third-party notices file ships with the installers.
 
 ## blockers
