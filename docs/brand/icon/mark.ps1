@@ -1,7 +1,8 @@
-param([string]$Out, [int]$Size = 1024, [switch]$FullBleed)
+param([string]$Out, [int]$Size = 1024, [switch]$FullBleed, [string]$Ink = '#EDEAE6')
 # Tironian app icon: U+204A (Tironian et) drawn as geometry, single weight,
 # flat terminals, on the brand's window ground. Colors from docs/brand/tironian.md:
-# --ground #1C1A18, --text #EDEAE6.
+# --ground #1C1A18, and the mark in --text #EDEAE6 by default. The tray renders
+# the same icon twice: idle in --text, recording in --accent (-Ink '#D97757').
 Add-Type -AssemblyName System.Drawing
 $s = $Size / 1024.0
 $bmp = New-Object System.Drawing.Bitmap $Size, $Size
@@ -10,7 +11,7 @@ $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
 $g.Clear([System.Drawing.Color]::Transparent)
 
 $ground = [System.Drawing.ColorTranslator]::FromHtml('#1C1A18')
-$ink = [System.Drawing.ColorTranslator]::FromHtml('#EDEAE6')
+$inkColor = [System.Drawing.ColorTranslator]::FromHtml($Ink)
 
 # macOS icon grid: 824px rounded square centred on a 1024 canvas, radius ~185.
 if ($FullBleed) { $x0 = 0; $w = 1024; $r = 0 } else { $x0 = 100; $w = 824; $r = 185 }
@@ -32,7 +33,7 @@ $g.FillPath((New-Object System.Drawing.SolidBrush $ground), $path)
 # A vertical stem and a bar shorter than the stem is what keeps it from reading
 # as a 7, whose stroke slants.
 function P([double]$x, [double]$y) { New-Object System.Drawing.PointF ([float]($x * $s)), ([float]($y * $s)) }
-$brush = New-Object System.Drawing.SolidBrush $ink
+$brush = New-Object System.Drawing.SolidBrush $inkColor
 $bar = [System.Drawing.PointF[]]@((P 372 262), (P 662 262), (P 662 358), (P 372 358))
 $stem = [System.Drawing.PointF[]]@((P 566 262), (P 662 262), (P 662 782), (P 566 782))
 $g.FillPolygon($brush, $bar)

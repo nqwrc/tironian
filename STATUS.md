@@ -2,7 +2,7 @@
 
 state: active
 remote: github-public
-updated: 2026-09-11
+updated: 2026-09-13
 stale-after-days: 30
 
 ## kpi
@@ -15,7 +15,9 @@ stale-after-days: 30
 - Verified at 4735c9804: desktop run 34613692147, macOS smoke 4/4 (dictation window "Tironian" on screen at launch), dictation suite 319/0, `cargo test --release` 129/0, host TypeScript suite 41/0; Windows build and installer audit green. Local Windows: typecheck 0 errors, all checks pass, `cargo test` 118, package tests 12 failures, all Windows-only and present in the baseline.
 
 ## next
-- Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
+- Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo; whether to fold Model settings (Home) into the dictation window's Settings, since the second window is an Epicenter multi-app leftover and ADR-0180 no longer ships.
+- `bugfix/tray-mark`: the tray shows the brand mark (idle `--text`, recording `--accent`) instead of the two inherited emoji images; `cargo test` pending at commit time.
+- Open: on the Windows install of 0.1.0 the Model settings window showed white on screen. The WebView renders it correctly over CDP (two fresh opens, host logs empty), so the fault is on-screen presentation and is not yet reproduced.
 - Follow-ups, not defects: ADR-number citations in comments name design records that no longer ship; the `packages/sqlite` browser adapter has no consumer; seven sound files have no recorded provenance; no generated third-party notices file ships with the installers.
 
 ## blockers
