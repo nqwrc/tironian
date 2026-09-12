@@ -261,7 +261,7 @@ jobs:
           # every macOS bundle before this check shipped without apps-dist and
           # could not start. Assert the files the host needs at launch.
           missing=0
-          for f in apps-dist/dictation/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
+          for f in apps-dist/dictation/index.html; do
             test -f "$APP/Contents/Resources/$f" || { echo "::error::bundle is missing Contents/Resources/$f"; missing=1; }
           done
           ls -R "$APP/Contents/Resources" | head -40

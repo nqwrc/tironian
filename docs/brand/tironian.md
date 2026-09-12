@@ -292,8 +292,10 @@ on `--ground`, inside the macOS 824-unit rounded square. A font's glyph would
 carry that font's license into the logo, and a slanted stem reads as a 7.
 `docs/brand/icon/mark.ps1` renders it at any size; `tironian-1024.png` is the
 source `tauri icon` expands into the `.icns`, `.ico` and PNG set in
-`apps/desktop/src-tauri/icons/`. The tray still shows the recorder-state
-images in `recorder-state-icons/`, not the mark.
+`apps/desktop/src-tauri/icons/`. The tray shows the same icon at 64px,
+`recorder-state-icons/idle.png` with the mark in `--text` and `recording.png`
+with it in `--accent` (`mark.ps1 -Size 64 -Ink '#D97757'`). The ground stays
+behind the mark so it reads on a light taskbar as well as a dark one.
 
 ## Licensing and attribution
 

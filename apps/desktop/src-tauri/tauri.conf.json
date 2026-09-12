@@ -32,9 +32,7 @@
 		"shortDescription": "Dictation you own.",
 		"externalBin": ["binaries/tironian-host"],
 		"resources": {
-			"../dist": "apps-dist",
-			"recorder-state-icons/studio_microphone.png": "recorder-state-icons/studio_microphone.png",
-			"recorder-state-icons/red_large_square.png": "recorder-state-icons/red_large_square.png"
+			"../dist": "apps-dist"
 		},
 		"icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
 		"macOS": {

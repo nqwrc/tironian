@@ -70,11 +70,14 @@ pub fn set_tray_recording_state(app: &AppHandle, recording: bool) {
     }
 }
 
+/// The tray shows the app mark, never a microphone (docs/brand/tironian.md,
+/// "The mark"): idle in `--text`, recording in `--accent`. Both images come from
+/// `docs/brand/icon/mark.ps1` and are compiled in, so the bundle ships no copy.
 fn tray_icon(recording: bool) -> tauri::Result<Image<'static>> {
     let bytes = if recording {
-        include_bytes!("../recorder-state-icons/red_large_square.png").as_slice()
+        include_bytes!("../recorder-state-icons/recording.png").as_slice()
     } else {
-        include_bytes!("../recorder-state-icons/studio_microphone.png").as_slice()
+        include_bytes!("../recorder-state-icons/idle.png").as_slice()
     };
     Image::from_bytes(bytes)
 }
