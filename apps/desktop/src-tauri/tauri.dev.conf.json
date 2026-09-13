@@ -5,8 +5,6 @@
 	"app": {
 		"security": {
 			"capabilities": [
-				"home-model-administration-development",
-				"home-launch-application-development",
 				"trusted-app-windows-development",
 				"trusted-dictation-native-development",
 				"trusted-dictation-overlay-development"

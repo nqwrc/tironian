@@ -260,20 +260,6 @@ export const commands = {
 		__TAURI_INVOKE<LocalTranscriptionReadiness>(
 			'get_local_transcription_readiness',
 		),
-	/**
-	 *  Take the user to the app that can fix an unavailable local transcription
-	 *  route.
-	 *
-	 *  The app shell owns this navigation. The host reports that the route is
-	 *  unavailable, an application decides how to present it, and getting the user
-	 *  to Home is neither of their jobs: an application asks the shell to open
-	 *  Home, and the shell does. Home is the model administration window and
-	 *  nothing else now (ADR-0180), so there is no section to name: opening the
-	 *  window is the whole act.
-	 *
-	 *  It mutates no transcription state: it opens a window, and the user chooses.
-	 */
-	openHome: () => __TAURI_INVOKE<void>('open_home'),
 	/**  When the host drops the resident model. */
 	getUnloadPolicy: () => __TAURI_INVOKE<UnloadPolicy>('get_unload_policy'),
 	/**

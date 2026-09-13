@@ -16,8 +16,6 @@
 		"windows": [],
 		"security": {
 			"capabilities": [
-				"home-model-administration-production",
-				"home-launch-application-production",
 				"trusted-app-windows-production",
 				"trusted-dictation-native-production",
 				"trusted-dictation-overlay-production"
