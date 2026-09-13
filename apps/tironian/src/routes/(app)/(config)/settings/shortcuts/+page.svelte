@@ -4,7 +4,6 @@
 	import { pageTitle } from '$lib/constants/brand';
 	import { Button } from '@tironian/ui/button';
 	import * as SectionHeader from '@tironian/ui/section-header';
-	import { Separator } from '@tironian/ui/separator';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { report } from '$lib/report';
 	import { createAppShortcuts } from '$lib/platform/shortcuts';
@@ -27,13 +26,15 @@
 
 <svelte:head> <title>{pageTitle(m.settings_title_shortcuts())}</title> </svelte:head>
 
-<section class="mx-auto max-w-4xl py-6">
-	<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+<!-- Vivavoce 4j: one list under the tabs. The settings header already names
+     the page, so this opens on its one sentence and the reset. -->
+<section class="flex flex-col gap-4">
+	<div class="flex items-center justify-between gap-4">
 		<SectionHeader.Root>
-			<SectionHeader.Title level={1} class="text-3xl">
+			<SectionHeader.Title level={1} class="sr-only">
 				{m.settings_title_shortcuts()}
 			</SectionHeader.Title>
-			<SectionHeader.Description class="mt-2">
+			<SectionHeader.Description class="text-sm">
 				{m.shortcuts_description({ productName: PRODUCT_NAME })}
 			</SectionHeader.Description>
 		</SectionHeader.Root>
@@ -42,8 +43,6 @@
 			{m.shortcuts_reset_shortcuts()}
 		</Button>
 	</div>
-
-	<Separator class="my-6" />
 
 	<ShortcutTable>
 		{#snippet row(command)}

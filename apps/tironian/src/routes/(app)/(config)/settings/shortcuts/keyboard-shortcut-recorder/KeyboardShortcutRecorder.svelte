@@ -128,19 +128,24 @@
 	}
 </script>
 
+<!-- Vivavoce 4j: the scope reads as a word before the keys, so where a
+     shortcut works is visible without hovering. -->
 {#snippet keyChip(binding: KeyBinding, reach: Reach)}
-	<Kbd.Root>{keyBindingToLabel(binding, os.isApple, os.isWindows)}</Kbd.Root>
 	<span
-		class="inline-flex items-center text-muted-foreground"
+		class="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
 		title={reachLabel(reach)}
 	>
 		{#if reach === 'focused'}
-			<AppWindow class="size-3.5" />
+			<AppWindow class="size-3" />
+			{m.shortcut_scope_in_app({ productName: PRODUCT_NAME })}
 		{:else}
-			<Globe class="size-3.5" />
+			<Globe class="size-3" />
+			{m.shortcut_scope_everywhere()}
 		{/if}
-		<span class="sr-only">{reachLabel(reach)}</span>
 	</span>
+	<Kbd.Root class="font-mono"
+		>{keyBindingToLabel(binding, os.isApple, os.isWindows)}</Kbd.Root
+	>
 {/snippet}
 
 <div class="flex flex-wrap items-center justify-end gap-2">
