@@ -270,8 +270,10 @@ One product name. No sub-brands, no "Tironian Pro", no capitalized feature names
   `apps/desktop` for the Tauri host, and every code identifier that used to
   carry the forked-from project's name moved with them.
 - The bundle identifier is `app.tironian` (`app.tironian.dev` for the dev
-  build). It names the data root on every platform and is pinned equal in
-  Rust, TypeScript and both Tauri configs by a test. The move carried no
+  build). `app.tironian` names the data root on every platform, the dev build
+  included: the dev identifier separates the application (window state,
+  WebView storage, single-instance lock, deep links) and not the root, and
+  tests pin both properties in Rust and TypeScript. The move carried no
   migration: nothing had shipped an installed build under the old identifier
   to migrate.
 - The package scope is `@tironian/*`.

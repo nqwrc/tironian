@@ -156,8 +156,9 @@ impl StagedBlob {
         validate_blob_id(id)?;
         // Each writer owns a distinct staging subtree. Bun writes under
         // `.staging/bun`; native capture writes here, which is what lets the
-        // startup sweep delete this one wholesale without ever mistaking another
-        // runtime's active publication for its own debris.
+        // startup sweep judge every entry by this module's naming rule without
+        // ever mistaking another runtime's active publication for its own
+        // debris. The pid in the name is what the sweep judges by.
         let staging_root = root.join(STAGING_DIRECTORY).join(RUST_STAGING_DIRECTORY);
         std::fs::create_dir_all(&staging_root).map_err(|error| {
             RecorderError::failed(format!(
@@ -297,40 +298,142 @@ impl StagedBlob {
 /// naming it, because any of those would make a recording surviving a host crash
 /// a promise the host would then have to keep.
 ///
-/// Safe to run because `.staging/rust` has exactly one writer and Tironian is
-/// single-instance, so the only process that could own a live staging directory
-/// here is this one, which has not started a recording yet.
+/// Every staged directory is deleted only once the process that staged it has
+/// exited, judged by the pid [`StagedBlob::stage`] embeds in its name. Being
+/// single-instance does not make this process the only writer.
+/// `tauri_plugin_single_instance` locks per bundle identifier, and the dev build
+/// (`app.tironian.dev`) and the installed app (`app.tironian`) are two
+/// identifiers over one data root (`crate::app_data` keeps the root shared on
+/// purpose). Sweeping the whole subtree, as this once did, let a dev launch
+/// delete a production recording's audio while it was being captured. The same
+/// check covers two hosts pointed at one `TIRONIAN_DATA_DIR`, and the macOS
+/// single-instance handshake race.
 ///
-/// That rests on `tauri_plugin_single_instance`, whose macOS socket handshake is
-/// racy enough that two processes launched in the same instant can both survive
-/// it. The window it opens is not reachable: a surviving second process runs
-/// this sweep during its own startup, milliseconds after the first, and the
-/// first cannot have staged a recording in that time because staging begins at
-/// `start_recording`, which needs a person. Probing process liveness through the
-/// pid embedded in each staged directory name would close it, and is not worth
-/// the platform-specific code for a race that cannot lose audio.
+/// A name this module could not have produced has no owner to wait for, so it
+/// is deleted: only this module writes here, and keeping it would leak it
+/// forever. The known limit is pid reuse: a dead host's pid taken by an
+/// unrelated live process keeps that directory until a later launch finds the
+/// pid free. That costs disk, never audio, which is the right way round.
 pub fn delete_stale_staging(app: &AppHandle) {
     let Ok(root) = blobs_directory(app) else {
         return;
     };
-    delete_staging_root(&root);
+    delete_staging_root(&root, process_is_alive);
 }
 
-/// Delete a blobs root's native staging subtree, whatever it holds.
-pub(crate) fn delete_staging_root(root: &Path) {
+/// Delete every entry of a blobs root's native staging subtree whose owning
+/// process `owner_is_alive` reports gone, then the subtree itself if that left
+/// it empty. The probe is a parameter so a test can play a host that died.
+pub(crate) fn delete_staging_root(root: &Path, owner_is_alive: impl Fn(u32) -> bool) {
     let staging_root = root.join(STAGING_DIRECTORY).join(RUST_STAGING_DIRECTORY);
-    match std::fs::remove_dir_all(&staging_root) {
-        Ok(()) => info!(
-            "Deleted stale recorder staging at {}",
-            staging_root.display()
-        ),
+    let entries = match std::fs::read_dir(&staging_root) {
+        Ok(entries) => entries,
         // Nothing to sweep is the ordinary case: a clean exit leaves none.
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => warn!(
-            "Failed to delete stale recorder staging at {}: {error}",
-            staging_root.display()
-        ),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return,
+        Err(error) => {
+            warn!(
+                "Failed to read recorder staging at {}: {error}",
+                staging_root.display()
+            );
+            return;
+        }
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let owner = entry.file_name().to_str().and_then(staged_owner_pid);
+        if let Some(pid) = owner {
+            if owner_is_alive(pid) {
+                info!(
+                    "Kept recorder staging {} owned by live process {pid}",
+                    path.display()
+                );
+                continue;
+            }
+        }
+        let removed = if path.is_dir() {
+            std::fs::remove_dir_all(&path)
+        } else {
+            std::fs::remove_file(&path)
+        };
+        match removed {
+            Ok(()) => info!("Deleted stale recorder staging at {}", path.display()),
+            Err(error) => warn!(
+                "Failed to delete stale recorder staging at {}: {error}",
+                path.display()
+            ),
+        }
     }
+
+    // Fails while a live entry remains, which is exactly when it must stay.
+    let _ = std::fs::remove_dir(&staging_root);
+}
+
+/// The pid in a `{blob id}-{pid}-{nonce}` staging name, or `None` for a name
+/// [`StagedBlob::stage`] could not have produced. Parsed from the right so the
+/// rule does not depend on the blob id's alphabet excluding `-`.
+fn staged_owner_pid(name: &str) -> Option<u32> {
+    let mut parts = name.rsplitn(3, '-');
+    let nonce = parts.next()?;
+    let pid = parts.next()?;
+    let id = parts.next()?;
+    validate_blob_id(id).ok()?;
+    nonce.parse::<u128>().ok()?;
+    pid.parse::<u32>().ok().filter(|pid| *pid != 0)
+}
+
+/// Whether a process with this pid is running. Every answer the OS does not
+/// make certain counts as alive: a wrong "alive" leaks a directory until the
+/// next launch, a wrong "dead" deletes a recording in flight.
+#[cfg(windows)]
+fn process_is_alive(pid: u32) -> bool {
+    use windows::core::HRESULT;
+    use windows::Win32::Foundation::{CloseHandle, ERROR_INVALID_PARAMETER, STILL_ACTIVE};
+    use windows::Win32::System::Threading::{
+        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+
+    // SAFETY: a plain query-rights open; the handle is closed below.
+    let handle = match unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) } {
+        Ok(handle) => handle,
+        // Windows answers an unknown pid with ERROR_INVALID_PARAMETER. Any other
+        // refusal, such as access denied, names a process that exists.
+        Err(error) => return error.code() != HRESULT::from_win32(ERROR_INVALID_PARAMETER.0),
+    };
+    let mut exit_code = 0u32;
+    // SAFETY: `handle` is open with query rights and `exit_code` outlives the call.
+    let queried = unsafe { GetExitCodeProcess(handle, &mut exit_code) };
+    // SAFETY: `handle` came from `OpenProcess` and is not used after this.
+    let _ = unsafe { CloseHandle(handle) };
+    match queried {
+        // An exited process whose handle someone still holds reports its exit
+        // code here, not STILL_ACTIVE, so it correctly counts as gone.
+        Ok(()) => exit_code == STILL_ACTIVE.0 as u32,
+        Err(_) => true,
+    }
+}
+
+/// Whether a process with this pid is running. Every answer the OS does not
+/// make certain counts as alive: a wrong "alive" leaks a directory until the
+/// next launch, a wrong "dead" deletes a recording in flight.
+#[cfg(unix)]
+fn process_is_alive(pid: u32) -> bool {
+    // A pid no `pid_t` can hold names no process.
+    let Ok(pid) = libc::pid_t::try_from(pid) else {
+        return false;
+    };
+    // SAFETY: signal 0 delivers nothing; it only checks existence and permission.
+    if unsafe { libc::kill(pid, 0) } == 0 {
+        return true;
+    }
+    // EPERM is a live process this user cannot signal; only ESRCH means gone.
+    std::io::Error::last_os_error().raw_os_error() != Some(libc::ESRCH)
+}
+
+/// No probe on this platform, so nothing is ever proven dead.
+#[cfg(not(any(windows, unix)))]
+fn process_is_alive(_pid: u32) -> bool {
+    true
 }
 
 /// Decode one canonical local blob to the PCM shape local transcription uses.
@@ -449,6 +552,101 @@ mod tests {
 
         assert!(!staged_directory.exists());
         assert!(!root.path().join(ID).exists());
+    }
+
+    /// The pid of a process that has already exited, obtained by running one
+    /// rather than by guessing a number nothing is using. The child is returned
+    /// too: on Windows its handle keeps the pid from being reused until the
+    /// caller drops it.
+    fn exited_process() -> (std::process::Child, u32) {
+        let mut child = if cfg!(windows) {
+            std::process::Command::new("cmd")
+                .args(["/C", "exit"])
+                .spawn()
+        } else {
+            std::process::Command::new("true").spawn()
+        }
+        .expect("spawn a process that exits at once");
+        child.wait().expect("wait for the process to exit");
+        let pid = child.id();
+        (child, pid)
+    }
+
+    /// The sweep's contract with the OS probe, pinned against real processes:
+    /// this one is alive and one that has exited is not.
+    #[test]
+    fn the_liveness_probe_tells_a_live_process_from_an_exited_one() {
+        assert!(process_is_alive(std::process::id()));
+        let (_child, pid) = exited_process();
+        assert!(!process_is_alive(pid));
+    }
+
+    /// Dev and production are two single-instance applications over one data
+    /// root, so the sweeping process is not the only possible writer: a staged
+    /// capture whose process is alive belongs to a recording in flight and
+    /// survives, while one whose process has exited is debris and goes.
+    #[test]
+    fn the_sweep_keeps_a_live_process_staging_and_deletes_a_dead_one() {
+        let root = tempfile::tempdir().expect("a blobs root");
+        let live = StagedBlob::stage(root.path().to_path_buf(), ID).expect("stage");
+        File::create(live.data_path()).expect("create the live data file");
+
+        let (_child, dead_pid) = exited_process();
+        let staging_root = root
+            .path()
+            .join(STAGING_DIRECTORY)
+            .join(RUST_STAGING_DIRECTORY);
+        let dead = staging_root.join(format!("blob_bbbbbbbbbbbbbbbbbbbbb-{dead_pid}-1"));
+        std::fs::create_dir(&dead).expect("stage a dead process's capture");
+        File::create(dead.join(DATA_FILE)).expect("create the dead data file");
+
+        delete_staging_root(root.path(), process_is_alive);
+
+        assert!(
+            live.data_path().exists(),
+            "a recording in flight must keep its staged audio"
+        );
+        assert!(!dead.exists(), "an exited process's capture is debris");
+        live.publish()
+            .expect("the surviving capture still publishes");
+    }
+
+    /// Only this module writes `.staging/rust`, so a name it could not have
+    /// produced has no owner to wait for. Keeping it would leak it forever.
+    #[test]
+    fn the_sweep_deletes_what_this_module_could_not_have_named() {
+        let root = tempfile::tempdir().expect("a blobs root");
+        let staging_root = root
+            .path()
+            .join(STAGING_DIRECTORY)
+            .join(RUST_STAGING_DIRECTORY);
+        std::fs::create_dir_all(&staging_root).expect("create the staging root");
+        let own_pid = std::process::id();
+        let malformed = [
+            format!("not-a-blob-{own_pid}-1"),
+            format!("{ID}-0-1"),
+            format!("{ID}-{own_pid}"),
+            format!("{ID}-{own_pid}-not-a-nonce"),
+        ];
+        for name in &malformed {
+            std::fs::create_dir(staging_root.join(name)).expect("create a malformed entry");
+        }
+        File::create(staging_root.join("stray-file")).expect("create a stray file");
+
+        delete_staging_root(root.path(), |_| true);
+
+        assert!(
+            !staging_root.exists(),
+            "every malformed entry goes, and the emptied staging root with them"
+        );
+    }
+
+    #[test]
+    fn staged_names_parse_back_to_their_owner() {
+        assert_eq!(staged_owner_pid(&format!("{ID}-4242-17")), Some(4242));
+        assert_eq!(staged_owner_pid(&format!("{ID}-0-17")), None);
+        assert_eq!(staged_owner_pid(&format!("{ID}-4242")), None);
+        assert_eq!(staged_owner_pid("blob_short-4242-17"), None);
     }
 
     #[test]

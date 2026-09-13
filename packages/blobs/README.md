@@ -60,12 +60,14 @@ Bun uploads stage under `.staging/bun/`; the Rust recorder stages native
 captures under `.staging/rust/`. Each operation removes its own staging
 directory when it fails.
 
-The Rust recorder additionally deletes `.staging/rust/` wholesale at host
-startup, because a recording is now written progressively and a host that dies
-mid-capture leaves a partial WAV behind (ADR-0184). That sweep is safe only
-because the subtree has exactly one writer and Tironian is single-instance, so
-no live publication can be in it. It deletes and never promotes: a partial
-capture is not a blob and startup does not make it one. Bun has no equivalent
+The Rust recorder additionally sweeps `.staging/rust/` at host startup,
+because a recording is written progressively and a host that dies mid-capture
+leaves a partial WAV behind (ADR-0184). It deletes a staged capture only when
+the process whose pid is embedded in its name has exited. Single-instance is
+not enough: it holds per bundle identifier, and the dev build and the installed
+app are two identifiers over one data root, so another host's recording can be
+in flight here. It deletes and never promotes: a partial capture is not a blob
+and startup does not make it one. Bun has no equivalent
 sweep, and adding one would need the exclusive writer lease this deliberately
 does not require.
 

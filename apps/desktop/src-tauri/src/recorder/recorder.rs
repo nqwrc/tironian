@@ -2276,7 +2276,9 @@ mod tests {
         let abandoned = capture_holding(&root, abandoned_id, &tone(TEST_RATE, 1));
         std::mem::forget(abandoned);
 
-        crate::recorder::blob::delete_staging_root(root.path());
+        // The capture was staged by this test process, which is alive; the host
+        // being simulated here is not, so its pid is reported dead.
+        crate::recorder::blob::delete_staging_root(root.path(), |_| false);
 
         assert!(
             root.path().join(published_id).join("data").exists(),

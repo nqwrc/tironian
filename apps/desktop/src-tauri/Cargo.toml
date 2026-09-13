@@ -65,6 +65,11 @@ audiopus = "0.3.0-rc.0"
 windows = { version = "0.62", features = ["Media_Control", "Foundation", "Foundation_Collections", "Win32_Security", "Win32_System_Com", "Win32_System_DataExchange", "Win32_System_Threading", "Win32_UI_Accessibility", "Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
 winreg = "0.55"
 
+[target.'cfg(unix)'.dependencies]
+# `kill(pid, 0)`: the recorder's startup sweep asks whether the process that
+# staged a capture is still alive before deleting it.
+libc = "0.2"
+
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
 # ggml-vulkan requires SPIRV-Headers' CMake package. The Vulkan SDK provides
 # the loader but not that package, so Windows x64 builders must install
