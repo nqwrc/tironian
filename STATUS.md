@@ -16,7 +16,7 @@ stale-after-days: 30
 
 ## next
 - Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
-- `feature/home-brand-tokens`: Home loads the dictation window's brand layer, `apps/tironian/src/brand.css`, through the `@tironian/app/brand.css` export; built Home body computes `oklch(0.2 0.006 65)` (was shadcn navy `oklch(0.129 0.042 264.695)`). Home also takes the brand typefaces: the host CSP now admits `font-src 'self' data:`, and under the real host policy Instrument Sans and IBM Plex Mono load with 0 errored faces. Cost: Home's single-file build went from 729.81 kB to 1,168.61 kB, all subsets inlined. The sidecar end-to-end smoke fails on Windows with exit 143 after SIGTERM, identically with the change stashed.
+- `feature/home-brand-tokens`, PR #2 (the CSP `font-src` change kept by decision): Home loads the dictation window's brand layer, `apps/tironian/src/brand.css`, through the `@tironian/app/brand.css` export; built Home body computes `oklch(0.2 0.006 65)` (was shadcn navy `oklch(0.129 0.042 264.695)`). Home also takes the brand typefaces: the host CSP now admits `font-src 'self' data:`, and under the real host policy Instrument Sans and IBM Plex Mono load with 0 errored faces. Cost: Home's single-file build went from 729.81 kB to 1,168.61 kB, all subsets inlined. The sidecar end-to-end smoke fails on Windows with exit 143 after SIGTERM, identically with the change stashed.
 - Follow-ups, not defects: ADR-number citations in comments name design records that no longer ship; the `packages/sqlite` browser adapter has no consumer; seven sound files have no recorded provenance; no generated third-party notices file ships with the installers.
 
 ## blockers
