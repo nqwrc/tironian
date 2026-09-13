@@ -97,6 +97,12 @@ const DEVICE_DEFINITIONS = {
 		DEFAULT_BITRATE_KBPS,
 	),
 
+	// ── First run ─────────────────────────────────────────────────────
+	// Whether this device has been through the Vivavoce 4e onboarding. Device-
+	// local on purpose: a settings file carried to a new machine must not skip
+	// the microphone question that machine has never been asked.
+	'onboarding.completed': defineEntry(type('boolean'), false),
+
 	// Local transcription model selection and unload policy are deliberately
 	// absent: the host owns the one active local model and its lifecycle, and
 	// Settings administers both through the host (ADR-0245). They are still device-local,

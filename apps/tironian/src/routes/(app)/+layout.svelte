@@ -30,6 +30,7 @@
 	import BottomNav from './_components/BottomNav.svelte';
 	import ContentShell from './_components/ContentShell.svelte';
 	import GlobalDialogs from './_components/GlobalDialogs.svelte';
+	import Onboarding from './_components/Onboarding.svelte';
 	import VerticalNav from './_components/VerticalNav.svelte';
 
 	const log = createLogger('tironian/app-layout');
@@ -84,6 +85,8 @@
 
 			<GlobalDialogs />
 			<DictationIndicator />
+			<!-- First run only (Vivavoce 4e); gates itself on a device flag. -->
+			<Onboarding />
 		</Tooltip.Provider>
 	</TironianUiSessionProvider>
 {:catch error}
