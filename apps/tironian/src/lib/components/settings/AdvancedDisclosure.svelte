@@ -7,7 +7,9 @@
 	// The settings "Advanced" disclosure: a quiet toggle that hides the secondary
 	// fields the common path should skip. Owns the muted trigger, the chevron, and
 	// its open-state rotation, so every settings surface renders the exact same
-	// affordance from one place instead of restating the class stack.
+	// affordance from one place instead of restating the class stack. `label`
+	// renames the trigger where "Advanced" would not say what is inside (a sound
+	// list, a setup guide); the affordance stays the same.
 	//
 	// This composes the headless `@tironian/ui` Collapsible by hand, which is the
 	// shadcn-svelte pattern for a bespoke labeled disclosure: Collapsible ships
@@ -15,7 +17,10 @@
 	// coordinated set of sections, not a lone toggle. It stays app-local until a
 	// second app grows the same idiom; the other collapsibles in the monorepo
 	// (sidebar sections, search groups, tree folders) are different affordances.
-	let { children }: { children: Snippet } = $props();
+	let {
+		label = m.advanced_disclosure_advanced(),
+		children,
+	}: { label?: string; children: Snippet } = $props();
 </script>
 
 <Collapsible.Root>
@@ -23,7 +28,7 @@
 		class="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm [&[data-state=open]>svg]:rotate-180"
 	>
 		<ChevronDownIcon class="size-4 transition-transform" />
-		{m.advanced_disclosure_advanced()}
+		{label}
 	</Collapsible.Trigger>
 	<Collapsible.Content class="pt-3">
 		{@render children()}

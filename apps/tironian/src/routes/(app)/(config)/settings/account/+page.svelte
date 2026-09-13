@@ -14,7 +14,7 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { resultMutationOptions } from 'wellcrafted/query';
-	import { SettingSwitch } from '$lib/components/settings';
+	import { AdvancedDisclosure, SettingSwitch } from '$lib/components/settings';
 	import { logAnalyticsEvent } from '$lib/operations/analytics';
 	import { report } from '$lib/report';
 	import { getTironianApp } from '$lib/app/context';
@@ -335,6 +335,7 @@
 					}}
 				/>
 
+				<AdvancedDisclosure label={m.account_what_gets_logged()}>
 				<div class="grid gap-x-8 gap-y-4 sm:grid-cols-2">
 					<div class="space-y-1.5">
 						<p class="text-sm font-medium">{m.account_events_we_log()}</p>
@@ -378,6 +379,7 @@
 						Aptabase
 					</Link>{m.account_the_service_that_receives_them()}
 				</Field.Description>
+				</AdvancedDisclosure>
 			</Field.Group>
 		</Field.Set>
 	</Field.Group>

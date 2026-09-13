@@ -34,7 +34,7 @@
 		/>
 	</div>
 
-	<ul class="-mx-3 flex flex-col" aria-label={m.shortcut_table_command()}>
+	<ul class="-mx-3 flex flex-col" aria-label={m.settings_title_shortcuts()}>
 		{#each filteredCommands as command (command.id)}
 			<li
 				class="flex items-center justify-between gap-4 rounded-md px-3 py-1.5 transition-colors duration-(--motion-micro) hover:bg-accent/50"
