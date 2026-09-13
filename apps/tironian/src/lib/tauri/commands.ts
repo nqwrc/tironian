@@ -121,6 +121,7 @@ export type {
 	EndedReason,
 	GlobalShortcutRegistration,
 	HostRecording,
+	ModifierHoldRegistration,
 	LocalTranscriptionReadiness,
 	MicrophonePermission,
 	RecorderError as IpcRecorderError,

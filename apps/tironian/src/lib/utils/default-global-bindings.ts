@@ -1,6 +1,7 @@
 /**
- * The global chords Tironian ships with, as a function of the one bit that
- * decides them: whether this device uses Apple modifiers. Pure and DOM-free
+ * The global gestures Tironian ships with, as a function of the platform that
+ * decides them: Apple modifiers, Windows (the one host that can see a
+ * modifier-only hold), or everything else. Pure and DOM-free
  * like its neighbours `key-binding.ts` and `reserved-shortcuts.ts`, so the
  * table a build actually ships is the table `reserved-shortcuts.test.ts` runs
  * against the reserved-chord policy, rather than a hand copy that can drift
@@ -13,16 +14,27 @@
 
 import type { KeyBinding } from './key-binding';
 
+/** Which row of the shipped table a device gets. */
+export type GlobalBindingPlatform = 'apple' | 'windows' | 'other';
+
 /**
  * The shipped global gestures, not mnemonic app hotkeys. These are plain chords
  * the `tauri-plugin-global-shortcut` backend registers with no Accessibility
- * grant, the only global-shortcut backend on every platform (ADR-0117).
+ * grant (ADR-0117), except the Windows hold: Ctrl+Win, held, with no key. That
+ * one comes from the Windows host's keyboard hook, because `RegisterHotKey`
+ * has no modifier-only form and a hold is the gesture push-to-talk wants: two
+ * keys under the left hand, nothing to aim for (ADR-0246).
  *
  * ```
  *            hold                toggle             cancel
  *   Apple    Ctrl+Shift+Space    Cmd+Shift+Space    Cmd+.
+ *   Windows  Ctrl+Win            Ctrl+Shift+Space   Ctrl+Shift+.
  *   other    Ctrl+Alt+Space      Ctrl+Shift+Space   Ctrl+Shift+.
  * ```
+ *
+ * A device that stored Ctrl+Alt+Space before Ctrl+Win shipped keeps it: a
+ * stored binding outranks the default, so the new hold reaches only devices
+ * that never picked a push-to-talk gesture of their own.
  *
  * Every binding is distinct within a platform, which is the invariant that
  * matters: Ctrl+Shift+Space is the Apple hold and the non-Apple toggle, and
@@ -68,10 +80,14 @@ import type { KeyBinding } from './key-binding';
  * modifier so it is safe to register globally. Recipe gestures ship unbound:
  * opt-in only.
  */
-export function defaultGlobalBindings(isApple: boolean) {
-	const hold: KeyBinding['modifiers'] = isApple
-		? ['ctrl', 'shift']
-		: ['ctrl', 'alt'];
+export function defaultGlobalBindings(platform: GlobalBindingPlatform) {
+	const isApple = platform === 'apple';
+	const hold: KeyBinding =
+		platform === 'apple'
+			? { modifiers: ['ctrl', 'shift'], keys: ['space'] }
+			: platform === 'windows'
+				? { modifiers: ['ctrl', 'meta'], keys: [] }
+				: { modifiers: ['ctrl', 'alt'], keys: ['space'] };
 
 	const toggle: KeyBinding['modifiers'] = isApple
 		? ['meta', 'shift']
@@ -82,7 +98,7 @@ export function defaultGlobalBindings(isApple: boolean) {
 		: ['ctrl', 'shift'];
 
 	return {
-		pushToTalk: { modifiers: hold, keys: ['space'] },
+		pushToTalk: hold,
 		toggleManualRecording: { modifiers: toggle, keys: ['space'] },
 		cancelRecording: { modifiers: cancel, keys: ['dot'] },
 		toggleVadRecording: null,

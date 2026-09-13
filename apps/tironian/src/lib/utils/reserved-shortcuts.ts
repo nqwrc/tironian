@@ -8,12 +8,14 @@
  * - A short list of common OS/app chords (reload, clipboard, undo/redo, close,
  *   quit, app switch, screenshots, system search) is refused outright.
  * - A gesture must be a registrable plugin chord (one key plus a non-Fn
- *   modifier); a bare key, an Fn hold, and a modifier-only hold are refused
- *   (ADR-0117).
+ *   modifier); a bare key and an Fn hold are refused (ADR-0117). A
+ *   modifier-only hold passes only where the caller says the host can detect
+ *   one, which today is Windows (ADR-0246).
  */
 
 import {
 	type BindingLike,
+	isModifierHold,
 	isRegistrableChord,
 	type Modifier,
 } from './key-binding';
@@ -108,8 +110,14 @@ function matchesReserved(binding: BindingLike, chord: ReservedChord): boolean {
  *
  * An empty binding (no modifiers, no keys) is treated as "unset" and passes;
  * clearing a gesture is the caller's job, not this check's.
+ *
+ * `modifierHolds` says whether this host can detect a modifier-only hold. The
+ * table stays platform-blind, so the platform arrives here as a flag.
  */
-export function validateGlobalBinding(binding: BindingLike): string | null {
+export function validateGlobalBinding(
+	binding: BindingLike,
+	{ modifierHolds = false }: { modifierHolds?: boolean } = {},
+): string | null {
 	const hasNothing =
 		binding.modifiers.length === 0 && binding.keys.length === 0;
 	if (hasNothing) return null;
@@ -120,14 +128,20 @@ export function validateGlobalBinding(binding: BindingLike): string | null {
 		}
 	}
 
-	// A global shortcut must be a registrable plugin chord. Refuse a bare key, an
-	// Fn hold, or a modifier-only hold rather than store a gesture that silently
-	// never registers (ADR-0117).
+	if (isModifierHold(binding)) {
+		return modifierHolds
+			? null
+			: 'Holding only modifiers works as a global shortcut on Windows alone. Add a key.';
+	}
+
+	// Otherwise a global shortcut must be a registrable plugin chord. Refuse a
+	// bare key or an Fn hold rather than store a gesture that silently never
+	// registers (ADR-0117).
 	if (!isRegistrableChord(binding)) {
 		if (binding.modifiers.length === 0) {
 			return 'Add a modifier so the gesture cannot fire on an ordinary keypress.';
 		}
-		return 'Only a chord works as a global shortcut: one key with a modifier. Fn and modifier-only holds are not supported.';
+		return 'Only a chord works as a global shortcut: one key with a modifier. Fn and single-modifier holds are not supported.';
 	}
 
 	return null;

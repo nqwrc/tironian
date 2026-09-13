@@ -31,7 +31,9 @@ const globalBinding = type({
 // reserved-chord policy instead of a restatement of it. Exported because
 // `platform/system-shortcuts.tauri.ts` reads it too: reset writes these values
 // back, and push tells a default apart from a chord the user picked.
-export const DEFAULT_GLOBAL_BINDINGS = defaultGlobalBindings(os.isApple);
+export const DEFAULT_GLOBAL_BINDINGS = defaultGlobalBindings(
+	os.isApple ? 'apple' : os.isWindows ? 'windows' : 'other',
+);
 
 // ── Per-key definitions ──────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import { on } from 'svelte/events';
 import {
 	domCodeToKey,
 	eventModifiers,
+	isModifierHold,
 	type Key,
 	type KeyBinding,
 	type Modifier,
@@ -13,9 +14,11 @@ const CAPTURE_WINDOW_MS = 300; // Time to wait for additional keys in a combinat
  * The shared physical chord recorder: captures a gesture straight from the
  * webview's `keydown` stream in physical-key space (modifier flags plus a
  * physical `.code`), producing a `KeyBinding`. It can only see what the browser
- * exposes, so Fn and modifier-only holds are invisible here; that is fine, since
- * they are refused as global shortcuts anyway (ADR-0117). The global recorder
- * accepts a chord; the in-app recorder accepts whatever it yields.
+ * exposes, so an Fn hold is invisible here; that is fine, since it is refused
+ * as a global shortcut anyway (ADR-0117). A modifier-only hold is captured only
+ * when the owner passes `acceptModifierHolds` (Windows push-to-talk,
+ * ADR-0246). The global recorder accepts a chord; the in-app recorder accepts
+ * whatever it yields.
  *
  * The completion model: each new key extends a 300ms window, and the gesture
  * commits when every key releases (immediate) or the window expires (the safety
@@ -33,9 +36,12 @@ const CAPTURE_WINDOW_MS = 300; // Time to wait for additional keys in a combinat
 export function createChordRecorder({
 	onCapture,
 	onProgress,
+	acceptModifierHolds = () => false,
 }: {
 	onCapture: (binding: KeyBinding) => void;
 	onProgress: (binding: KeyBinding) => void;
+	/** Read at each release, so the owner can answer from reactive state. */
+	acceptModifierHolds?: () => boolean;
 }) {
 	// Internal control-flow guard only (the owner tracks its own session state), so
 	// a plain bool, not reactive.
@@ -65,12 +71,16 @@ export function createChordRecorder({
 		// Stay listening: the owner decides whether to accept (and stop us) or
 		// refuse a capture; reset so the next attempt starts clean either way.
 		reset();
-		// The webview recorder yields only bare keys and chords. A capture with no
-		// non-modifier key (a lone modifier pressed, or every non-modifier released
-		// past the window leaving only modifiers held) is a modifier-only hold,
-		// which is refused (ADR-0117), so it never commits here: a stored
-		// modifier-only binding would fire on every press of that modifier in-app.
-		if (binding.keys.length > 0) onCapture(binding);
+		// A capture with no non-modifier key (a lone modifier pressed, or every
+		// non-modifier released past the window leaving only modifiers held) is a
+		// modifier-only hold. It commits only where the owner accepts holds: a
+		// stored modifier-only binding anywhere else would fire on every press of
+		// that modifier in-app.
+		if (
+			binding.keys.length > 0 ||
+			(acceptModifierHolds() && isModifierHold(binding))
+		)
+			onCapture(binding);
 	}
 
 	// Quiet for CAPTURE_WINDOW_MS after the last key change = the gesture is done.
@@ -105,7 +115,14 @@ export function createChordRecorder({
 
 	function onKeyup(e: KeyboardEvent) {
 		heldCodes.delete(e.code);
-		if (heldCodes.size === 0) commit();
+		// A hold completes on its first release. Releasing Win can open Start
+		// and blur the window, which would reset the capture before the last
+		// key-up arrives.
+		const heldHold =
+			capturedKey === null &&
+			acceptModifierHolds() &&
+			isModifierHold({ modifiers: capturedModifiers, keys: [] });
+		if (heldCodes.size === 0 || heldHold) commit();
 	}
 
 	function start() {

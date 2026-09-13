@@ -8,4 +8,5 @@ const current = osType();
 export const os: Os = {
 	isApple: current === 'macos',
 	isLinux: current === 'linux',
+	isWindows: current === 'windows',
 };
