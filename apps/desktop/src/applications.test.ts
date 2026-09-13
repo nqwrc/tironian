@@ -1,5 +1,5 @@
 /**
- * What Home lists as launchable (ADR-0189).
+ * The compiled applications the host serves (ADR-0245).
  */
 
 import { describe, expect, test } from 'bun:test';
@@ -17,11 +17,6 @@ describe('COMPILED_APPLICATIONS', () => {
 		const [application] = COMPILED_APPLICATIONS;
 		expect(Object.keys(application ?? {}).sort()).toEqual(['id', 'title']);
 	});
-
-	test('Home is not an application a person can open', () => {
-		const listed = new Set(COMPILED_APPLICATIONS.map(({ id }) => id));
-		expect(listed.has('home')).toBe(false);
-	});
 });
 
 /**
@@ -32,11 +27,8 @@ describe('COMPILED_APPLICATIONS', () => {
  * with no route, shows up.
  */
 describe('built-in route coverage', () => {
-	test('each built-in route is Home or a compiled application', () => {
-		const served = new Set<string>([
-			BUILT_IN_ROUTES.home.id,
-			...COMPILED_APPLICATIONS.map(({ id }) => id),
-		]);
+	test('each built-in route is a compiled application', () => {
+		const served = new Set(COMPILED_APPLICATIONS.map(({ id }) => id));
 		expect(
 			Object.keys(BUILT_IN_ROUTES).filter((id) => !served.has(id)),
 		).toEqual([]);

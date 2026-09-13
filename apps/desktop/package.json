@@ -10,8 +10,7 @@
 	"scripts": {
 		"dev": "bun run dev:desktop",
 		"dev:desktop": "tauri dev --config src-tauri/tauri.dev.conf.json",
-		"build": "bun run clean:dist && bun run build:home && bun run build:dictation",
-		"build:home": "vite build",
+		"build": "bun run clean:dist && bun run build:dictation",
 		"build:sidecar": "bun run scripts/build-sidecar.ts",
 		"build:dictation": "bun run --cwd ../tironian build:tironian-host",
 		"clean:dist": "bun run scripts/clean-dist.ts",
@@ -19,33 +18,20 @@
 		"desktop:build": "tauri build",
 		"test": "bun test",
 		"tauri": "tauri",
-		"typecheck": "bun run typecheck:home && bun run --cwd ../tironian typecheck",
-		"typecheck:home": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
+		"typecheck": "bun run typecheck:host && bun run --cwd ../tironian typecheck",
+		"typecheck:host": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@tironian/blobs": "workspace:*",
 		"@tironian/constants": "workspace:*",
-		"@tironian/data": "workspace:*",
-		"@tironian/field": "workspace:*",
-		"@tironian/ui": "workspace:*",
-		"@tironian/app": "workspace:*",
-		"@tauri-apps/api": "catalog:",
 		"hono": "catalog:",
 		"mime": "catalog:",
 		"wellcrafted": "catalog:"
 	},
 	"devDependencies": {
-		"@sveltejs/vite-plugin-svelte": "catalog:",
-		"@tailwindcss/vite": "catalog:",
 		"@tauri-apps/cli": "catalog:",
 		"@types/bun": "catalog:",
-		"fake-indexeddb": "^6.2.5",
-		"svelte": "catalog:",
-		"svelte-check": "catalog:",
-		"tailwindcss": "catalog:",
-		"typescript": "catalog:",
-		"vite": "catalog:",
-		"vite-plugin-singlefile": "catalog:"
+		"typescript": "catalog:"
 	},
 	"license": "AGPL-3.0-or-later"
 }

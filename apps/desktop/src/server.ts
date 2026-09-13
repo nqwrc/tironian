@@ -11,19 +11,15 @@ import type { BunBlobStore } from '@tironian/blobs/bun';
 import { LOCAL_BLOB_PATH } from '@tironian/blobs/webview';
 import { type Context, Hono, type Next } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import {
-	BOOTSTRAP_ROUTE,
-	BUILT_IN_ROUTES,
-	LOCAL_BLOB_ROUTE,
-} from './routes.ts';
+import { BOOTSTRAP_ROUTE, LOCAL_BLOB_ROUTE } from './routes.ts';
 import type { TironianStaticAssets } from './static-assets.ts';
 
-export type HomeServerOptions = {
+export type HostServerOptions = {
 	/** Exact active origin, including the Rust-selected explicit port. */
 	origin: string;
 	/** Per-launch credential received from Rust over stdin. */
 	launchToken: string;
-	/** Home's document and every compiled application's release build. */
+	/** Every compiled application's release build. */
 	staticAssets: TironianStaticAssets;
 	/** Canonical device-local bytes shared by every trusted app window. */
 	blobs: BunBlobStore;
@@ -33,24 +29,23 @@ const SESSION_COOKIE = 'tironian_session';
 const MAX_BROWSER_SESSIONS = 32;
 const SESSION_SHELL = `<!doctype html><html><head><meta charset="utf-8"><title>Tironian</title><script>window.__TIRONIAN_SESSION_READY__.then(() => window.location.reload())</script></head><body></body></html>`;
 
-export function createHomeServer({
+export function createHostServer({
 	origin,
 	launchToken,
 	staticAssets,
 	blobs,
-}: HomeServerOptions) {
+}: HostServerOptions) {
 	if (launchToken === '') {
 		throw new Error('Tironian refuses to serve without a launch token.');
 	}
 	const activeUrl = validateOrigin(origin);
 	const activeHost = activeUrl.host;
 	const sessionHashes = new Set<string>();
-	const homePage = staticAssets.homePage;
 	// A compiled application is a built SPA below `/apps/<id>/` whose document
 	// the host serves gated behind the browser session.
 	const servedApps = staticAssets.applications;
 	const csp = contentSecurityPolicy(
-		[homePage, ...servedApps.map(({ page }) => page), SESSION_SHELL].join('\n'),
+		[...servedApps.map(({ page }) => page), SESSION_SHELL].join('\n'),
 	);
 	const app = new Hono();
 
@@ -103,12 +98,6 @@ export function createHomeServer({
 		if (!hasBrowserSession(c)) return c.text('Unauthorized', 401);
 		await next();
 	};
-	// Home: one document, no asset tree behind it.
-	app.get(BUILT_IN_ROUTES.home.pattern, (c) => {
-		c.header('cache-control', 'no-store');
-		if (!hasBrowserSession(c)) return c.html(SESSION_SHELL);
-		return c.html(homePage);
-	});
 	// One contained asset tree each, with the document served from memory so
 	// every client route lands on the stamped page.
 	for (const application of servedApps) {
@@ -341,11 +330,6 @@ function contentSecurityPolicy(page: string): string {
 		// refuses the compile and the recording trigger dies mid-boot.
 		`script-src 'self' 'wasm-unsafe-eval' ${scriptHashes.join(' ')}`,
 		"style-src 'self' 'unsafe-inline'",
-		// `data:` is how Home gets its typefaces at all: it is one self-contained
-		// document, so its build inlines every font file it bundles. A font
-		// cannot run code, and a stylesheet able to name one is already admitted
-		// by the line above.
-		"font-src 'self' data:",
 		"connect-src 'self' ipc: http://ipc.localhost",
 		"img-src 'self' data: blob:",
 		"media-src 'self' data: blob:",

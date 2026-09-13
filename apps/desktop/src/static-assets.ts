@@ -44,16 +44,15 @@ type ServedSpa = {
 export type CompiledApplicationAssets = ServedSpa;
 
 export type TironianStaticAssets = {
-	homePage: string;
 	/** Compiled applications, in the order the release declared them. */
 	applications: CompiledApplicationAssets[];
 };
 
 /**
- * Load Home's document and the build of every compiled application this
- * release declares. Unlike catalog derivation, a declared application that did
- * not build is an error rather than an omission: the release promised it, Home
- * will list it, and a 404 behind a listed row is worse than refusing to start.
+ * Load the build of every compiled application this release declares. A
+ * declared application that did not build is an error rather than an omission:
+ * the release promised it, and a window with nothing behind it is worse than
+ * refusing to start.
  */
 export async function loadStaticAssets(
 	appsDist: string,
@@ -66,14 +65,8 @@ export async function loadStaticAssets(
 	}
 
 	const root = await requiredDirectory(appsDist, 'applications asset root');
-	const homeIndex = await requiredFile(
-		root,
-		resolve(root, 'home', 'index.html'),
-		'Home index',
-	);
 
 	return {
-		homePage: await Bun.file(homeIndex).text(),
 		applications: await Promise.all(
 			applications.map(async ({ id, title }) => {
 				const appRoot = await requiredContainedDirectory(

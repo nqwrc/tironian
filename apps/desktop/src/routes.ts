@@ -29,14 +29,12 @@ function builtInRoute<const TId extends string>(id: TId, title: string) {
 }
 
 export const BUILT_IN_ROUTES = {
-	home: builtInRoute('home', 'Home'),
 	dictation: builtInRoute('dictation', 'Tironian'),
 } as const;
 
 export type BuiltInRouteId = keyof typeof BUILT_IN_ROUTES;
 
 export const BOOTSTRAP_ROUTE = route('/_tironian/bootstrap');
-export const HOME_ROUTE = BUILT_IN_ROUTES.home;
 export const DICTATION_ROUTE = BUILT_IN_ROUTES.dictation;
 export const LOCAL_BLOB_ROUTE = {
 	pattern: `${LOCAL_BLOB_PATH}/:blobId`,

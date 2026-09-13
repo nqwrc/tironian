@@ -41,8 +41,8 @@
 name: Tironian desktop build
 
 # No `paths:` filter: `beforeBuildCommand` runs `bun run build:desktop`, which
-# builds the Home frontend plus the Dictation bundle and compiles the Bun
-# sidecar, so almost any workspace package can break it.
+# builds the Dictation bundle and compiles the Bun sidecar, so almost any
+# workspace package can break it.
 on:
   pull_request:
   push:
@@ -184,7 +184,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       # tauri.conf.json's `beforeBuildCommand` is `bun run build:desktop`, which
-      # builds Home and Dictation, then compiles the Bun sidecar that
+      # builds Dictation, then compiles the Bun sidecar that
       # `externalBin` requires.
       - name: Build the desktop app
         run: bun run --cwd apps/desktop desktop:build
@@ -261,7 +261,7 @@ jobs:
           # every macOS bundle before this check shipped without apps-dist and
           # could not start. Assert the files the host needs at launch.
           missing=0
-          for f in apps-dist/home/index.html apps-dist/dictation/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
+          for f in apps-dist/dictation/index.html recorder-state-icons/studio_microphone.png recorder-state-icons/red_large_square.png; do
             test -f "$APP/Contents/Resources/$f" || { echo "::error::bundle is missing Contents/Resources/$f"; missing=1; }
           done
           ls -R "$APP/Contents/Resources" | head -40
@@ -276,8 +276,8 @@ jobs:
       # off a green build:
       #   1. the bundled executable is still running 45 s after launch;
       #   2. the loopback host answers HTTP on 127.0.0.1:41730;
-      #   3. the dictation window (titled "Tironian") is on screen: launch opens
-      #      it by default now, not Home;
+      #   3. the dictation window (titled "Tironian"), the app's only window
+      #      (ADR-0245), is on screen;
       #   4. no crash report for it appeared while it ran.
       # Known limits of a runner, not failures: no microphone grant (TCC), no
       # local model downloaded, so no dictation round trip is attempted.
