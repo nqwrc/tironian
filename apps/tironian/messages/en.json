@@ -317,6 +317,7 @@
 	"autostart_switch_automatically_open_app_when": "Automatically open {productName} when you log in",
 	"group_nav_settings_navigation": "Settings navigation",
 	"group_nav_account_data": "Data",
+	"group_nav_recording": "Recording",
 	"account_share_anonymized_events": "Share anonymized events",
 	"account_export_failed": "Export failed",
 	"account_nothing_to_export": "Nothing to export",
