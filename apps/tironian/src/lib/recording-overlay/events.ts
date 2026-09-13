@@ -17,10 +17,12 @@ import type {
 /** Stable Tauri label for the secondary recording pill webview. */
 export const RECORDING_OVERLAY_WINDOW_LABEL = 'recording-overlay';
 
-/** main -> overlay: what the shared recording pill should display. */
-export const recordingOverlayStatus = defineWindowEvent<RecordingPillStatus>(
-	'recording-overlay:status',
-);
+/**
+ * main -> overlay: what the shared recording pill should display, or `null`
+ * for the resting line (Vivavoce 4a draws idle; it is not a hidden window).
+ */
+export const recordingOverlayStatus =
+	defineWindowEvent<RecordingPillStatus | null>('recording-overlay:status');
 
 /** overlay -> main: the user invoked a recording pill control. */
 export const recordingOverlayAction = defineWindowEvent<RecordingPillAction>(

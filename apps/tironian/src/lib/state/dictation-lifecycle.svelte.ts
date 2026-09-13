@@ -76,13 +76,14 @@ export type DictationLifecycleError = InferErrors<
 	typeof DictationLifecycleError
 >;
 
-// How long a clean delivery's checkmark flashes before the outcome retires to
-// `none`. Sub-second: the transcribed text landing is the real receipt, so this
-// is a glance confirming it, not a notice to read. Only the clean `output` reach
+// How long a clean delivery's checkmark holds before the outcome retires to
+// `none`: 1.2s, Vivavoce 4a's delivered state. Still a glance, since the text
+// landing is the real receipt, but long enough to catch from the corner of the
+// eye before the pill settles back to its resting line. Only the clean `output` reach
 // flashes; a reduced reach persists instead (see `markDelivered`). (A live VAD
 // session projects `delivered` to no pip, so this flash only ever shows once
 // capture is idle.)
-const DELIVERED_FLASH_MS = 900;
+const DELIVERED_FLASH_MS = 1200;
 
 // How long a failure holds the pill before the outcome retires to `none`.
 // Longer than a delivery's glance, because a failure is unexpected and there is

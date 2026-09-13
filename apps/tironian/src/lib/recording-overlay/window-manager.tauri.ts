@@ -122,7 +122,7 @@ const ensureReadyListener = once(
 	(): Promise<void> =>
 		recordingOverlayReady
 			.listen(() => {
-				if (latestStatus) void recordingOverlayStatus.emit(latestStatus);
+				void recordingOverlayStatus.emit(latestStatus);
 				if (pendingRepositionAnchor) {
 					void recordingOverlayEnterReposition.emit({
 						anchor: pendingRepositionAnchor,
@@ -185,14 +185,9 @@ async function applyOverlayStatus(
 	const isSuperseded = () => status !== latestStatus || repositionActive;
 	if (isSuperseded()) return;
 
-	if (!status) {
-		const overlay = await WebviewWindow.getByLabel(
-			RECORDING_OVERLAY_WINDOW_LABEL,
-		);
-		if (overlay) await overlay.hide();
-		return;
-	}
-
+	// Vivavoce 4a draws idle as a resting line, so a `null` status shows the
+	// window too. At rest it passes every click through: an always-on-top window
+	// must not take a click from the app beneath a glyph that has no controls.
 	const overlay = await getOrCreateOverlayWindow();
 	if (!overlay || isSuperseded()) return;
 
@@ -201,13 +196,11 @@ async function applyOverlayStatus(
 	if (position) await overlay.setPosition(position);
 	if (isSuperseded()) return;
 
+	await overlay.setIgnoreCursorEvents(status === null);
+	if (isSuperseded()) return;
+
 	await overlay.show();
-	if (isSuperseded()) {
-		// A reposition session that started mid-flight owns the window now, so
-		// leave it up even with no dictation behind it.
-		if (!latestStatus && !repositionActive) await overlay.hide();
-		return;
-	}
+	if (isSuperseded()) return;
 
 	await recordingOverlayStatus.emit(status);
 }
@@ -220,6 +213,26 @@ export function synchronizeRecordingOverlayWindow(
 	latestStatus = status;
 	queue = queue
 		.then(() => applyOverlayStatus(app, status))
+		.catch((cause) => {
+			log.warn(RecordingOverlayError.SynchronizeFailed({ cause }));
+		});
+}
+
+/**
+ * Take the pill off screen entirely, resting line included.
+ *
+ * For the owner going away: the native window outlives the component that
+ * drives it, and a line left behind would have nothing updating it.
+ */
+export function hideRecordingOverlayWindow(): void {
+	latestStatus = null;
+	queue = queue
+		.then(async () => {
+			const overlay = await WebviewWindow.getByLabel(
+				RECORDING_OVERLAY_WINDOW_LABEL,
+			);
+			if (overlay) await overlay.hide();
+		})
 		.catch((cause) => {
 			log.warn(RecordingOverlayError.SynchronizeFailed({ cause }));
 		});
@@ -269,6 +282,8 @@ export async function startOverlayRepositionSession(
 			return RecordingOverlayError.WindowCreateFailed({ payload: null });
 		}
 
+		// A resting pill passes clicks through; the session needs them back.
+		await overlay.setIgnoreCursorEvents(false);
 		await overlay.show();
 		await recordingOverlayEnterReposition.emit({ anchor });
 

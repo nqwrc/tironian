@@ -3,9 +3,9 @@ import type { DictationFailureTier } from '$lib/state/dictation-lifecycle.svelte
 
 /**
  * What the shared recording pill should display. Only non-idle phases are
- * representable: an idle dictation hides the pill rather than producing a
- * status. The model is platform-free; Tauri serializes it over overlay IPC and
- * the browser host consumes it directly.
+ * representable: an idle dictation is `null`, which the pill draws as its
+ * resting line (Vivavoce 4a). The model is platform-free; Tauri serializes it
+ * over overlay IPC and the browser host consumes it directly.
  */
 export type RecordingPillStatus =
 	| { phase: 'recording'; trigger: 'manual' }

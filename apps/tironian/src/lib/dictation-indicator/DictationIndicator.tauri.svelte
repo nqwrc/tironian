@@ -22,7 +22,10 @@
 		recordingOverlayAction,
 		revealMainWindow,
 	} from '$lib/recording-overlay/events';
-	import { synchronizeRecordingOverlayWindow } from '$lib/recording-overlay/window-manager.tauri';
+	import {
+		hideRecordingOverlayWindow,
+		synchronizeRecordingOverlayWindow,
+	} from '$lib/recording-overlay/window-manager.tauri';
 	import { dispatchPillAction } from '$lib/recording-pill/pill-actions';
 	import { projectLifecycleToStatus } from '$lib/recording-pill/projection';
 	import { dictationLifecycle } from '$lib/state/dictation-lifecycle.svelte';
@@ -42,8 +45,8 @@
 	});
 
 	// The native window outlives this component, so hide it when the session-root
-	// owner is destroyed rather than leaving stale status with detached controls.
-	onDestroy(() => synchronizeRecordingOverlayWindow(app, null));
+	// owner is destroyed rather than leaving a resting line nothing updates.
+	onDestroy(() => hideRecordingOverlayWindow());
 
 	// The event subscriptions resolve asynchronously, so unmount can land before
 	// a listener settles. A late listener is immediately detached instead of leaked.
