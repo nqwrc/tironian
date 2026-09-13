@@ -490,6 +490,8 @@ describe('createHomeServer', () => {
 			]);
 			expect(directives.get('object-src')).toEqual(["'none'"]);
 			expect(directives.get('default-src')).toEqual(["'self'"]);
+			// Home's single-file build inlines its typefaces, and nothing wider.
+			expect(directives.get('font-src')).toEqual(["'self'", 'data:']);
 
 			// The capability is real on this origin, not a token for its own sake:
 			// the binary the policy admits is served by this host.

@@ -341,6 +341,11 @@ function contentSecurityPolicy(page: string): string {
 		// refuses the compile and the recording trigger dies mid-boot.
 		`script-src 'self' 'wasm-unsafe-eval' ${scriptHashes.join(' ')}`,
 		"style-src 'self' 'unsafe-inline'",
+		// `data:` is how Home gets its typefaces at all: it is one self-contained
+		// document, so its build inlines every font file it bundles. A font
+		// cannot run code, and a stylesheet able to name one is already admitted
+		// by the line above.
+		"font-src 'self' data:",
 		"connect-src 'self' ipc: http://ipc.localhost",
 		"img-src 'self' data: blob:",
 		"media-src 'self' data: blob:",
