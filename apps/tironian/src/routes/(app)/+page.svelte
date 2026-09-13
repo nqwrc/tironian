@@ -30,34 +30,30 @@
 	import { dictationPath } from '$lib/constants/urls';
 	import { importFiles } from '$lib/operations/import';
 	import { selectCaptureSurface } from '$lib/operations/recording';
-	import { deleteRecordingsWithConfirmation } from '$lib/operations/delete-recordings';
 	import { report } from '$lib/report';
 	import {
 		getSelectedTranscriptionProvider,
 		getTranscriptionReadiness,
 	} from '$lib/settings/transcription-validation';
 	import { captureSurface } from '$lib/state/capture-surface.svelte';
-	import { getRecordingShortcutLabel } from '$lib/utils/recording-shortcut';
 	import { viewTransition } from '$lib/utils/viewTransitions';
 	import { getTironianApp } from '$lib/app/context';
 	import tironianMark from '$lib/assets/tironian-mark.png';
 	import { tauri } from '#platform/tauri';
 	import CaptureBehaviorPopover from './_components/CaptureBehaviorPopover.svelte';
 	import CapturePipeline from './_components/CapturePipeline.svelte';
-	import ManualRecordingAction from './_components/ManualRecordingAction.svelte';
+	import LastTranscriptionCard from './_components/LastTranscriptionCard.svelte';
+	import ListenHero from './_components/ListenHero.svelte';
 	import PolishToggle from './_components/PolishToggle.svelte';
-	import RecordingResult from './_components/RecordingResult.svelte';
 	import VadRecordingAction from './_components/VadRecordingAction.svelte';
 
+	// Home follows the Vivavoce shell (4b): the mark to click, the shortcut, and
+	// the last transcription. The capture-mode switch and the pipeline selectors
+	// stay here, smaller, until the Settings redesign (4d) gives them a home.
 	const app = getTironianApp();
 
 	const latestRecording = $derived(app.recordings.sorted[0]);
 	const transcriptionReadiness = $derived(getTranscriptionReadiness(app));
-	const hasActiveShortcut = $derived.by(() => {
-		const surface = captureSurface.current(app);
-		if (surface === 'import') return false;
-		return !!getRecordingShortcutLabel(app, surface);
-	});
 	// This screen is onboarding, not configuration: when transcription is not
 	// ready, ask for only the one required credential inline. A cloud provider
 	// needs a single API key, so we render just that field (via `secretsOnly`)
@@ -163,21 +159,21 @@
 <svelte:head> <title>{pageTitle()}</title> </svelte:head>
 
 <div
-	class="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-start gap-5 px-4 pt-8 pb-24 sm:justify-center sm:py-12"
+	class="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-start gap-6 px-4 pt-8 pb-24 sm:justify-center sm:py-12"
 >
-	<SectionHeader.Root class="flex flex-col items-center gap-2 text-center">
-		<div class="flex items-center gap-2.5">
-			<img src={tironianMark} alt="" class="size-8" />
-			<SectionHeader.Title level={1} class="text-3xl">{PRODUCT_NAME}</SectionHeader.Title>
-		</div>
-		<SectionHeader.Description class="text-base">
-			{m.app_press_shortcut_speak_get_text_free_and_open()}
-		</SectionHeader.Description>
-	</SectionHeader.Root>
-
 	<DictationCapabilityNotice />
 
 	{#if !transcriptionReadiness.isReady}
+		<SectionHeader.Root class="flex flex-col items-center gap-2 text-center">
+			<div class="flex items-center gap-2.5">
+				<img src={tironianMark} alt="" class="size-8" />
+				<SectionHeader.Title level={1} class="text-3xl">{PRODUCT_NAME}</SectionHeader.Title>
+			</div>
+			<SectionHeader.Description class="text-base">
+				{m.app_press_shortcut_speak_get_text_free_and_open()}
+			</SectionHeader.Description>
+		</SectionHeader.Root>
+
 		<div class="w-full space-y-3">
 			<div class="space-y-1">
 				<h2 class="text-base font-semibold">{m.transcription_selector_set_up_transcription()}</h2>
@@ -217,44 +213,20 @@
 			{/if}
 		</div>
 	{:else}
-		<ToggleGroup.Root
-			type="single"
-			bind:value={() => captureSurface.current(app),
-				(surface) => {
-					if (!surface) return;
-					void selectCaptureSurface(app, surface as CaptureSurface);
-				}}
-			class="w-full"
-		>
-			{#each CAPTURE_SURFACE_OPTIONS as option}
-				{@const SurfaceIcon = CAPTURE_SURFACE_META[option.value].Icon}
-				<ToggleGroup.Item
-					value={option.value}
-					aria-label="Switch to {option.label.toLowerCase()}"
-				>
-					<SurfaceIcon class="size-4" />
-					<span class="hidden truncate sm:inline">{option.label}</span>
-				</ToggleGroup.Item>
-			{/each}
-		</ToggleGroup.Root>
-
 		{#if captureSurface.current(app) === 'manual'}
-			<div class="flex w-full flex-col items-center gap-3">
-				<ManualRecordingAction>
-					{#snippet footer()}
-						<CapturePipeline>
-							<ManualDeviceSelector
-								iconViewTransitionName={viewTransition.pipeline.device}
-							/>
-							<TranscriptionSelector
-								variant="pipeline"
-								iconViewTransitionName={viewTransition.pipeline.transcription}
-							/>
-							<PolishToggle />
-							<CaptureBehaviorPopover />
-						</CapturePipeline>
-					{/snippet}
-				</ManualRecordingAction>
+			<div class="flex w-full flex-col items-center gap-5">
+				<ListenHero />
+				<CapturePipeline class="rounded-xl border bg-card px-3 py-2">
+					<ManualDeviceSelector
+						iconViewTransitionName={viewTransition.pipeline.device}
+					/>
+					<TranscriptionSelector
+						variant="pipeline"
+						iconViewTransitionName={viewTransition.pipeline.transcription}
+					/>
+					<PolishToggle />
+					<CaptureBehaviorPopover />
+				</CapturePipeline>
 			</div>
 		{:else if captureSurface.current(app) === 'vad'}
 			<div class="flex w-full flex-col items-center gap-3">
@@ -307,29 +279,30 @@
 		{/if}
 
 		{#if latestRecording}
-			<RecordingResult
-				recordingId={latestRecording.id}
-				audioBlobId={latestRecording.audioBlobId}
-				transcript={latestRecording.polishedTranscript ?? latestRecording.transcript}
-				rows={1}
-				onDelete={() => {
-					deleteRecordingsWithConfirmation(app, latestRecording);
-				}}
-			/>
+			<LastTranscriptionCard recording={latestRecording} />
 		{/if}
 
-		{#if captureSurface.current(app) !== 'import'}
-			<p class="text-muted-foreground text-center text-sm">
-				{#if hasActiveShortcut}
-					Your shortcut works
-					{tauri ? 'from any app.' : 'while this window is focused.'}
-					<Link href={dictationPath('/settings/shortcuts')}>{m.app_configure_shortcuts()}</Link>
-				{:else}
-					<Link href={dictationPath('/settings/shortcuts')}>{m.app_set_a_shortcut()}</Link>
-					{tauri ? 'to dictate from any app.' : 'to start recording.'}
-				{/if}
-			</p>
-		{/if}
+		<ToggleGroup.Root
+			type="single"
+			size="sm"
+			bind:value={() => captureSurface.current(app),
+				(surface) => {
+					if (!surface) return;
+					void selectCaptureSurface(app, surface as CaptureSurface);
+				}}
+			class="text-muted-foreground"
+		>
+			{#each CAPTURE_SURFACE_OPTIONS as option}
+				{@const SurfaceIcon = CAPTURE_SURFACE_META[option.value].Icon}
+				<ToggleGroup.Item
+					value={option.value}
+					aria-label="Switch to {option.label.toLowerCase()}"
+				>
+					<SurfaceIcon class="size-4" />
+					<span class="hidden truncate sm:inline">{option.label}</span>
+				</ToggleGroup.Item>
+			{/each}
+		</ToggleGroup.Root>
 
 		{#if !tauri}
 			<p class="text-muted-foreground text-center text-sm font-light">
