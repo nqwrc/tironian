@@ -44,7 +44,7 @@
 </script>
 
 <nav
-	class="flex gap-1 overflow-x-auto border-b border-border/60"
+	class="flex gap-1 overflow-x-auto border-b border-border/60 [scrollbar-width:none]"
 	aria-label={m.group_nav_settings_navigation()}
 >
 	{#each items as item (item.href)}
