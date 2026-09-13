@@ -2,7 +2,7 @@
 
 state: active
 remote: github-public
-updated: 2026-09-11
+updated: 2026-09-13
 stale-after-days: 30
 
 ## kpi
@@ -16,9 +16,9 @@ stale-after-days: 30
 
 ## next
 - Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
-- `feature/single-window` (ADR-0245): the Home window is gone. Model settings live in the dictation app under Settings, Privacy & Processing; the dictation window holds the model administration grants, the tray has no Model settings item, `tironian://app/home` is refused, and `font-src data:` is removed (the dictation build serves 28 woff2 files, 0 `data:` fonts). Checks: `cargo test` 116/0, dictation suite 320/0, host 37 pass with 2 environmental failures (Windows SIGTERM exit 143 as on main; compiled-host test cannot bind 41730 while the installed app runs).
+- `feature/single-window` (ADR-0245): the Home window is gone. Model settings live in the dictation app under Settings, Privacy & Processing; the dictation window holds the model administration grants, the tray has no Model settings item, `tironian://app/home` is refused, and `font-src data:` is removed (the dictation build serves 28 woff2 files, 0 `data:` fonts). Checks: `cargo test` 116/0, dictation suite 320/0, host 37 pass with 2 environmental failures (Windows SIGTERM exit 143 as on main; compiled-host test cannot bind 41730 while the installed app runs). Rendered in the real Tironian Dev WebView over CDP: Settings, Privacy & Processing lists the three models with live download state and the unload policy, fonts load without `data:`, and the console holds only the Ctrl+Alt+Space conflict. The model store reads the host when the panel mounts, not at import. Not yet installed over the running app.
 - Vivavoce design, deliverable 4 (project "App redesign directions" on Claude Design, 10 screens): deliverable 2 tokens already ship in `brand.css`. Not implemented yet: labeled sidebar with live stats, Home 4b, Registrazioni rows 4c, six-tab Settings 4d/4j, Dettatura 4f (Polish, commands, dictionary), Ricette 4g, Snippet 4h, detail modal 4i, light onboarding 4e, pill states 4a. Not carried over, per docs/brand/tironian.md: the vivavoce wordmark, the soundwave mark, Italian as source language.
 - Follow-ups, not defects: ADR-number citations in comments name design records that no longer ship; the `packages/sqlite` browser adapter has no consumer; seven sound files have no recorded provenance; no generated third-party notices file ships with the installers.
 
 ## blockers
-- The 13 Vivavoce artboards stay unreachable until `/design-login` runs once in an interactive `claude` terminal.
+- Tironian Dev and the installed app share the data root `%APPDATA%\app.tironian`, so a dev launch sweeps production's `.staging/rust` (seen 2026-09-13, nothing was in flight). Do not run the two side by side while dictating until the sweep or the root is scoped.
