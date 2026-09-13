@@ -1,17 +1,24 @@
 import { extractErrorMessage } from 'wellcrafted/error';
 import { createLogger } from 'wellcrafted/logger';
 import { Err, tryAsync } from 'wellcrafted/result';
+import { os } from '#platform/os';
 import { type Command, commands, dispatchCommandTrigger } from '$lib/commands';
 import {
 	DEFAULT_GLOBAL_BINDINGS,
 	deviceConfig,
 } from '$lib/state/device-config.svelte';
-import { type ChordRegistration, tauriOnly } from '$lib/tauri.tauri';
+import {
+	type ChordRegistration,
+	type HoldRegistration,
+	tauriOnly,
+} from '$lib/tauri.tauri';
 import {
 	bindingsEqual,
+	isModifierHold,
 	isRegistrableChord,
 	type KeyBinding,
 	keyBindingToAccelerator,
+	keyBindingToHoldModifiers,
 } from '$lib/utils/key-binding';
 import { validateGlobalBinding } from '$lib/utils/reserved-shortcuts';
 import { createShortcuts } from './shortcuts.shared';
@@ -34,19 +41,33 @@ const log = createLogger('tironian/system-shortcuts');
 const globalKey = (id: Command['id']) => `shortcuts.global.${id}` as const;
 
 /**
+ * The one command a modifier-only hold may drive. A hold is a press-and-release
+ * gesture made of keys that also start ordinary chords, which suits holding to
+ * talk and nothing that toggles on a press.
+ */
+const HOLD_COMMAND: Command['id'] = 'pushToTalk';
+
+/** Whether this device may store and register `binding` as a hold for `id`. */
+function isAllowedHold(id: Command['id'], binding: KeyBinding): boolean {
+	return os.isWindows && id === HOLD_COMMAND && isModifierHold(binding);
+}
+
+/**
  * Device-config validates `keys` structurally as `string[]`, so this read is the
  * boundary that narrows the stored value to `KeyBinding`. The registrability
  * check below rejects any key string the plugin vocabulary cannot spell.
  *
- * A stale persisted binding that is not a registrable plugin chord (a
- * pre-ADR-0117 Fn or modifier-only hold) is sanitized to `null`: it no longer
- * registers, so it reads as unset instead of surfacing "Works everywhere" for a
- * dead gesture or being silently skipped at push time.
+ * A stale persisted binding that can no longer register (an Fn hold, or a
+ * modifier-only hold off Windows or on a command other than push-to-talk) is
+ * sanitized to `null`: it reads as unset instead of surfacing "Works
+ * everywhere" for a dead gesture or being silently skipped at push time.
  */
 function readBinding(id: Command['id']): KeyBinding | null {
 	const stored = (deviceConfig.get(globalKey(id)) as KeyBinding | null) ?? null;
 	if (stored === null) return null;
-	return isRegistrableChord(stored) ? stored : null;
+	return isRegistrableChord(stored) || isAllowedHold(id, stored)
+		? stored
+		: null;
 }
 
 export const createSystemShortcuts: CreateSystemShortcuts | null = (app) =>
@@ -57,7 +78,16 @@ export const createSystemShortcuts: CreateSystemShortcuts | null = (app) =>
 		// The plugin matches complete chords. Refuse reserved gestures and exact
 		// duplicates, while allowing distinct chords that share keys or modifiers.
 		findConflict: (id, binding) => {
-			const reserved = validateGlobalBinding(binding);
+			if (isModifierHold(binding) && id !== HOLD_COMMAND) {
+				return {
+					kind: 'reserved',
+					reason:
+						'Holding only modifiers works for push to talk alone. Add a key.',
+				};
+			}
+			const reserved = validateGlobalBinding(binding, {
+				modifierHolds: os.isWindows,
+			});
 			if (reserved) return { kind: 'reserved', reason: reserved };
 			for (const command of commands) {
 				if (command.id === id) continue;
@@ -86,9 +116,22 @@ export const createSystemShortcuts: CreateSystemShortcuts | null = (app) =>
 				string,
 				{ commandId: Command['id']; isDefault: boolean }
 			>();
+			// A hold claims its modifier set the way a chord claims its accelerator;
+			// the `hold:` prefix keeps the two spellings from ever meeting.
+			const holdModifiers = new Map<string, HoldRegistration['modifiers']>();
 			for (const entry of entries) {
 				if (entry.binding === null) continue;
-				const accelerator = keyBindingToAccelerator(entry.binding);
+				let accelerator = keyBindingToAccelerator(entry.binding);
+				if (
+					accelerator === null &&
+					isAllowedHold(entry.command.id, entry.binding)
+				) {
+					const modifiers = keyBindingToHoldModifiers(entry.binding);
+					if (modifiers) {
+						accelerator = `hold:${modifiers.join('+')}`;
+						holdModifiers.set(accelerator, modifiers);
+					}
+				}
 				if (accelerator === null) continue;
 				const fallback = DEFAULT_GLOBAL_BINDINGS[entry.command.id] ?? null;
 				const isDefault =
@@ -106,15 +149,21 @@ export const createSystemShortcuts: CreateSystemShortcuts | null = (app) =>
 				}
 				claims.set(accelerator, { commandId: entry.command.id, isDefault });
 			}
-			const chords: ChordRegistration[] = [...claims].map(
-				([accelerator, { commandId }]) => ({ commandId, accelerator }),
-			);
+			const chords: ChordRegistration[] = [];
+			const holds: HoldRegistration[] = [];
+			for (const [accelerator, { commandId }] of claims) {
+				const modifiers = holdModifiers.get(accelerator);
+				if (modifiers) holds.push({ commandId, modifiers });
+				else chords.push({ commandId, accelerator });
+			}
 			// A plugin registration the OS rejects (a chord another app holds) fails
 			// the whole replace-all; surface it instead of partially binding.
 			const { error } = await tryAsync({
 				try: async () => {
-					await tauriOnly.keyboard.registerChords(chords, (commandId, state) =>
-						dispatchCommandTrigger(app, commandId, state),
+					await tauriOnly.keyboard.registerChords(
+						chords,
+						holds,
+						(commandId, state) => dispatchCommandTrigger(app, commandId, state),
 					);
 				},
 				catch: (cause) =>

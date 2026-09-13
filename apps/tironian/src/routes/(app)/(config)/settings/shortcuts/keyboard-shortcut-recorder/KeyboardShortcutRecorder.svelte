@@ -71,6 +71,9 @@
 		onProgress: (partial) => {
 			previewBinding = partial;
 		},
+		// Windows push-to-talk may be a modifier-only hold such as Ctrl+Win
+		// (ADR-0246); every other command and platform needs a key.
+		acceptModifierHolds: () => os.isWindows && command.id === 'pushToTalk',
 	});
 
 	// The recorder runs while the popover is open. Closing or unmounting stops it.
@@ -107,7 +110,7 @@
 				description: reason,
 				cause: {
 					name: 'ShortcutConflict',
-					message: `${keyBindingToLabel(next, os.isApple)}: ${reason}`,
+					message: `${keyBindingToLabel(next, os.isApple, os.isWindows)}: ${reason}`,
 				},
 			});
 			previewBinding = null;
@@ -116,7 +119,7 @@
 		const realized = shortcuts.reachBadge(command.id, next);
 		await shortcuts.set(command.id, next);
 		report.success({
-			title: `${command.title} set to ${keyBindingToLabel(next, os.isApple)}`,
+			title: `${command.title} set to ${keyBindingToLabel(next, os.isApple, os.isWindows)}`,
 			description: reachLabel(realized),
 		});
 		// Closing tears capture down through the effects' cleanup.
@@ -126,7 +129,7 @@
 </script>
 
 {#snippet keyChip(binding: KeyBinding, reach: Reach)}
-	<Kbd.Root>{keyBindingToLabel(binding, os.isApple)}</Kbd.Root>
+	<Kbd.Root>{keyBindingToLabel(binding, os.isApple, os.isWindows)}</Kbd.Root>
 	<span
 		class="inline-flex items-center text-muted-foreground"
 		title={reachLabel(reach)}

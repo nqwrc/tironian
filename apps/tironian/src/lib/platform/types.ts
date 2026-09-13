@@ -92,4 +92,9 @@ export type Os = {
 	isApple: boolean;
 	/** Desktop Linux, excluding Android. Gates the Linux-only VAD notice. */
 	isLinux: boolean;
+	/**
+	 * Windows. Gates the modifier-only push-to-talk hold, which only the
+	 * Windows host can detect (ADR-0246), and the Win key label.
+	 */
+	isWindows: boolean;
 };

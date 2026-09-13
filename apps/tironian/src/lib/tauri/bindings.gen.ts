@@ -362,9 +362,17 @@ export const commands = {
 	 */
 	getForegroundContext: () =>
 		__TAURI_INVOKE<ForegroundContext>('get_foreground_context'),
-	replaceGlobalShortcuts: (registrations: GlobalShortcutRegistration[]) =>
+	/**
+	 *  Replace every global shortcut at once: the plugin chords, and the
+	 *  modifier-only holds only the Windows hook can see (ADR-0246). Either set
+	 *  failing leaves the previous chords registered.
+	 */
+	replaceGlobalShortcuts: (
+		registrations: GlobalShortcutRegistration[],
+		holds: ModifierHoldRegistration[],
+	) =>
 		typedError<null, string>(
-			__TAURI_INVOKE('replace_global_shortcuts', { registrations }),
+			__TAURI_INVOKE('replace_global_shortcuts', { registrations, holds }),
 		),
 	isAutostartEnabled: () =>
 		typedError<boolean, string>(__TAURI_INVOKE('is_autostart_enabled')),
@@ -614,6 +622,9 @@ export type GlobalShortcutTriggered = {
 	state: GlobalShortcutState;
 };
 
+/**  A modifier a hold is made of. Left and right collapse, as in chords. */
+export type HoldModifier = 'Control' | 'Alt' | 'Shift' | 'Super';
+
 /**
  *  The recording a window holds: the id it will publish under, the microphone
  *  it opened, and whether its capture has already ended.
@@ -705,6 +716,12 @@ export type ModelInfo = {
 	supportsLanguage: boolean;
 	recommended: boolean;
 	downloaded: boolean;
+};
+
+/**  One command bound to a modifier-only hold, beside the plugin chords. */
+export type ModifierHoldRegistration = {
+	commandId: string;
+	modifiers: HoldModifier[];
 };
 
 export type RecorderError =

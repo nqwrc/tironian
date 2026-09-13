@@ -10,6 +10,7 @@ use tauri_plugin_autostart::ManagerExt as AutostartExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState as NativeShortcutState};
 use tauri_specta::Event;
 
+use crate::keyboard::modifier_hold::{self, ModifierHoldRegistration};
 use crate::{request_window, BuiltInApp, DesktopAppHandle};
 
 const TRAY_ID: &str = "tironian-tray";
@@ -78,14 +79,18 @@ fn tray_icon(recording: bool) -> tauri::Result<Image<'static>> {
     Image::from_bytes(bytes)
 }
 
+/// Replace every global shortcut at once: the plugin chords, and the
+/// modifier-only holds only the Windows hook can see (ADR-0246). Either set
+/// failing leaves the previous chords registered.
 #[tauri::command]
 #[specta::specta]
 pub fn replace_global_shortcuts(
     app: AppHandle<Wry>,
     registry: tauri::State<'_, GlobalShortcutRegistry>,
     registrations: Vec<GlobalShortcutRegistration>,
+    holds: Vec<ModifierHoldRegistration>,
 ) -> Result<(), String> {
-    validate_registrations(&registrations)?;
+    let hold_targets = validate_registrations(&registrations, &holds)?;
     let mut current = registry
         .0
         .lock()
@@ -95,7 +100,9 @@ pub fn replace_global_shortcuts(
     app.global_shortcut()
         .unregister_all()
         .map_err(|error| error.to_string())?;
-    if let Err(error) = register_all(&app, &registrations) {
+    let replaced = register_all(&app, &registrations)
+        .and_then(|()| modifier_hold::replace(&app, hold_targets));
+    if let Err(error) = replaced {
         let _ = app.global_shortcut().unregister_all();
         if let Err(rollback_error) = register_all(&app, &previous) {
             log::error!(
@@ -109,7 +116,26 @@ pub fn replace_global_shortcuts(
     Ok(())
 }
 
-fn validate_registrations(registrations: &[GlobalShortcutRegistration]) -> Result<(), String> {
+/// Deliver a trigger edge to the dictation window, from a plugin chord or a
+/// modifier hold alike, so the command layer sees one event either way.
+pub(crate) fn emit_shortcut_trigger(
+    app: &AppHandle,
+    command_id: String,
+    state: GlobalShortcutState,
+) {
+    if let Err(error) =
+        (GlobalShortcutTriggered { command_id, state }).emit_to(app, DICTATION_WINDOW)
+    {
+        log::warn!("deliver a global shortcut trigger: {error}");
+    }
+}
+
+/// Check both sets and resolve each hold to its modifier mask. A command owns
+/// at most one global gesture, chord or hold.
+fn validate_registrations(
+    registrations: &[GlobalShortcutRegistration],
+    holds: &[ModifierHoldRegistration],
+) -> Result<Vec<(u8, String)>, String> {
     let mut command_ids = HashSet::new();
     let mut accelerators = HashSet::new();
     for registration in registrations {
@@ -129,7 +155,25 @@ fn validate_registrations(registrations: &[GlobalShortcutRegistration]) -> Resul
             ));
         }
     }
-    Ok(())
+    let mut masks = HashSet::new();
+    let mut targets = Vec::with_capacity(holds.len());
+    for hold in holds {
+        if hold.command_id.is_empty() {
+            return Err("global shortcut command ids must not be empty".into());
+        }
+        if !command_ids.insert(&hold.command_id) {
+            return Err(format!(
+                "duplicate global shortcut command id: {}",
+                hold.command_id
+            ));
+        }
+        let mask = modifier_hold::mask_of(hold)?;
+        if !masks.insert(mask) {
+            return Err(format!("duplicate modifier hold for {}", hold.command_id));
+        }
+        targets.push((mask, hold.command_id.clone()));
+    }
+    Ok(targets)
 }
 
 fn register_all(
@@ -144,11 +188,7 @@ fn register_all(
                     NativeShortcutState::Pressed => GlobalShortcutState::Pressed,
                     NativeShortcutState::Released => GlobalShortcutState::Released,
                 };
-                let _ = GlobalShortcutTriggered {
-                    command_id: command_id.clone(),
-                    state,
-                }
-                .emit_to(app, DICTATION_WINDOW);
+                emit_shortcut_trigger(app, command_id.clone(), state);
             })
             .map_err(|error| error.to_string())?;
     }
@@ -191,12 +231,35 @@ mod tests {
             registration("record", "Cmd+R"),
             registration("record", "Cmd+T"),
         ];
-        assert!(validate_registrations(&duplicate_command).is_err());
+        assert!(validate_registrations(&duplicate_command, &[]).is_err());
 
         let duplicate_accelerator = [
             registration("record", "Cmd+R"),
             registration("cancel", "Cmd+R"),
         ];
-        assert!(validate_registrations(&duplicate_accelerator).is_err());
+        assert!(validate_registrations(&duplicate_accelerator, &[]).is_err());
+    }
+
+    #[test]
+    fn a_command_owns_one_gesture_across_chords_and_holds() {
+        use modifier_hold::HoldModifier::{Control, Super};
+        let hold = |command_id: &str| ModifierHoldRegistration {
+            command_id: command_id.into(),
+            modifiers: vec![Control, Super],
+        };
+
+        let targets = validate_registrations(
+            &[registration("cancel", "Control+Shift+Period")],
+            &[hold("pushToTalk")],
+        )
+        .expect("a chord and a hold for different commands");
+        assert_eq!(targets.len(), 1);
+
+        assert!(validate_registrations(
+            &[registration("pushToTalk", "Control+Alt+Space")],
+            &[hold("pushToTalk")]
+        )
+        .is_err());
+        assert!(validate_registrations(&[], &[hold("pushToTalk"), hold("toggle")]).is_err());
     }
 }
