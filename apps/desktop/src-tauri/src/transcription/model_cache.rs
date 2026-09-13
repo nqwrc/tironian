@@ -111,7 +111,7 @@ impl ModelCache {
             return Err(Unavailable {
                 reason: UnavailableReason::NoActiveModel,
                 message: "No local transcription model is active on this device. \
-                          Choose one in Model settings."
+                          Choose one in Settings, under Privacy & Processing."
                     .to_string(),
             });
         };
@@ -127,7 +127,8 @@ impl ModelCache {
             _ => Err(Unavailable {
                 reason: UnavailableReason::ActiveModelUnavailable,
                 message: "The active local transcription model is not available on this \
-                          device. Open Model settings to download it or choose another."
+                          device. Download it or choose another in Settings, under Privacy & \
+                          Processing."
                     .to_string(),
             }),
         }
@@ -609,7 +610,7 @@ mod tests {
         let (reason, message) = unavailable_of(&cache_with("none", None).readiness());
         assert_eq!(reason, UnavailableReason::NoActiveModel);
         assert!(
-            message.contains("Model settings"),
+            message.contains("Settings, under Privacy & Processing"),
             "the message must name the one place that can fix it: {message}"
         );
     }
