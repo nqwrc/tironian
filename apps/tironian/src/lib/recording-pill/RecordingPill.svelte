@@ -265,9 +265,10 @@
 		.vv-pill {
 			transition: none;
 		}
+		/* The 4s dim is a change of state, not motion, so it still happens;
+		   it just lands in one step instead of fading. */
 		.vv-pill--idle {
-			animation: none;
-			opacity: 0.6;
+			animation: vv-idle-dim 1ms linear 4s forwards;
 		}
 		.vv-mark {
 			animation: none;
