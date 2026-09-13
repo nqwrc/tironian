@@ -214,7 +214,12 @@
 	{/if}
 
 	<AdvancedDisclosure>
-		<Field.Group>{@render advancedFields()}</Field.Group>
+		<Field.Group>
+			{#if selected?.access === 'key'}
+				<ProviderConfigFields provider={selected.id} part="optional" />
+			{/if}
+			{@render advancedFields()}
+		</Field.Group>
 	</AdvancedDisclosure>
 </Field.Group>
 
@@ -235,7 +240,7 @@
 		label: model.name,
 		...model,
 	}))}
-	<ProviderConfigFields provider={entry.id} />
+	<ProviderConfigFields provider={entry.id} part="required" />
 
 	<Field.Field orientation="horizontal">
 		<Field.Content>

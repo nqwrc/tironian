@@ -13,6 +13,9 @@
 		placeholder: string;
 		configKey: Extract<DeviceConfigKey, `providers.${string}`>;
 		description: DescriptionPart[];
+		/** An override most people never set (a base URL, a key a local server
+		 * does not need); settings render it under their Advanced disclosure. */
+		optional?: true;
 	};
 
 	/**
@@ -51,6 +54,7 @@
 				type: 'url',
 				placeholder: 'https://api.openai.com/v1 (default)',
 				configKey: 'providers.openai.endpoint',
+				optional: true,
 				description: [
 					'Override the default OpenAI API endpoint. Useful for reverse proxies or OpenAI-compatible services. Leave empty to use the official OpenAI API.',
 				],
@@ -75,6 +79,7 @@
 				type: 'url',
 				placeholder: 'https://api.groq.com/openai/v1 (default)',
 				configKey: 'providers.groq.endpoint',
+				optional: true,
 				description: [
 					'Override the default Groq API endpoint. Useful for reverse proxies or Groq-compatible services. Leave empty to use the official Groq API.',
 				],
@@ -202,12 +207,18 @@
 				type: 'password',
 				placeholder: 'Leave empty if not required',
 				configKey: 'providers.custom.apiKey',
+				optional: true,
 				description: [
 					"Most local endpoints don't require authentication. Only enter a key if your endpoint requires it.",
 				],
 			},
 		],
 	};
+
+	/** Whether a provider has any override to tuck under Advanced. */
+	export function hasOptionalFields(provider: ProviderConfigId): boolean {
+		return PROVIDER_FIELDS[provider].some((field) => field.optional);
+	}
 </script>
 
 <script lang="ts">
@@ -223,9 +234,16 @@
 
 	let {
 		provider,
+		part = 'all',
 		secretsOnly = false,
 	}: {
 		provider: ProviderConfigId;
+		/**
+		 * Which fields to render: the ones a provider needs (`required`), the
+		 * overrides most people skip (`optional`, for an Advanced disclosure), or
+		 * both in declaration order.
+		 */
+		part?: 'all' | 'required' | 'optional';
 		/**
 		 * When true, render only the secret (API key) fields, hiding optional
 		 * endpoint or base-URL overrides. The home onboarding uses this to ask for
@@ -236,9 +254,12 @@
 	} = $props();
 
 	const fields = $derived(
-		secretsOnly
-			? PROVIDER_FIELDS[provider].filter((field) => isSecretKey(field.configKey))
-			: PROVIDER_FIELDS[provider],
+		PROVIDER_FIELDS[provider].filter((field) => {
+			if (secretsOnly) return isSecretKey(field.configKey);
+			if (part === 'required') return !field.optional;
+			if (part === 'optional') return field.optional === true;
+			return true;
+		}),
 	);
 
 	/**

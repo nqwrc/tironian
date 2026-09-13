@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import * as Alert from '@tironian/ui/alert';
 	import * as Field from '@tironian/ui/field';
 	import { Input } from '@tironian/ui/input';
 	import * as Select from '@tironian/ui/select';
@@ -14,7 +13,9 @@
 	import { resolveCompletionState } from '$lib/operations/completion';
 	import { describeCompletionReadiness } from '$lib/operations/completion-target';
 	import AdvancedDisclosure from './AdvancedDisclosure.svelte';
-	import ProviderConfigFields from './ProviderConfigFields.svelte';
+	import ProviderConfigFields, {
+		hasOptionalFields,
+	} from './ProviderConfigFields.svelte';
 	import { getTironianApp } from '$lib/app/context';
 
 	const app = getTironianApp();
@@ -24,7 +25,9 @@
 	// (`completionProvider`/`completionModel`), with the selected provider's
 	// credentials nested underneath as an implementation detail. Locality and
 	// readiness are read from the same resolved state the call path uses, so what
-	// the user sees here is exactly what the pipeline will do.
+	// the user sees here is exactly what the pipeline will do. One row picks the
+	// provider (Vivavoce 4d); the key it needs sits under it, and the model and
+	// endpoint overrides wait under Advanced.
 
 	const provider = $derived(app.settings.get('completionProvider'));
 	const readiness = $derived(
@@ -59,15 +62,25 @@
 	}
 </script>
 
-<Field.Group>
-	<Field.Field>
-		<Field.Label for="completion-provider">{m.completion_runtime_config_text_ai_provider()}</Field.Label>
+<Field.Group class="gap-4">
+	<Field.Field orientation="horizontal">
+		<Field.Content>
+			<Field.Label for="completion-provider">{m.completion_runtime_config_text_ai_provider()}</Field.Label>
+			{#if readiness.ready}
+				<Field.Description>{readiness.summary}</Field.Description>
+			{:else}
+				<Field.Description class="text-amber-600 dark:text-amber-400">
+					<TriangleAlertIcon class="mr-1 inline size-3.5 align-[-2px]" />
+					{readiness.summary}
+				</Field.Description>
+			{/if}
+		</Field.Content>
 		<Select.Root
 			type="single"
 			bind:value={() => provider,
 				(value) => selectProvider(value as InferenceProviderId)}
 		>
-			<Select.Trigger id="completion-provider" class="w-full">
+			<Select.Trigger id="completion-provider" size="sm" class="w-44 shrink-0">
 				{INFERENCE[provider].label}
 			</Select.Trigger>
 			<Select.Content>
@@ -78,43 +91,9 @@
 		</Select.Root>
 	</Field.Field>
 
-	{#if readiness.ready}
-		<p class="text-muted-foreground text-sm">{readiness.summary}</p>
-	{:else}
-		<Alert.Root variant="warning">
-			<TriangleAlertIcon class="size-4" />
-			<Alert.Description>{readiness.summary}</Alert.Description>
-		</Alert.Root>
-	{/if}
+	<ProviderConfigFields {provider} part="required" />
 
-	<ProviderConfigFields {provider} />
-
-	{#if modelItems}
-		<!-- Fixed-list providers get a working default model on selection, so the
-		     model is an advanced detail, not a required input. -->
-		<AdvancedDisclosure>
-			<Field.Field>
-				<Field.Label for="completion-model">{m.completion_runtime_config_model()}</Field.Label>
-				<Select.Root
-					type="single"
-					bind:value={() => app.settings.get('completionModel'),
-						(value) => app.settings.set('completionModel', value)}
-				>
-					<Select.Trigger id="completion-model" class="w-full">
-						{app.settings.get('completionModel') || 'Select a model'}
-					</Select.Trigger>
-					<Select.Content>
-						{#each modelItems as item (item.value)}
-							<Select.Item value={item.value} label={item.label} />
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<Field.Description>
-					{m.completion_runtime_config_the_model_polish_and()}
-				</Field.Description>
-			</Field.Field>
-		</AdvancedDisclosure>
-	{:else}
+	{#if !modelItems}
 		<!-- Free-form providers (OpenRouter, Custom) have no default model, so the
 		     id is a required primary input the endpoint must serve, kept inline. -->
 		<Field.Field>
@@ -134,5 +113,37 @@
 				{m.completion_runtime_config_the_model_id_your_endpoint()}
 			</Field.Description>
 		</Field.Field>
+	{/if}
+
+	{#if modelItems || hasOptionalFields(provider)}
+		<!-- Fixed-list providers get a working default model on selection, so the
+		     model is an advanced detail, like the endpoint overrides. -->
+		<AdvancedDisclosure>
+			<Field.Group>
+				{#if modelItems}
+					<Field.Field>
+						<Field.Label for="completion-model">{m.completion_runtime_config_model()}</Field.Label>
+						<Select.Root
+							type="single"
+							bind:value={() => app.settings.get('completionModel'),
+								(value) => app.settings.set('completionModel', value)}
+						>
+							<Select.Trigger id="completion-model" class="w-full">
+								{app.settings.get('completionModel') || 'Select a model'}
+							</Select.Trigger>
+							<Select.Content>
+								{#each modelItems as item (item.value)}
+									<Select.Item value={item.value} label={item.label} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						<Field.Description>
+							{m.completion_runtime_config_the_model_polish_and()}
+						</Field.Description>
+					</Field.Field>
+				{/if}
+				<ProviderConfigFields {provider} part="optional" />
+			</Field.Group>
+		</AdvancedDisclosure>
 	{/if}
 </Field.Group>
