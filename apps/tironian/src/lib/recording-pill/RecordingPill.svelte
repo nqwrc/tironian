@@ -18,9 +18,10 @@
 	// idle is a flat line that dims after 4s; listening is five bars riding the
 	// real mic level, never a loop; processing is P1, the mark passing slowly
 	// along the line like a note; delivered is D1, a green check held for 1.2s.
-	// One adaptation: the artboards draw the mark as a waveform stroke, and the
-	// shipped mark is U+204A (docs/brand/tironian.md, "The mark stays U+204A"),
-	// so P1 moves the bar-and-stem geometry of the app icon instead. The design
+	// One adaptation: the artboards scroll a waveform stroke, which the brand
+	// rejects (docs/brand/tironian.md, "The mark stays U+204A"). P1's own words
+	// are "come una nota che passa", so it passes a musical note along the line,
+	// taken literally at Nicola's request. The design
 	// has no controls and no text; stop, cancel and ship-raw appear on hover so
 	// the resting pill stays the glyph alone, and the withheld and failed states
 	// the design does not draw keep their words in the same shell.
@@ -151,8 +152,10 @@
 			</button>
 		</div>
 	{:else if processing}
-		<!-- P1, adapted: the U+204A bar and stem (the app icon's proportions,
-		     290 by 520 units) slide along the resting line. -->
+		<!-- P1, taken literally: an eighth note (♪) sits on the resting line
+		     like a note on a staff and passes slowly left to right. Drawn as
+		     geometry rather than set as U+266A, which some Windows fonts turn
+		     into a color emoji. -->
 		<svg
 			width="22"
 			height="14"
@@ -162,9 +165,27 @@
 		>
 			<path d="M1 7h20" stroke="#a39d93" stroke-width="2" stroke-linecap="round"
 			></path>
-			<g class="vv-mark" fill="#c7c2ba">
-				<rect x="0" y="1.8" width="5.8" height="1.9"></rect>
-				<rect x="3.9" y="1.8" width="1.9" height="10.4"></rect>
+			<g class="vv-mark">
+				<ellipse
+					cx="2.4"
+					cy="8.6"
+					rx="2.3"
+					ry="1.7"
+					transform="rotate(-20 2.4 8.6)"
+					fill="#c7c2ba"
+				></ellipse>
+				<path
+					d="M4.5 8.2V1.2"
+					stroke="#c7c2ba"
+					stroke-width="1.2"
+					stroke-linecap="round"
+				></path>
+				<path
+					d="M4.5 1.2c1.9 0.8 3.1 2.1 2.7 4.3"
+					stroke="#c7c2ba"
+					stroke-width="1.2"
+					stroke-linecap="round"
+				></path>
 			</g>
 		</svg>
 		<span class="sr-only">{m.recording_pill_flowing()}</span>
