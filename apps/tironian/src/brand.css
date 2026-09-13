@@ -11,10 +11,8 @@
  * ours, and the license boundary in AGENTS.md exists precisely to keep
  * app-specific decisions out of the toolkit.
  *
- * It carries tokens and brand-wide behavior only, never font files or rules for
- * one window's elements. Those belong to that window's own stylesheet: Home is a
- * single-file build, so any font it imported would be inlined as a `data:` URL
- * its Content-Security-Policy refuses.
+ * It carries the tokens, the typefaces they name, and brand-wide behavior. Rules
+ * for elements only one window renders belong to that window's own stylesheet.
  *
  * Values are the Vivavoce design system, deliverable 2, in the oklch it
  * specifies. Warm graphite at hue 65 to 80 instead of slate: it reads as a
@@ -29,15 +27,22 @@
  * where those four live. `--accent` stays a warm neutral.
  */
 
+/* Bundled through fontsource rather than fetched from Google Fonts. An app
+   whose whole claim is that it works with the network off should not ask a CDN
+   for its typeface on first paint. The dictation window serves these as files;
+   Home is a single-file build, so they reach it inlined as `data:` URLs, which
+   is why the host's policy admits `font-src data:`. */
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
 :root {
 	/* Three roles, never mixed. Instrument Sans carries the whole interface and
 	   is never heavier than 600; IBM Plex Mono is for data only, meaning timers,
 	   durations, shortcut chords, words per minute and model identifiers.
 	   Newsreader Italic belongs to the brand and marketing surfaces and is
-	   deliberately absent here: the design keeps it out of the app.
-
-	   The dictation window bundles both faces in its `app.css`. A window that
-	   does not load them falls through to the system stack below. */
+	   deliberately absent here: the design keeps it out of the app. */
 	--font-sans:
 		"Instrument Sans Variable", "Instrument Sans", system-ui, -apple-system,
 		BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

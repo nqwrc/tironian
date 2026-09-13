@@ -2,18 +2,9 @@
  * The dictation window's own stylesheet.
  *
  * Loaded last, after `@tironian/ui/app.css` and then `./brand.css`, which holds
- * the tokens both windows share. What stays here is what only this window
- * needs: the bundled typefaces the brand layer's font stacks name, and rules
- * for elements only this window renders.
+ * the tokens and typefaces both windows share. What stays here is only what
+ * this window renders and Home does not.
  */
-
-/* Bundled through fontsource rather than fetched from Google Fonts. An app
-   whose whole claim is that it works with the network off should not ask a CDN
-   for its typeface on first paint. */
-@import "@fontsource-variable/instrument-sans";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/600.css";
 
 /* Native audio players (home result, recordings row, detail modal). The controls
    live in engine shadow DOM, so this is the whole styling surface we get.

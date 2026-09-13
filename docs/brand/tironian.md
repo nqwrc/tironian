@@ -332,7 +332,7 @@ clean.
 
 6. The token system applied as the app's brand layer, in
    `apps/tironian/src/brand.css`, with Instrument Sans and IBM Plex Mono bundled
-   through fontsource in the dictation window's `apps/tironian/src/app.css`.
+   through fontsource.
 7. A message layer, so Italian is a locale rather than a fork of the source.
 
 ### Decisions taken on the assets
@@ -358,9 +358,9 @@ clean.
   so the same variable names win with no component changes, which is what the
   design actually asked for. The host's Home window imports the same file,
   `@tironian/app/brand.css`, in the same position, so the two windows share one
-  palette. Both apps are AGPL, so that import crosses no license boundary. Home
-  takes the tokens but not the font files: it is a single-file build, and its
-  Content-Security-Policy refuses the `data:` fonts that build would inline.
+  palette and typefaces. Both apps are AGPL, so that import crosses no license
+  boundary. Home is a single-file build, so its fonts arrive inlined as `data:`
+  URLs, and the host's Content-Security-Policy admits `font-src data:` for them.
 - **The accent is `--voce`, not shadcn's `--accent`.** The design names its
   accent "accent", but in this component library that token means "subtle hover
   surface": menu rows, ghost buttons and command items all fill with it. Pointing
