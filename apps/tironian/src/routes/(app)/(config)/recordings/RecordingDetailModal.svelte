@@ -22,6 +22,7 @@
 	import DownloadRecordingButton from './actions/DownloadRecordingButton.svelte';
 	import TranscribeRecordingButton from './actions/TranscribeRecordingButton.svelte';
 	import RecordingStorageBadge from './RecordingStorageBadge.svelte';
+	import { formatClock } from './recording-groups';
 	import {
 		getTironianApp,
 		getTironianQueries,
@@ -86,6 +87,19 @@
 
 	const deliveredTranscript = $derived(
 		workingCopy.polishedTranscript ?? workingCopy.transcript,
+	);
+
+	/** The mono line under the header (Vivavoce 4i): when, and how long. */
+	const meta = $derived(
+		[
+			new Date(recording.recordedAt).toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+			}),
+			recording.duration === null ? null : formatClock(recording.duration),
+		]
+			.filter(Boolean)
+			.join(' · '),
 	);
 
 	function promptUserConfirmLeave() {
@@ -171,8 +185,11 @@
 		</Modal.Header>
 
 		<div class="space-y-4 p-4">
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-2.5">
 				<RecordingStorageBadge {recording} />
+				<span class="font-mono text-[11px] text-muted-foreground tabular-nums"
+					>{meta}</span
+				>
 			</div>
 
 			{#if audioAvailabilityQuery.data === 'available'}
@@ -195,21 +212,37 @@
 							text={workingCopy.polishedTranscript}
 							copyFn={createCopyFn('delivered transcript')}
 							variant="outline"
-						/>
+							size="sm">{m.recording_detail_modal_copy()}</CopyButton
+						>
 					</div>
 					<Textarea
 						id="delivered-transcript"
 						value={workingCopy.polishedTranscript}
 						readonly
-						rows={6}
+						rows={3}
+						class="text-muted-foreground"
 					/>
 				</div>
 			{/if}
 
 			<div class="space-y-2">
-				<Label for="transcript">
-					{workingCopy.polishedTranscript ? 'Original transcript' : 'Transcript'}
-				</Label>
+				<div class="flex items-center justify-between gap-2">
+					<Label for="transcript">
+						{workingCopy.polishedTranscript
+							? 'Original transcript'
+							: 'Transcript'}
+					</Label>
+					{#if !workingCopy.polishedTranscript}
+						<CopyButton
+							text={deliveredTranscript}
+							copyFn={createCopyFn('transcript')}
+							variant="outline"
+							size="sm"
+							disabled={!deliveredTranscript.trim()}
+							>{m.recording_detail_modal_copy()}</CopyButton
+						>
+					{/if}
+				</div>
 				<Textarea
 					id="transcript"
 					value={workingCopy.transcript}
@@ -220,7 +253,7 @@
 						};
 						isWorkingCopyDirty = true;
 					}}
-					rows={12}
+					rows={4}
 				/>
 			</div>
 
@@ -243,7 +276,7 @@
 
 			<div class="space-y-4">
 				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="title" class="text-right">{m.recording_detail_modal_title()}</Label>
+					<Label for="title" class="text-right font-normal text-muted-foreground">{m.recording_detail_modal_title()}</Label>
 					<Input
 						id="title"
 						value={workingCopy.title}
@@ -255,7 +288,7 @@
 					/>
 				</div>
 				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="recordedAt" class="text-right">{m.recording_detail_modal_recorded_at()}</Label>
+					<Label for="recordedAt" class="text-right font-normal text-muted-foreground">{m.recording_detail_modal_recorded_at()}</Label>
 					<Input
 						id="recordedAt"
 						value={workingCopy.recordedAt}
@@ -266,11 +299,11 @@
 							};
 							isWorkingCopyDirty = true;
 						}}
-						class="col-span-3"
+						class="col-span-3 font-mono text-xs"
 					/>
 				</div>
 				<div class="grid grid-cols-4 items-center gap-4">
-					<Label class="text-right">{m.recording_detail_modal_recorded_timezone()}</Label>
+					<Label class="text-right font-normal text-muted-foreground">{m.recording_detail_modal_recorded_timezone()}</Label>
 					<div class="col-span-3">
 						<TimezoneCombobox
 							bind:value={() => workingCopy.recordedAtZone,
@@ -290,7 +323,8 @@
 
 		<Modal.Footer>
 			<Button
-				variant="destructive"
+				variant="ghost"
+				class="text-destructive hover:text-destructive"
 				onclick={() =>
 					deleteRecordingsWithConfirmation(app, $state.snapshot(recording), {
 						onSuccess: () => {
@@ -302,19 +336,12 @@
 				{m.recording_detail_modal_delete()}
 			</Button>
 			<div class="flex-1"></div>
-			<Button variant="outline" onclick={() => promptUserConfirmLeave()}>
+			<Button variant="ghost" onclick={() => promptUserConfirmLeave()}>
 				{m.text_preview_dialog_close()}
 			</Button>
-			<CopyButton
-				text={deliveredTranscript}
-				copyFn={createCopyFn('transcript')}
-				variant="outline"
-				size="default"
-				disabled={!deliveredTranscript.trim()}
+			<Button onclick={save} disabled={!isWorkingCopyDirty}
+				>{m.recording_detail_modal_save()}</Button
 			>
-				{m.recording_detail_modal_copy()}
-			</CopyButton>
-			<Button onclick={save} disabled={!isWorkingCopyDirty}>{m.recording_detail_modal_save()}</Button>
 		</Modal.Footer>
 	</Modal.Content>
 </Modal.Root>
