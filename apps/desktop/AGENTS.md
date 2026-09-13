@@ -1,7 +1,7 @@
 # Tironian desktop host
 
-One desktop application host. Bun serves the trusted dictation SPA and the
-Home session; Rust owns native application mechanisms.
+One desktop application host. Bun serves the trusted dictation SPA; Rust owns
+native application mechanisms.
 
 Design: a compiled application is a declared `dist/<id>` build; a build no longer declares a host-owned replica at all, so `tironian-host` does not mean that. One application window, `dictation` (ADR-0245): the product never opens a second window for a surface. One closed list of compiled applications the host declares and Rust's built-in app table mirrors; nothing external is admitted. One host-owned active local transcription model, administered from the dictation app's Settings. Owner-scoped local stores. One trusted application origin. Remote devices attach to the session, never to per-app endpoints.
 
