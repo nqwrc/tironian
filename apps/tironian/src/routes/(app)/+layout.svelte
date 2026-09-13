@@ -36,7 +36,9 @@
 
 	let { children } = $props();
 
-	let sidebarOpen = $state(false);
+	// Open by default: the sidebar names its destinations and carries the
+	// dictation stats, which the icon rail hides.
+	let sidebarOpen = $state(true);
 
 	// Sidebar when wide, bottom bar on narrow viewports (phone, small window).
 	const isNarrow = new MediaQuery('(max-width: 767px)');
@@ -72,7 +74,7 @@
 					<BottomNav />
 				</div>
 			{:else}
-				<Sidebar.Provider bind:open={sidebarOpen}>
+				<Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 13rem">
 					<VerticalNav />
 					<Sidebar.Inset>
 						<ContentShell>{@render children()}</ContentShell>
