@@ -356,11 +356,8 @@ clean.
   across the workspace, so patching it would rebrand code that is not scoped
   to this app. The app's own stylesheet already loads after the shared theme,
   so the same variable names win with no component changes, which is what the
-  design actually asked for. The host's Home window imports the same file,
-  `@tironian/app/brand.css`, in the same position, so the two windows share one
-  palette and typefaces. Both apps are AGPL, so that import crosses no license
-  boundary. Home is a single-file build, so its fonts arrive inlined as `data:`
-  URLs, and the host's Content-Security-Policy admits `font-src data:` for them.
+  design actually asked for. The app has one window (ADR-0245), so one
+  stylesheet chain covers everything a person sees.
 - **The accent is `--voce`, not shadcn's `--accent`.** The design names its
   accent "accent", but in this component library that token means "subtle hover
   surface": menu rows, ghost buttons and command items all fill with it. Pointing

@@ -2,25 +2,23 @@
 	import * as Alert from '@tironian/ui/alert';
 	import { Badge } from '@tironian/ui/badge';
 	import { Button } from '@tironian/ui/button';
-	import * as Card from '@tironian/ui/card';
 	import * as Empty from '@tironian/ui/empty';
 	import * as Item from '@tironian/ui/item';
 	import { Progress } from '@tironian/ui/progress';
 	import * as Select from '@tironian/ui/select';
-	import type { ModelInfo } from './bindings.gen';
+	import { onMount } from 'svelte';
+	import { localModels } from '$lib/state/local-models.svelte';
+	import type { ModelInfo } from '$lib/tauri/commands';
 	import { LOCAL_MODEL_UNLOAD_POLICY_OPTIONS } from './local-model-unload-policy';
-	import { localModels } from './local-models.svelte';
 
 	/**
-	 * Tironian's local transcription model administration.
+	 * The one active local transcription model, administered where the local
+	 * route is configured (ADR-0245). Every local transcription on this device
+	 * runs on whichever model is active here, and no request can name a
+	 * different one, so the choice is stated plainly rather than buried.
 	 *
-	 * This is the one place a local model is chosen (ADR-0180). Every application
-	 * on this device transcribes on whichever model is active here, and none of
-	 * them can pick a different one per request, so the choice is stated plainly
-	 * rather than buried per app.
-	 *
-	 * Device-local: the choice names files and an accelerator on this machine, so
-	 * it never syncs to another device.
+	 * Device-local: the choice names files and an accelerator on this machine,
+	 * so it never syncs to another device.
 	 */
 
 	const active = $derived(localModels.active);
@@ -51,20 +49,15 @@
 		const size = formatSize(model.sizeBytes);
 		return size ? `${model.description} · ${size}` : model.description;
 	}
+
+	// The first scan belongs to the view: the store reads nothing at import.
+	onMount(() => void localModels.refresh());
 </script>
 
 <svelte:window onfocus={() => localModels.refresh()} />
 
-<Card.Root>
-	<Card.Header>
-		<Card.Title class="text-lg">Local transcription model</Card.Title>
-		<Card.Description>
-			Tironian runs every local transcription on one active model. Apps choose
-			whether to transcribe locally; this is where you choose what they run on.
-			Models live in your shared Hugging Face cache and stay on this device.
-		</Card.Description>
-	</Card.Header>
-	<Card.Content class="space-y-3">
+{#if localModels.available}
+	<div class="space-y-3">
 		{#if localModels.error}
 			<Alert.Root variant="destructive">
 				<Alert.Title>Something went wrong</Alert.Title>
@@ -85,7 +78,7 @@
 		{#if !localModels.loaded}
 			<p class="text-sm text-muted-foreground">Loading models…</p>
 		{:else if !anyDownloaded && recommended && recommendedState}
-			<Empty.Root class="py-8">
+			<Empty.Root class="py-6">
 				<Empty.Title>No local model installed</Empty.Title>
 				<Empty.Description>
 					Runs on this device: private, offline, and free. Download the
@@ -108,9 +101,7 @@
 							</Button>
 						</div>
 					{:else}
-						<Button
-							onclick={() => localModels.downloadAndActivate(recommended)}
-						>
+						<Button onclick={() => localModels.downloadAndActivate(recommended)}>
 							Download and use {recommended.name} ({formatSize(
 								recommended.sizeBytes,
 							)})
@@ -195,10 +186,7 @@
 					(policy) => localModels.setUnloadPolicy(policy)
 				}
 			>
-				<Select.Trigger
-					class="w-full"
-					aria-labelledby="unload-policy-label"
-				>
+				<Select.Trigger class="w-full" aria-labelledby="unload-policy-label">
 					{unloadPolicyLabel ?? 'Select a policy'}
 				</Select.Trigger>
 				<Select.Content>
@@ -219,5 +207,5 @@
 				fresh load on the next transcription.
 			</p>
 		</div>
-	</Card.Content>
-</Card.Root>
+	</div>
+{/if}

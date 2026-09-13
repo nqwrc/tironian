@@ -4,9 +4,9 @@
 //!
 //! A model is identified by a stable `modelId` string rendered from its Hugging
 //! Face coordinate as `"{repo_id}@{revision}/{filename}"`. That id is an opaque
-//! catalog key. Tironian Home names it when it administers models, and the host
-//! stores the one active choice; applications never see it and never pass it to
-//! `transcribe_recording` (ADR-0180). An id outside this catalog is refused
+//! catalog key. Settings names it when it administers models, and the host
+//! stores the one active choice; no transcription request ever passes it to
+//! `transcribe_recording` (ADR-0245). An id outside this catalog is refused
 //! rather than parsed. (Custom drop-in GGUF is a later earned feature, not a
 //! compatibility path.)
 //!
@@ -154,12 +154,12 @@ pub fn installed_model_path(model_id: &str) -> Option<PathBuf> {
     find(model_id).and_then(CatalogEntry::cached_path)
 }
 
-/// The one active local model as **Home** sees it: its exact identity and
+/// The one active local model as Settings sees it: its exact identity and
 /// whether its file is on this machine right now.
 ///
-/// Administration data, not application data (ADR-0180). Home chooses the active
-/// model, so Home is told which one it is; an ordinary application never learns
-/// model identity and reads `get_local_transcription_readiness` instead. Nothing
+/// Administration data (ADR-0245). Settings chooses the active model, so it is
+/// told which one it is; the transcription path never learns model identity
+/// and reads `get_local_transcription_readiness` instead. Nothing
 /// here reports residency: `installed` is disk presence, and how many models are
 /// resident or warm stays host-private.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -209,10 +209,10 @@ pub fn model_names() -> Vec<&'static str> {
     CATALOG.iter().map(|entry| entry.name).collect()
 }
 
-/// A catalog model as Home's administration view sees it: identity, display
-/// fields, static capabilities, and whether it is already downloaded. Home names
-/// `id` when it activates, downloads, or deletes a model; it never learns the
-/// Hugging Face coordinate. Applications see none of this.
+/// A catalog model as the Settings administration view sees it: identity,
+/// display fields, static capabilities, and whether it is already downloaded.
+/// Settings names `id` when it activates, downloads, or deletes a model; it
+/// never learns the Hugging Face coordinate.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelInfo {

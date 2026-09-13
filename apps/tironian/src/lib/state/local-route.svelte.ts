@@ -2,10 +2,10 @@
  * Whether the host's local transcription route can run here, and what it accepts.
  *
  * Tironian has exactly one active local model per device; the host owns it and
- * Tironian Home administers it (ADR-0180). Tironian chooses the *route*
- * (local against a cloud provider) and reads this to render that choice
- * honestly. It never learns which model is active, what models exist, or
- * anything about what is cached or resident.
+ * Settings administers it (ADR-0245, `local-models.svelte.ts`). The route
+ * (local against a cloud provider) reads this to render that choice honestly.
+ * This read names no model: it answers whether the route can run and what it
+ * accepts, and nothing about what is cached or resident.
  *
  * Advisory, not a gate. Nothing here decides whether `transcribeRecording` may
  * be called: the host resolves the active model independently at the point of
@@ -21,8 +21,8 @@
  *
  * Three states, and `checking` is genuinely separate from `unavailable`: a boot
  * that has not answered yet must not flash a warning, and a host that refused
- * must not read as ready. Refreshed on window focus, because the answer changes
- * in another window.
+ * must not read as ready. Refreshed on window focus, because the shared cache
+ * changes outside the app, and by the model administration after each change.
  */
 import { tauri } from '#platform/tauri';
 import {
@@ -48,8 +48,8 @@ function createLocalRoute() {
 	// runs and answers `host-unavailable`, so callers never platform-detect.
 	void refresh();
 	if (host) {
-		// A model activated, downloaded, or deleted in Home lands here when the
-		// user comes back to this window.
+		// A model file added or removed outside the app lands here when the user
+		// comes back to this window.
 		window.addEventListener('focus', () => void refresh());
 	}
 
@@ -67,14 +67,8 @@ function createLocalRoute() {
 		get capabilities() {
 			return result?.data ?? { supportsPrompt: true, supportsLanguage: true };
 		},
-		/**
-		 * Send the user to Tironian Home's model administration. The app shell
-		 * owns this navigation (ADR-0181); Tironian only asks for it, and the
-		 * user still chooses what to do there.
-		 */
-		openHomeTranscription() {
-			host?.transcription.openHomeTranscription();
-		},
+		/** Re-read the host's answer, after a model change made in Settings. */
+		refresh,
 	};
 }
 

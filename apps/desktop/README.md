@@ -6,7 +6,6 @@ Tironian ships one native application host. It owns one Tauri runtime and one na
 trusted SPA source                 Desktop build output
 
 apps/tironian/src    -----------> dist/dictation
-apps/desktop/ui       -----------> dist/home
                                           |
                                           v
                               Bun loopback sidecar
@@ -67,29 +66,25 @@ drive, because the ggml-vulkan shader build otherwise runs past Windows'
 that, keeping it near a drive root. It needs `VULKAN_SDK` set, and warns when it
 is not.
 
-Tironian Home is the model administration window and nothing else:
-the one place a local transcription model is chosen, downloaded, or deleted. A
-single-app product has no launcher and no chat pane to hold beside it, so Home
-renders Settings directly rather than switching between panes. Tironian, the
-dictation SPA, hands transcription setup back to Home's Settings when the host
-has no usable local model, and Settings offers the ordinary launch action once
-there is one. The tray and deep links remain shortcuts into the same windows:
+The dictation app is the only window (ADR-0245). The local transcription
+model is chosen, downloaded, and deleted in its Settings, under Privacy &
+Processing, and the record screen links there when no local model is ready.
+The tray and the deep link are shortcuts into that one window:
 
 ```bash
 open 'tironian://app/dictation'
-open 'tironian://app/home'
 ```
 
 ## Build and verify
 
 ```bash
-# Build Home, the compiled application, and the Bun sidecar
+# Build the compiled application and the Bun sidecar
 bun run --cwd apps/desktop build:desktop
 
 # Package the complete native application
 bun run --cwd apps/desktop desktop:build
 
-# Typecheck Home plus the compiled application's platform conditions
+# Typecheck the host plus the compiled application's platform conditions
 bun run --cwd apps/desktop typecheck
 
 # Host, routing, sidecar, and window tests
@@ -102,7 +97,7 @@ cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 ## Ownership rules
 
 - `src-tauri` owns native commands, permissions, windows, deep links, and packaging.
-- `src` owns the Bun host, trusted route catalog, static-asset containment, and the Home session.
+- `src` owns the Bun host, trusted route catalog, static-asset containment, and the browser session.
 - `dist` is generated. Never edit it or commit product source beneath it.
 - The dictation SPA owns its UI and browser deployment from `apps/tironian`.
 - A multi-host SPA selects implementations through build-time `#platform/*` conditions. Runtime checks guard optional capabilities; they do not choose which implementation was bundled.

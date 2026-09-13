@@ -9,7 +9,7 @@ import { createBunBlobStore } from '@tironian/blobs/bun';
 import { tironianDataRoot } from '@tironian/constants/app-data';
 import { extractErrorMessage } from 'wellcrafted/error';
 import { COMPILED_APPLICATIONS } from './applications.ts';
-import { createHomeServer } from './server.ts';
+import { createHostServer } from './server.ts';
 import {
 	createReadyFrame,
 	parseBootFrame,
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
 			COMPILED_APPLICATIONS,
 		);
 		const origin = `http://127.0.0.1:${boot.port}`;
-		const app = createHomeServer({
+		const app = createHostServer({
 			origin,
 			launchToken: boot.token,
 			staticAssets,

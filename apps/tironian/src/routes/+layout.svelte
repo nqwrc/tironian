@@ -5,11 +5,9 @@
 	import { onNavigate } from '$app/navigation';
 	import { FlushEditsOnHide } from '@tironian/svelte';
 	import '@tironian/ui/app.css';
-	// Tironian's brand layer, after the shared theme so it wins. Home loads the
-	// same file in the same position.
+	// Tironian's brand layer, after the shared theme so it wins.
 	import '../brand.css';
-	// Rules for elements only this window renders. Keep it last among the
-	// stylesheets.
+	// Rules for particular elements. Keep it last among the stylesheets.
 	import '../app.css';
 
 	let { children } = $props();

@@ -1,6 +1,6 @@
 /**
- * The release asset layout a test host serves: `home/index.html` plus one
- * built document per compiled application this release declares.
+ * The release asset layout a test host serves: one built document per
+ * compiled application this release declares.
  *
  * Fixtures derive their application directories from
  * {@link COMPILED_APPLICATIONS} instead of listing them, because
@@ -16,15 +16,11 @@ import { type Application, COMPILED_APPLICATIONS } from './applications.ts';
 
 export function writeAppsDist({
 	root = mkdtempSync(join(tmpdir(), 'tironian-apps-dist-')),
-	homePage,
 	applicationPage,
 }: {
 	root?: string;
-	homePage: string;
 	applicationPage(application: Application): string;
 }): string {
-	mkdirSync(join(root, 'home'), { recursive: true });
-	writeFileSync(join(root, 'home', 'index.html'), homePage);
 	for (const application of COMPILED_APPLICATIONS) {
 		mkdirSync(join(root, application.id), { recursive: true });
 		writeFileSync(

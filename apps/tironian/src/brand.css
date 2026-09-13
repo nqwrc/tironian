@@ -1,18 +1,16 @@
 /*
  * Tironian's brand layer, and the one place its tokens are defined.
  *
- * Both windows load it right after `@tironian/ui/app.css`, which ships shadcn's
- * default blue-slate theme for every Tironian app: the dictation window from
- * its root layout, and the host's Home window through the `@tironian/app/brand.css`
- * export. One file, so the two windows cannot drift. This file redefines the
- * same variable names so no component changes, and it lives here rather than in
- * `packages/ui` for two reasons: that package is MIT and app-agnostic, so
+ * The root layout loads it right after `@tironian/ui/app.css`, which ships
+ * shadcn's default blue-slate theme for every Tironian app. This file redefines
+ * the same variable names so no component changes, and it lives here rather than
+ * in `packages/ui` for two reasons: that package is MIT and app-agnostic, so
  * repainting it in place would rebrand every consumer it ever gets, not just
  * ours, and the license boundary in AGENTS.md exists precisely to keep
  * app-specific decisions out of the toolkit.
  *
  * It carries the tokens, the typefaces they name, and brand-wide behavior. Rules
- * for elements only one window renders belong to that window's own stylesheet.
+ * for particular elements belong to `app.css`.
  *
  * Values are the Vivavoce design system, deliverable 2, in the oklch it
  * specifies. Warm graphite at hue 65 to 80 instead of slate: it reads as a
@@ -29,9 +27,8 @@
 
 /* Bundled through fontsource rather than fetched from Google Fonts. An app
    whose whole claim is that it works with the network off should not ask a CDN
-   for its typeface on first paint. The dictation window serves these as files;
-   Home is a single-file build, so they reach it inlined as `data:` URLs, which
-   is why the host's policy admits `font-src data:`. */
+   for its typeface on first paint. The build serves them as files on the app's
+   own origin. */
 @import "@fontsource-variable/instrument-sans";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";

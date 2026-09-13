@@ -11,10 +11,10 @@ pub enum TranscriptionError {
     /// The local route cannot run at all: no model is active on this device, or
     /// the active model's file is not here.
     ///
-    /// One public precondition family (ADR-0180). The two cases differ only as
+    /// One public precondition family (ADR-0245). The two cases differ only as
     /// compact `reason` data, because the caller's job is the same either way:
-    /// say so honestly and point at Home. `message` never names a model, since
-    /// model identity is administration data an application does not receive.
+    /// say so honestly and point at Settings. `message` never names a model:
+    /// the transcription path reports readiness, not identity.
     ///
     /// Failing here changes nothing. No model is adopted, downloaded,
     /// substituted, or routed to the cloud on the caller's behalf.

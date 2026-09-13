@@ -5,7 +5,6 @@
 	"description": "Tironian: dictation you own. Local-first speech-to-text on macOS and Windows.",
 	"exports": {
 		"./app": "./src/lib/app/app.ts",
-		"./brand.css": "./src/brand.css",
 		"./commands": "./src/lib/commands.ts",
 		"./workspace": "./src/lib/workspace/index.ts"
 	},

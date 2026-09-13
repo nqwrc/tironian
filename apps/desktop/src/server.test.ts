@@ -1,20 +1,19 @@
 /**
- * Home Server Tests
+ * Host Server Tests
  *
  * Verifies the loopback shell every trusted document and API sits behind
  * (ADR-0084): the exact Host and Origin checks protect the loopback boundary,
- * Tauri bootstraps HttpOnly browser sessions without a URL token, and Home and
- * Dictation are served at their final routes.
+ * Tauri bootstraps HttpOnly browser sessions without a URL token, and the
+ * dictation app, the only window (ADR-0245), is served at its final route.
  *
  * Key behaviors:
  * - The launch token is accepted only by the bootstrap route
  * - Domain APIs (local blobs) require an HttpOnly browser session
- * - Home and Dictation serve their builds
+ * - Dictation serves its build; the retired Home route serves nothing
  * - Unknown, non-canonical, and traversal-shaped app paths stay closed
  * - Host, Origin, CSP, frame, and referrer policies are enforced
- * - The real vite build emits one document with no external asset references
  * - The spawned `main.ts` sidecar announces versioned readiness and serves
- *   the built SPA
+ *   the app document
  */
 
 import { describe, expect, test } from 'bun:test';
@@ -32,13 +31,8 @@ import { generateBlobId } from '@tironian/blobs';
 import { createBunBlobStore } from '@tironian/blobs/bun';
 import { desktopBlobUrl } from '@tironian/blobs/webview';
 import { COMPILED_APPLICATIONS } from './applications.ts';
-import {
-	BOOTSTRAP_ROUTE,
-	BUILT_IN_ROUTES,
-	DICTATION_ROUTE,
-	HOME_ROUTE,
-} from './routes.ts';
-import { createHomeServer } from './server.ts';
+import { BOOTSTRAP_ROUTE, BUILT_IN_ROUTES, DICTATION_ROUTE } from './routes.ts';
+import { createHostServer } from './server.ts';
 import {
 	type ReadyFrame,
 	SIDECAR_PROTOCOL_VERSION,
@@ -51,8 +45,6 @@ import { writeAppsDist } from './test-apps-dist.ts';
 
 const TOKEN = 'per-launch-secret';
 
-/** A stand-in for the built SPA document; `/` must return it byte-for-byte. */
-const PAGE = '<!doctype html><html><body>Home test page</body></html>';
 const applicationPage = (title: string) =>
 	`<!doctype html><html><body>${title} test application</body></html>`;
 const DICTATION_PAGE = applicationPage('Tironian');
@@ -87,7 +79,7 @@ function boundPort(server: { port?: number }): number {
 	return server.port;
 }
 
-async function serveHost(page: string = PAGE) {
+async function serveHost() {
 	const portProbe = Bun.serve({
 		hostname: '127.0.0.1',
 		port: 0,
@@ -96,10 +88,10 @@ async function serveHost(page: string = PAGE) {
 	const port = boundPort(portProbe);
 	await portProbe.stop(true);
 	const origin = `http://127.0.0.1:${port}`;
-	const app = createHomeServer({
+	const app = createHostServer({
 		origin,
 		launchToken: TOKEN,
-		staticAssets: await createAppsDistFixture(page),
+		staticAssets: await createAppsDistFixture(),
 		blobs: createTestBlobs(),
 	});
 	const server = Bun.serve({
@@ -123,11 +115,8 @@ async function serveHost(page: string = PAGE) {
 	return server;
 }
 
-async function createAppsDistFixture(homePage: string = PAGE) {
-	return loadStaticAssets(
-		writeAppsDistFixture(homePage),
-		COMPILED_APPLICATIONS,
-	);
+async function createAppsDistFixture() {
+	return loadStaticAssets(writeAppsDistFixture(), COMPILED_APPLICATIONS);
 }
 
 /** The loaded build of one compiled application, by ID. */
@@ -139,9 +128,8 @@ function applicationAssets(assets: TironianStaticAssets, id: string) {
 	return application;
 }
 
-function writeAppsDistFixture(homePage: string = PAGE): string {
+function writeAppsDistFixture(): string {
 	const root = writeAppsDist({
-		homePage,
 		applicationPage: ({ title }) => applicationPage(title),
 	});
 	mkdirSync(join(root, 'dictation', '_app', 'immutable'), { recursive: true });
@@ -175,12 +163,11 @@ function authenticatedHeaders(server: TestServer) {
 }
 
 describe('loadStaticAssets', () => {
-	test('every declared compiled application must have built, and so must Home', async () => {
+	test('every declared compiled application must have built', async () => {
 		// One omission at a time, so the message names the application that is
 		// actually missing rather than whichever absence lost a race.
 		for (const absent of COMPILED_APPLICATIONS) {
 			const root = writeAppsDist({
-				homePage: PAGE,
 				applicationPage: ({ title }) => applicationPage(title),
 			});
 			rmSync(join(root, absent.id), { recursive: true });
@@ -188,15 +175,6 @@ describe('loadStaticAssets', () => {
 				new RegExp(`${absent.title} asset root is missing`),
 			);
 		}
-
-		const missingHome = writeAppsDist({
-			homePage: PAGE,
-			applicationPage: ({ title }) => applicationPage(title),
-		});
-		rmSync(join(missingHome, 'home'), { recursive: true });
-		expect(
-			loadStaticAssets(missingHome, COMPILED_APPLICATIONS),
-		).rejects.toThrow(/Home index is missing/);
 	});
 
 	test('resolves nested generated assets and extensionless SPA routes', async () => {
@@ -254,11 +232,11 @@ describe('loadStaticAssets', () => {
 	});
 });
 
-describe('createHomeServer', () => {
+describe('createHostServer', () => {
 	test('refuses an empty launch token and non-loopback origins', async () => {
 		const staticAssets = await createAppsDistFixture();
 		expect(() =>
-			createHomeServer({
+			createHostServer({
 				origin: 'http://127.0.0.1:39130',
 				launchToken: '',
 				staticAssets,
@@ -272,7 +250,7 @@ describe('createHomeServer', () => {
 			'http://127.0.0.1:39130/path',
 		]) {
 			expect(() =>
-				createHomeServer({
+				createHostServer({
 					origin,
 					launchToken: TOKEN,
 					staticAssets,
@@ -318,14 +296,14 @@ describe('createHomeServer', () => {
 	test('serves only the session shell before bootstrap and gates domain APIs', async () => {
 		const server = await serveHost();
 		try {
-			const shell = await fetch(HOME_ROUTE.url(server.url.origin));
+			const shell = await fetch(DICTATION_ROUTE.url(server.url.origin));
 			expect(shell.status).toBe(200);
 			expect(await shell.text()).toContain('__TIRONIAN_SESSION_READY__');
 			expect(shell.headers.get('cache-control')).toBe('no-store');
-			const page = await fetch(HOME_ROUTE.url(server.url.origin), {
+			const page = await fetch(DICTATION_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
 			});
-			expect(await page.text()).toBe(PAGE);
+			expect(await page.text()).toBe(DICTATION_PAGE);
 
 			// The host owns no chat session or app catalog any more (ADR-0226):
 			// the routes those used to answer at are simply gone, not just gated.
@@ -342,7 +320,7 @@ describe('createHomeServer', () => {
 		}
 	});
 
-	test('serves Home and every compiled application', async () => {
+	test('serves the one compiled application and nothing at the retired Home route', async () => {
 		const server = await serveHost();
 		try {
 			expect(
@@ -350,16 +328,12 @@ describe('createHomeServer', () => {
 					id,
 					pattern,
 				})),
-			).toEqual([
-				{ id: 'home', pattern: '/apps/home/' },
-				{ id: 'dictation', pattern: '/apps/dictation/' },
-			]);
+			).toEqual([{ id: 'dictation', pattern: '/apps/dictation/' }]);
 
-			const query = await fetch(HOME_ROUTE.url(server.url.origin), {
+			const retiredHome = await fetch(`${server.url.origin}/apps/home/`, {
 				headers: authenticatedHeaders(server),
 			});
-			const queryPage = await query.text();
-			expect(queryPage).toBe(PAGE);
+			expect(retiredHome.status).toBe(404);
 
 			const dictation = await fetch(DICTATION_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
@@ -386,7 +360,6 @@ describe('createHomeServer', () => {
 			expect(await clientRoute.text()).toBe(DICTATION_PAGE);
 
 			for (const response of [
-				query,
 				dictation,
 				dictationAsset,
 				vadAsset,
@@ -408,6 +381,7 @@ describe('createHomeServer', () => {
 		try {
 			for (const path of [
 				'/apps/unknown/',
+				'/apps/home/',
 				'/apps/home/extra',
 				'/apps/home%2f',
 				'/apps/home/%2e%2e/%2e%2e/package.json',
@@ -419,13 +393,13 @@ describe('createHomeServer', () => {
 				expect(await response.text()).not.toContain('"scripts"');
 			}
 
-			// Home strings are SPA state, not an alternate server-side app page.
+			// Query strings are SPA state, not an alternate server-side app page.
 			const queryState = await fetch(
-				`${HOME_ROUTE.url(server.url.origin)}?conversation=recent`,
+				`${DICTATION_ROUTE.url(server.url.origin)}?tab=models`,
 				{ headers: authenticatedHeaders(server) },
 			);
 			expect(queryState.status).toBe(200);
-			expect(await queryState.text()).toBe(PAGE);
+			expect(await queryState.text()).toBe(DICTATION_PAGE);
 		} finally {
 			await server.stop(true);
 		}
@@ -435,15 +409,18 @@ describe('createHomeServer', () => {
 		const server = await serveHost();
 		try {
 			const wrongHost = await fetch(
-				HOME_ROUTE.url(server.url.origin).replace('127.0.0.1', 'localhost'),
+				DICTATION_ROUTE.url(server.url.origin).replace(
+					'127.0.0.1',
+					'localhost',
+				),
 			);
 			expect(wrongHost.status).toBe(421);
-			const wrongOrigin = await fetch(HOME_ROUTE.url(server.url.origin), {
+			const wrongOrigin = await fetch(DICTATION_ROUTE.url(server.url.origin), {
 				headers: { origin: 'https://example.com' },
 			});
 			expect(wrongOrigin.status).toBe(403);
 
-			const page = await fetch(HOME_ROUTE.url(server.url.origin));
+			const page = await fetch(DICTATION_ROUTE.url(server.url.origin));
 			expect(page.headers.get('content-security-policy')).toContain(
 				"connect-src 'self' ipc: http://ipc.localhost",
 			);
@@ -463,7 +440,7 @@ describe('createHomeServer', () => {
 	test('admits first-party WebAssembly without restoring eval', async () => {
 		const server = await serveHost();
 		try {
-			const page = await fetch(HOME_ROUTE.url(server.url.origin), {
+			const page = await fetch(DICTATION_ROUTE.url(server.url.origin), {
 				headers: authenticatedHeaders(server),
 			});
 			const directives = cspDirectives(
@@ -490,8 +467,9 @@ describe('createHomeServer', () => {
 			]);
 			expect(directives.get('object-src')).toEqual(["'none'"]);
 			expect(directives.get('default-src')).toEqual(["'self'"]);
-			// Home's single-file build inlines its typefaces, and nothing wider.
-			expect(directives.get('font-src')).toEqual(["'self'", 'data:']);
+			// Fonts are files on this origin, which `default-src 'self'` covers;
+			// nothing inlines them as `data:` since the single-file Home went.
+			expect(directives.has('font-src')).toBe(false);
 
 			// The capability is real on this origin, not a token for its own sake:
 			// the binary the policy admits is served by this host.
@@ -726,78 +704,6 @@ describe('local blob routes', () => {
 });
 
 // ============================================================================
-// Built SPA Tests (the real vite build)
-// ============================================================================
-
-let builtPagePromise: Promise<string> | undefined;
-
-/**
- * Run the real Vite build once per test run and return Home's index document.
- * Memoized because both the built-SPA describe and the sidecar smoke need it,
- * and bun test does not guarantee an ordering contract between describes.
- */
-function buildSpaOnce(): Promise<string> {
-	builtPagePromise ??= (async () => {
-		const outDir = mkdtempSync(join(tmpdir(), 'tironian-home-build-'));
-		const build = Bun.spawn(['bun', 'x', 'vite', 'build', '--outDir', outDir], {
-			cwd: queryDir,
-			stdout: 'pipe',
-			stderr: 'pipe',
-		});
-		const exitCode = await build.exited;
-		if (exitCode !== 0) {
-			const stderr = await new Response(build.stderr).text();
-			throw new Error(`vite build exited with ${exitCode}:\n${stderr}`);
-		}
-		return Bun.file(join(outDir, 'index.html')).text();
-	})();
-	return builtPagePromise;
-}
-
-describe('the built SPA', () => {
-	test('the build emits one self-contained document and the server returns it byte-for-byte', async () => {
-		const page = await buildSpaOnce();
-
-		// Home currently ships as one document. The server hashes every inline
-		// script into its CSP instead of allowing arbitrary inline execution.
-		const scriptTags = page.match(/<script\b[^>]*>/gi) ?? [];
-		expect(scriptTags.length).toBeGreaterThan(0);
-		for (const tag of scriptTags) {
-			expect(tag).not.toMatch(/\ssrc\s*=/i);
-		}
-		// No asset-bearing tag may reference an external file. Matching tag
-		// attributes (not raw substrings) keeps legitimate inline JS or CSS
-		// content from false-positives.
-		for (const [tag] of page.matchAll(
-			/<(?:img|iframe|source|audio|video|embed)\b[^>]*>/gi,
-		)) {
-			expect(tag).not.toMatch(/\ssrc\s*=/i);
-		}
-		expect(page).not.toMatch(/<link\b[^>]*\brel\s*=\s*["']?stylesheet/i);
-		expect(page).not.toMatch(/<link\b[^>]*\bhref\s*=/i);
-
-		const server = await serveHost(page);
-		try {
-			const response = await fetch(HOME_ROUTE.url(server.url.origin), {
-				headers: authenticatedHeaders(server),
-			});
-			expect(response.status).toBe(200);
-			expect(await response.text()).toBe(page);
-			const scriptSrc =
-				cspDirectives(response.headers.get('content-security-policy')).get(
-					'script-src',
-				) ?? [];
-			expect(
-				scriptSrc.some((token) => token.startsWith("'sha256-")),
-			).toBeTrue();
-			expect(scriptSrc).not.toContain("'unsafe-inline'");
-		} finally {
-			await server.stop(true);
-		}
-	}, 60_000);
-});
-
-// ============================================================================
 // Sidecar End-to-End Smoke (the real main.ts entrypoint)
 // ============================================================================
 
@@ -870,8 +776,7 @@ async function exitWithin(
 
 describe('sidecar end-to-end smoke', () => {
 	test('the spawned entrypoint announces readiness and serves the built SPA', async () => {
-		const page = await buildSpaOnce();
-		const appsDist = writeAppsDistFixture(page);
+		const appsDist = writeAppsDistFixture();
 
 		const portProbe = Bun.serve({
 			hostname: '127.0.0.1',
@@ -905,7 +810,7 @@ describe('sidecar end-to-end smoke', () => {
 			expect(announcedPort).toBe(port);
 			const origin = `http://127.0.0.1:${announcedPort}`;
 
-			const shell = await fetch(HOME_ROUTE.url(origin));
+			const shell = await fetch(DICTATION_ROUTE.url(origin));
 			expect(shell.status).toBe(200);
 			expect(await shell.text()).toContain('__TIRONIAN_SESSION_READY__');
 
@@ -919,10 +824,10 @@ describe('sidecar end-to-end smoke', () => {
 			expect(bootstrap.status).toBe(204);
 			const cookie = bootstrap.headers.get('set-cookie')?.split(';', 1)[0];
 			expect(cookie).toBeDefined();
-			const served = await fetch(HOME_ROUTE.url(origin), {
+			const served = await fetch(DICTATION_ROUTE.url(origin), {
 				headers: { cookie: cookie ?? '' },
 			});
-			expect(await served.text()).toBe(page);
+			expect(await served.text()).toBe(DICTATION_PAGE);
 		} finally {
 			sidecar.kill('SIGTERM');
 			expect(await sidecar.exited).toBe(0);
@@ -930,7 +835,7 @@ describe('sidecar end-to-end smoke', () => {
 	}, 60_000);
 
 	test('a port collision exits without announcing readiness or falling back', async () => {
-		const appsDist = writeAppsDistFixture(await buildSpaOnce());
+		const appsDist = writeAppsDistFixture();
 		const occupied = Bun.serve({
 			hostname: '127.0.0.1',
 			port: 0,
@@ -968,7 +873,7 @@ describe('sidecar end-to-end smoke', () => {
 	}, 60_000);
 
 	test('parent-pipe EOF exits and releases the listening port', async () => {
-		const appsDist = writeAppsDistFixture(await buildSpaOnce());
+		const appsDist = writeAppsDistFixture();
 		const portProbe = Bun.serve({
 			hostname: '127.0.0.1',
 			port: 0,

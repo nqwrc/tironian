@@ -210,11 +210,11 @@ export const commands = {
 	 *  The active local model's identity and whether it can run right now, or
 	 *  `None` when nobody has chosen one.
 	 *
-	 *  **Administration only.** Home holds this grant because Home chooses the
-	 *  active model and must show which one that is. Applications are not granted
-	 *  it and read `get_local_transcription_readiness` instead, which answers the
-	 *  question they actually have without handing them an identity they could
-	 *  start keying behaviour off.
+	 *  **Administration.** The dictation window's Settings holds this grant because
+	 *  it chooses the active model and must show which one that is (ADR-0245). The
+	 *  public app client is not granted it and reads
+	 *  `get_local_transcription_readiness` instead, which answers whether the route
+	 *  can run without handing it an identity to start keying behaviour off.
 	 */
 	getActiveModel: () =>
 		__TAURI_INVOKE<{
@@ -241,7 +241,7 @@ export const commands = {
 		} | null>('get_active_model'),
 	/**
 	 *  Make `model_id` the active local model, or clear the choice with `null`.
-	 *  Home's administration write: the only way the active model changes.
+	 *  The Settings administration write: the only way the active model changes.
 	 */
 	setActiveModel: (modelId: string | null) =>
 		typedError<null, SettingsError>(
@@ -260,20 +260,6 @@ export const commands = {
 		__TAURI_INVOKE<LocalTranscriptionReadiness>(
 			'get_local_transcription_readiness',
 		),
-	/**
-	 *  Take the user to the app that can fix an unavailable local transcription
-	 *  route.
-	 *
-	 *  The app shell owns this navigation. The host reports that the route is
-	 *  unavailable, an application decides how to present it, and getting the user
-	 *  to Home is neither of their jobs: an application asks the shell to open
-	 *  Home, and the shell does. Home is the model administration window and
-	 *  nothing else now (ADR-0180), so there is no section to name: opening the
-	 *  window is the whole act.
-	 *
-	 *  It mutates no transcription state: it opens a window, and the user chooses.
-	 */
-	openHome: () => __TAURI_INVOKE<void>('open_home'),
 	/**  When the host drops the resident model. */
 	getUnloadPolicy: () => __TAURI_INVOKE<UnloadPolicy>('get_unload_policy'),
 	/**
@@ -401,12 +387,12 @@ export const events = {
 
 /* Types */
 /**
- *  The one active local model as **Home** sees it: its exact identity and
+ *  The one active local model as Settings sees it: its exact identity and
  *  whether its file is on this machine right now.
  *
- *  Administration data, not application data (ADR-0180). Home chooses the active
- *  model, so Home is told which one it is; an ordinary application never learns
- *  model identity and reads `get_local_transcription_readiness` instead. Nothing
+ *  Administration data (ADR-0245). Settings chooses the active model, so it is
+ *  told which one it is; the transcription path never learns model identity
+ *  and reads `get_local_transcription_readiness` instead. Nothing
  *  here reports residency: `installed` is disk presence, and how many models are
  *  resident or warm stays host-private.
  */
@@ -651,7 +637,7 @@ export type HostRecording = {
  *  What an application may learn about the local transcription route: whether it
  *  is ready, and which advisory inputs it accepts.
  *
- *  Readiness and capability, never identity (ADR-0180). This is advisory UI
+ *  Readiness and capability, never identity (ADR-0245). This is advisory UI
  *  state, not a preflight gate: a caller uses it to warn before capture and to
  *  decide whether to offer a prompt or language field, never to decide whether
  *  `transcribe_recording` may be called. Transcription resolves the active model
@@ -701,10 +687,10 @@ export type MicrophonePermission =
 	| 'unknown';
 
 /**
- *  A catalog model as Home's administration view sees it: identity, display
- *  fields, static capabilities, and whether it is already downloaded. Home names
- *  `id` when it activates, downloads, or deletes a model; it never learns the
- *  Hugging Face coordinate. Applications see none of this.
+ *  A catalog model as the Settings administration view sees it: identity,
+ *  display fields, static capabilities, and whether it is already downloaded.
+ *  Settings names `id` when it activates, downloads, or deletes a model; it
+ *  never learns the Hugging Face coordinate.
  */
 export type ModelInfo = {
 	id: string;
@@ -770,7 +756,7 @@ export type RecordingEndedEvent = {
 };
 
 /**
- *  Failures the Home administration commands can report. Both are actionable:
+ *  Failures the model administration commands can report. Both are actionable:
  *  the id is not a model this build knows, or the choice could not be made
  *  durable.
  */
@@ -812,10 +798,10 @@ export type TranscriptionError =
 	 *  The local route cannot run at all: no model is active on this device, or
 	 *  the active model's file is not here.
 	 *
-	 *  One public precondition family (ADR-0180). The two cases differ only as
+	 *  One public precondition family (ADR-0245). The two cases differ only as
 	 *  compact `reason` data, because the caller's job is the same either way:
-	 *  say so honestly and point at Home. `message` never names a model, since
-	 *  model identity is administration data an application does not receive.
+	 *  say so honestly and point at Settings. `message` never names a model:
+	 *  the transcription path reports readiness, not identity.
 	 *
 	 *  Failing here changes nothing. No model is adopted, downloaded,
 	 *  substituted, or routed to the cloud on the caller's behalf.
@@ -837,7 +823,7 @@ export type TranscriptionError =
 /**
  *  The advisory hints an application supplies with a transcription.
  *
- *  Model identity is deliberately absent (ADR-0180): the host resolves the one
+ *  Model identity is deliberately absent (ADR-0245): the host resolves the one
  *  active model at use, so an ordinary request cannot reassign the shared model
  *  cache. Language and prompt stay application-owned and read-at-use, exactly as
  *  ADR-0012 left them; nothing here is retained between calls.
@@ -871,8 +857,8 @@ export type TranscriptionOutcome =
 /**
  *  Why the local transcription route cannot run right now.
  *
- *  A compact reason, deliberately not a model. It is enough for an application
- *  to write an honest sentence and name Home as the fix, and it carries no
+ *  A compact reason, deliberately not a model. It is enough for the app to
+ *  write an honest sentence and point at Settings as the fix, and it carries no
  *  identity, no inventory, and nothing about what is cached or resident.
  */
 export type UnavailableReason =

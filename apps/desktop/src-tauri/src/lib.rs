@@ -13,7 +13,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use tauri::webview::NewWindowResponse;
 use tauri::{
-    AppHandle, Manager, RunEvent, Runtime, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
     WindowEvent, Wry,
 };
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -129,38 +129,28 @@ const fn suppress_default_window(is_first_generation: bool, launched_from_autost
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum BuiltInApp {
-    Home,
     Dictation,
 }
 
 impl BuiltInApp {
-    const ALL: [Self; 2] = [Self::Home, Self::Dictation];
-
-    /// Whether Home lists this app as one a person can open (ADR-0189).
-    ///
-    /// Home is absent because you are already looking at it, not because it is
-    /// above the others (ADR-0209).
-    const fn is_launchable(self) -> bool {
-        matches!(self, Self::Dictation)
-    }
+    /// The one application window (ADR-0245). Settings, including model
+    /// administration, live inside it, so there is no second built-in app.
+    const ALL: [Self; 1] = [Self::Dictation];
 
     const fn id(self) -> &'static str {
         match self {
-            Self::Home => "home",
             Self::Dictation => "dictation",
         }
     }
 
     const fn path(self) -> &'static str {
         match self {
-            Self::Home => "/apps/home/",
             Self::Dictation => "/apps/dictation/",
         }
     }
 
     const fn title(self) -> &'static str {
         match self {
-            Self::Home => "Tironian: Model settings",
             Self::Dictation => "Tironian",
         }
     }
@@ -298,10 +288,9 @@ enum FailureChoice {
     Quit,
 }
 
-/// The typed Tironian command and event contract. The raw audio response,
-/// Tironian host-status command, and host-owned `launch_application` remain on Tauri's
-/// handwritten handler because they are outside this generated Tironian
-/// binding API.
+/// The typed Tironian command and event contract. The raw audio response
+/// remains on Tauri's handwritten handler because its shape is outside this
+/// generated Tironian binding API.
 fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(tauri_specta::collect_commands![
@@ -323,7 +312,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             get_active_model,
             set_active_model,
             get_local_transcription_readiness,
-            open_home,
             get_unload_policy,
             set_unload_policy,
             list_models,
@@ -349,19 +337,13 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 
 #[cfg(test)]
 mod export_bindings {
-    /// Both consumers of this crate's typed command API are generated from
-    /// the one builder, so neither can drift from Rust.
+    /// The one consumer of this crate's typed command API is generated from
+    /// the builder, so it cannot drift from Rust.
     ///
-    /// Each file carries the whole API because `tauri_specta` exports a
+    /// The file carries the whole API because `tauri_specta` exports a
     /// builder, not a slice of one. What a window may actually call is decided
-    /// by its capability file, not by which bindings it can import: Home's
-    /// `home-model-administration-*` capability grants exactly the local-model
-    /// administration commands (ADR-0180), and every other command in Home's
-    /// copy is denied at the IPC boundary.
-    const TARGETS: &[&str] = &[
-        "../../tironian/src/lib/tauri/bindings.gen.ts",
-        "../src/ui/bindings.gen.ts",
-    ];
+    /// by its capability file, not by which bindings it can import.
+    const TARGETS: &[&str] = &["../../tironian/src/lib/tauri/bindings.gen.ts"];
 
     #[test]
     fn export_types() {
@@ -371,111 +353,6 @@ mod export_bindings {
                 .unwrap_or_else(|error| panic!("failed to export bindings to {target}: {error}"));
         }
     }
-}
-
-/// Take the user to the app that can fix an unavailable local transcription
-/// route.
-///
-/// The app shell owns this navigation. The host reports that the route is
-/// unavailable, an application decides how to present it, and getting the user
-/// to Home is neither of their jobs: an application asks the shell to open
-/// Home, and the shell does. Home is the model administration window and
-/// nothing else now (ADR-0180), so there is no section to name: opening the
-/// window is the whole act.
-///
-/// It mutates no transcription state: it opens a window, and the user chooses.
-#[tauri::command]
-#[specta::specta]
-fn open_home(app: DesktopAppHandle) {
-    request_window(&app, BuiltInApp::Home);
-}
-
-/// Launch one application Home lists: reveal and focus its window, creating it
-/// the first time. Calling again focuses rather than duplicating, and Home is
-/// never hidden to do it.
-///
-/// Windows are deliberate (ADR-0209). One window that switched between
-/// applications would union every capability file onto one label, because a
-/// label is what native authority is granted to; separate windows are what keep
-/// `home` and `dictation` meaning different things. From here the OS is the
-/// switcher.
-///
-/// This is Home's verb, not an app-facing one. Home only ever lists the
-/// compiled built-in apps it is allowed to launch (ADR-0189); there is no
-/// second, admitted source of application IDs to resolve.
-///
-/// # Why it waits
-///
-/// Window work happens on the main thread, so this command hands the attempt
-/// over and blocks on its outcome rather than reporting that it scheduled
-/// something. A caller that gets `Ok` has a window; a caller that gets `Err`
-/// has a sentence to show. `#[tauri::command(async)]` is what makes the wait
-/// safe: it moves this body off the main thread, which would otherwise be the
-/// thread the closure below is waiting for.
-#[tauri::command(async)]
-fn launch_application(
-    app: DesktopAppHandle,
-    state: State<'_, HostState>,
-    app_id: String,
-) -> std::result::Result<(), String> {
-    let Some(built_in) = parse_application_id(&app_id) else {
-        return Err(format!(
-            "app id must name a built-in app Home offers: {app_id}"
-        ));
-    };
-    // Unlike the tray, deep links, and startup, a user-invoked launch does not
-    // queue itself for a future host generation: the person is waiting, and a
-    // window that appears after the next restart is not what they asked for.
-    let Some(token) = state.active_token() else {
-        return Err("the Tironian host is not ready".to_string());
-    };
-    let port = state.port().map_err(|error| format!("{error:#}"))?;
-
-    launch_on_main_thread(&app, built_in, port, &token).map_err(|error| format!("{error:#}"))
-}
-
-/// Create or reveal the window on the main thread and report what happened.
-///
-/// Mirrors `create_windows_on_main_thread`: hand the work over, wait for the
-/// one result. The sender lives in the closure, so an event loop that shuts
-/// down before running it drops the sender and this returns an error rather
-/// than waiting forever.
-fn launch_on_main_thread(
-    app: &DesktopAppHandle,
-    built_in: BuiltInApp,
-    port: u16,
-    token: &str,
-) -> Result<()> {
-    let (sender, receiver) = mpsc::sync_channel(1);
-    let window_app = app.clone();
-    let token = token.to_string();
-    app.run_on_main_thread(move || {
-        let result = if window_app.state::<HostState>().token_is_active(&token) {
-            ensure_window(&window_app, built_in, port, &token, true)
-        } else {
-            // The host restarted between the click and the main thread reaching
-            // this: every window from the old generation is being torn down, so
-            // opening one now would create a window against a dead token.
-            Err(anyhow!(
-                "the Tironian host restarted before the window opened"
-            ))
-        };
-        let _ = sender.send(result);
-    })
-    .context("schedule the application window on the main thread")?;
-    receiver
-        .recv()
-        .context("the main thread stopped before opening the window")?
-}
-
-/// Resolve the one ID shape this command can act on: a compiled built-in app
-/// Home is allowed to launch.
-///
-/// This is a single-app product now: there is no admitted catalog and no
-/// second `app-` window class, so an ID that names anything else (Home
-/// itself, or nothing this build knows) is refused rather than opened.
-fn parse_application_id(id: &str) -> Option<BuiltInApp> {
-    BuiltInApp::from_id(id).filter(|built_in| built_in.is_launchable())
 }
 
 /// Release the host resources a window owns once it is destroyed.
@@ -503,7 +380,7 @@ pub fn run() {
     let port = configured_port();
     let specta_builder = make_specta_builder();
     let specta_handler = tauri_specta::Builder::invoke_handler(&specta_builder);
-    let native_handler = tauri::generate_handler![encode_recording_for_upload, launch_application]
+    let native_handler = tauri::generate_handler![encode_recording_for_upload]
         as fn(tauri::ipc::Invoke<tauri::Wry>) -> bool;
     let log_plugin = tauri_plugin_log::Builder::new()
         .level(log::LevelFilter::Info)
@@ -554,10 +431,7 @@ pub fn run() {
 
     builder
         .invoke_handler(move |invoke| {
-            if matches!(
-                invoke.message.command(),
-                "encode_recording_for_upload" | "launch_application"
-            ) {
+            if invoke.message.command() == "encode_recording_for_upload" {
                 native_handler(invoke)
             } else {
                 specta_handler(invoke)
@@ -611,9 +485,7 @@ pub fn run() {
             // Autostart registers this launch with `AUTOSTART_HIDDEN_ARG`
             // (ADR-0189): the OS starting Tironian at login is not a person
             // asking for a window, so the tray comes up and nothing else.
-            if !opened_window
-                && !launched_from_autostart(&std::env::args().collect::<Vec<_>>())
-            {
+            if !opened_window && !launched_from_autostart(&std::env::args().collect::<Vec<_>>()) {
                 request_window(app.handle(), BuiltInApp::Dictation);
             }
             request_start(app.handle().clone(), None);
@@ -673,10 +545,8 @@ fn open_deep_links(app: &DesktopAppHandle, urls: &[tauri::Url]) {
 /// Ask for a window without waiting: queue it when the host is not ready yet,
 /// and log rather than report what the main thread makes of it.
 ///
-/// That is right for the callers that have nobody to answer to (startup, the
-/// tray, a deep link, macOS reopen, an app asking for a section of Home). It is
-/// wrong for `launch_application`, where a person clicked and is owed an
-/// outcome, so that command waits on the main thread instead.
+/// Every caller has nobody to answer to: startup, the tray, a deep link, and
+/// macOS reopen all reveal the one dictation window.
 fn request_window(app: &DesktopAppHandle, built_in: BuiltInApp) {
     let state = app.state::<HostState>();
     let Some(token) = state.active_token() else {
@@ -706,11 +576,9 @@ fn request_window(app: &DesktopAppHandle, built_in: BuiltInApp) {
 
 /// Resolve `tironian://app/<id>` to the built-in app it names.
 ///
-/// The segment is `app` because it is the same ID space as `/apps/<id>/` and
-/// the list Home shows: a person pasting a link names the thing they want, not
-/// the frame it arrives in. An admitted app's dotted ID cannot collide with
-/// these bare labels (ADR-0210), so widening this to the catalog later needs
-/// no new grammar.
+/// The segment is `app` because it is the same ID space as `/apps/<id>/`: a
+/// person pasting a link names the thing they want, not the frame it arrives
+/// in. The one ID that resolves is `dictation` (ADR-0245).
 fn parse_app_deep_link(url: &tauri::Url) -> Option<BuiltInApp> {
     if url.scheme() != "tironian"
         || url.host_str() != Some("app")
@@ -1292,8 +1160,9 @@ fn read_ready_frame(reader: &mut impl BufRead, expected_port: u16) -> Result<()>
     }
 
     let line = line.trim_end_matches(['\r', '\n']);
-    let frame: ReadyFrame = serde_json::from_str(line)
-        .context(format!("Bun stdout was not one strict v{PROTOCOL_VERSION} ready frame"))?;
+    let frame: ReadyFrame = serde_json::from_str(line).context(format!(
+        "Bun stdout was not one strict v{PROTOCOL_VERSION} ready frame"
+    ))?;
     if frame.r#type != "ready" {
         bail!("Bun emitted a frame other than ready");
     }
@@ -1450,7 +1319,7 @@ mod tests {
     #[test]
     fn navigation_allows_only_the_exact_active_origin_without_credentials() {
         for allowed in [
-            "http://127.0.0.1:41730/apps/home/",
+            "http://127.0.0.1:41730/apps/dictation/",
             "http://127.0.0.1:41730/another/path?query=ok#fragment",
         ] {
             assert!(is_allowed_navigation(
@@ -1460,11 +1329,11 @@ mod tests {
         }
 
         for denied in [
-            "https://127.0.0.1:41730/apps/home/",
-            "http://localhost:41730/apps/home/",
-            "http://127.0.0.1:41731/apps/home/",
-            "http://user@127.0.0.1:41730/apps/home/",
-            "http://user:secret@127.0.0.1:41730/apps/home/",
+            "https://127.0.0.1:41730/apps/dictation/",
+            "http://localhost:41730/apps/dictation/",
+            "http://127.0.0.1:41731/apps/dictation/",
+            "http://user@127.0.0.1:41730/apps/dictation/",
+            "http://user:secret@127.0.0.1:41730/apps/dictation/",
         ] {
             assert!(!is_allowed_navigation(
                 &denied.parse().unwrap(),
@@ -1476,55 +1345,21 @@ mod tests {
     #[test]
     fn built_in_window_table_has_stable_ids_routes_and_titles() {
         let actual = BuiltInApp::ALL.map(|window| (window.id(), window.path(), window.title()));
+        assert_eq!(actual, [("dictation", "/apps/dictation/", "Tironian")]);
+    }
+
+    /// One window (ADR-0245): the table resolves `dictation` and nothing else,
+    /// the retired Home label included. The Bun side asserts the same list
+    /// against `applications.ts`.
+    #[test]
+    fn only_dictation_is_a_built_in_app() {
         assert_eq!(
-            actual,
-            [
-                ("home", "/apps/home/", "Tironian: Model settings"),
-                ("dictation", "/apps/dictation/", "Tironian"),
-            ]
+            BuiltInApp::from_id("dictation"),
+            Some(BuiltInApp::Dictation)
         );
-    }
-
-    /// Home lists exactly the applications this table calls launchable, so the
-    /// two must not drift: an ID Home can show has to be one this verb opens,
-    /// and an ID it cannot show has to be one this verb refuses. The Bun side
-    /// asserts the same list against `applications.ts`.
-    #[test]
-    fn compiled_applications_are_the_release_built_spas() {
-        let launchable: Vec<&str> = BuiltInApp::ALL
-            .into_iter()
-            .filter(|window| window.is_launchable())
-            .map(BuiltInApp::id)
-            .collect();
-        assert_eq!(launchable, ["dictation"]);
-    }
-
-    /// A single-app product admits no other apps: the only ID that resolves
-    /// through the launch verb is the one compiled built-in app Home lists.
-    /// Everything else is refused outright rather than opening a window at all,
-    /// which is the tightening that came with dropping the admitted catalog.
-    #[test]
-    fn only_dictation_resolves_through_the_launch_verb() {
-        assert_eq!(parse_application_id("dictation"), Some(BuiltInApp::Dictation));
-
-        for denied in [
-            "",
-            "Hello",
-            "hello_http",
-            "hello/http",
-            "..",
-            "0-",
-            "-a",
-            "hello http",
-            "héllo",
-            "hello-http",
-            "app.tironian.hello",
-            "never-admitted",
-            // Reserved windows Home does not list: the shell itself.
-            "home",
-        ] {
+        for denied in ["", "home", "Dictation", "app.tironian.hello", ".."] {
             assert!(
-                parse_application_id(denied).is_none(),
+                BuiltInApp::from_id(denied).is_none(),
                 "expected {denied:?} rejected"
             );
         }
@@ -1625,8 +1460,6 @@ mod tests {
         let declared: std::collections::BTreeSet<&str> =
             crate::command_names::COMMANDS.iter().copied().collect();
         for encoded in [
-            include_str!("../capabilities/home-model-administration-development.json"),
-            include_str!("../capabilities/home-model-administration-production.json"),
             include_str!("../capabilities/trusted-dictation-native-development.json"),
             include_str!("../capabilities/trusted-dictation-native-production.json"),
             include_str!("../capabilities/trusted-app-windows-development.json"),
@@ -1657,42 +1490,33 @@ mod tests {
     /// The generated bindings are a committed artifact, so they can go stale
     /// against the command list without anything failing to compile.
     ///
-    /// Two commands are deliberately outside the generated API: they ride
-    /// Tauri's handwritten handler because their shapes are not `specta::Type`
-    /// (raw bytes) or are host-owned rather than part of the app contract.
+    /// One command is deliberately outside the generated API: it rides Tauri's
+    /// handwritten handler because its shape (raw bytes) is not `specta::Type`.
     #[test]
     fn generated_bindings_cover_every_declared_command() {
-        const HANDWRITTEN: &[&str] = &["encode_recording_for_upload", "launch_application"];
-        for bindings in [
-            include_str!("../../../tironian/src/lib/tauri/bindings.gen.ts"),
-            include_str!("../../src/ui/bindings.gen.ts"),
-        ] {
-            for command in crate::command_names::COMMANDS {
-                if HANDWRITTEN.contains(command) {
-                    continue;
-                }
-                // Either quote style: specta emits double quotes and the repo
-                // formatter rewrites them to single, so both are "fresh".
-                assert!(
-                    bindings.contains(&format!("'{command}'"))
-                        || bindings.contains(&format!("\"{command}\"")),
-                    "regenerate bindings: {command} is missing"
-                );
+        const HANDWRITTEN: &[&str] = &["encode_recording_for_upload"];
+        let bindings = include_str!("../../../tironian/src/lib/tauri/bindings.gen.ts");
+        for command in crate::command_names::COMMANDS {
+            if HANDWRITTEN.contains(command) {
+                continue;
             }
+            // Either quote style: specta emits double quotes and the repo
+            // formatter rewrites them to single, so both are "fresh".
+            assert!(
+                bindings.contains(&format!("'{command}'"))
+                    || bindings.contains(&format!("\"{command}\"")),
+                "regenerate bindings: {command} is missing"
+            );
         }
     }
 
-    /// Model administration is routed to Home and to no application window
-    /// (ADR-0180). This is wiring, not a sandbox: an app window runs as
-    /// Tironian. What it proves is that the ownership the record describes is
-    /// the ownership the build actually wires, so "Dictation cannot pick a
-    /// model" does not quietly become false the next time a permission is
-    /// pasted into the wrong file.
+    /// Model administration belongs to the dictation window's own native
+    /// capability, where its Settings live (ADR-0245), and not to the public
+    /// app-window capability the `@tironian/app` client is described by. This
+    /// is wiring, not a sandbox: what it proves is that the grant the record
+    /// describes is the grant the build wires.
     #[test]
-    fn model_administration_is_routed_to_home_and_away_from_applications() {
-        // `get_active_model` is in this list: model *identity* is administration
-        // data. An application reads readiness, which answers "can the route run
-        // and what does it accept" without naming a model (ADR-0180).
+    fn model_administration_is_granted_to_the_dictation_window() {
         const ADMINISTRATION: &[&str] = &[
             "allow-list-models",
             "allow-download-model",
@@ -1705,54 +1529,30 @@ mod tests {
         ];
 
         for encoded in [
-            include_str!("../capabilities/home-model-administration-development.json"),
-            include_str!("../capabilities/home-model-administration-production.json"),
-        ] {
-            let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
-            assert_eq!(
-                capability["windows"].as_array().unwrap(),
-                &vec![serde_json::json!("home")],
-                "model administration belongs to Home alone"
-            );
-            let permissions = capability["permissions"].as_array().unwrap();
-            for permission in ADMINISTRATION {
-                assert!(
-                    permissions.contains(&serde_json::json!(permission)),
-                    "Home must be able to invoke {permission}"
-                );
-            }
-        }
-
-        for encoded in [
             include_str!("../capabilities/trusted-dictation-native-development.json"),
             include_str!("../capabilities/trusted-dictation-native-production.json"),
         ] {
             let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
+            assert_eq!(
+                capability["windows"],
+                serde_json::json!(["dictation"]),
+                "model administration is granted to the dictation window"
+            );
             let permissions = capability["permissions"].as_array().unwrap();
-            for permission in ADMINISTRATION {
-                assert!(
-                    !permissions.contains(&serde_json::json!(permission)),
-                    "an application must not administer models: {permission}"
-                );
-            }
-            // It still transcribes, still reads advisory readiness so it can warn
-            // before capture, and can still send the user to Home to fix it.
-            for permission in [
+            for permission in ADMINISTRATION.iter().chain(&[
                 "allow-transcribe-recording",
                 "allow-prewarm-model",
                 "allow-get-local-transcription-readiness",
-                "allow-open-home",
-            ] {
+            ]) {
                 assert!(
                     permissions.contains(&serde_json::json!(permission)),
-                    "Dictation must keep {permission}"
+                    "the dictation window must be able to invoke {permission}"
                 );
             }
         }
 
-        // The dictation window transcribes through the same public client, so
-        // the same separation has to hold for its window class, not just
-        // Home's.
+        // The public client is not the settings surface: administering models
+        // stays out of the app-window capability.
         for encoded in APP_WINDOW_CAPABILITIES {
             let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
             let permissions = capability["permissions"].as_array().unwrap();
@@ -1872,7 +1672,7 @@ mod tests {
         // Either quote style, for the same reason the binding freshness check
         // above accepts both: specta emits double quotes and the repo formatter
         // rewrites them to single.
-        const BINDINGS: &str = include_str!("../../src/ui/bindings.gen.ts");
+        const BINDINGS: &str = include_str!("../../../tironian/src/lib/tauri/bindings.gen.ts");
         assert!(
             BINDINGS.contains("'recording-ended-event'")
                 || BINDINGS.contains("\"recording-ended-event\""),
@@ -1880,16 +1680,18 @@ mod tests {
         );
     }
 
+    /// Each build selects the dictation window's native capability, and no
+    /// capability for a window that no longer exists (ADR-0245).
     #[test]
-    fn each_build_selects_the_home_model_administration_capability() {
+    fn each_build_selects_the_dictation_native_capability_and_no_home() {
         for (encoded, capability) in [
             (
                 include_str!("../tauri.dev.conf.json"),
-                "home-model-administration-development",
+                "trusted-dictation-native-development",
             ),
             (
                 include_str!("../tauri.conf.json"),
-                "home-model-administration-production",
+                "trusted-dictation-native-production",
             ),
         ] {
             let config: serde_json::Value = serde_json::from_str(encoded).unwrap();
@@ -1899,6 +1701,13 @@ mod tests {
             assert!(
                 selected.contains(&serde_json::json!(capability)),
                 "{capability} exists but this build does not select it"
+            );
+            assert!(
+                !selected
+                    .iter()
+                    .filter_map(|id| id.as_str())
+                    .any(|id| id.starts_with("home-")),
+                "a build selects a capability for the removed Home window"
             );
         }
     }
@@ -1919,54 +1728,28 @@ mod tests {
         assert_ne!(production["identifier"], development["identifier"]);
     }
 
-    /// Home lists what can be launched, so Home is the window that launches it
-    /// (ADR-0189). Granting the verb more widely would let an application open
-    /// another application without the user ever choosing it, which is a
-    /// product decision nobody made.
+    /// One window means no verb that opens another (ADR-0245). A command that
+    /// reveals a second window would reopen the split this build removed.
     #[test]
-    fn only_home_can_launch_an_application() {
-        for encoded in [
-            include_str!("../capabilities/home-launch-application-development.json"),
-            include_str!("../capabilities/home-launch-application-production.json"),
-        ] {
-            let capability: serde_json::Value = serde_json::from_str(encoded).unwrap();
-            assert_eq!(
-                capability["windows"],
-                serde_json::json!(["home"]),
-                "the launch verb belongs to the Home window alone"
-            );
-            let permissions = capability["permissions"].as_array().unwrap();
-            assert!(permissions.contains(&serde_json::json!("allow-launch-application")));
-        }
-    }
-
-    /// ADR-0181 keeps `openHome(section)` and `openApp(appId)` apart because a
-    /// built-in window and an admitted member have different identity and
-    /// authority rules. Home's launch verb crosses that line by design, which is
-    /// exactly why no app window may hold it: an admitted app must not be able
-    /// to reveal a compiled window, and reusing the reserved `open_app` name
-    /// for this would have made that the default the day a `shell` namespace
-    /// shipped.
-    #[test]
-    fn no_app_window_can_launch_an_application() {
-        for encoded in APP_WINDOW_CAPABILITIES {
+    fn there_is_no_verb_that_opens_a_second_window() {
+        for retired in ["launch_application", "open_home"] {
             assert!(
-                !granted_app_commands(encoded).contains("launch_application"),
-                "an app window must not be able to reveal another application"
+                !crate::command_names::COMMANDS.contains(&retired),
+                "{retired} opens a second window and must not come back"
             );
         }
     }
 
     #[test]
     fn deep_links_accept_only_the_closed_built_in_app_table() {
-        for (url, expected) in [
-            ("tironian://app/home", BuiltInApp::Home),
-            ("tironian://app/dictation", BuiltInApp::Dictation),
-        ] {
-            assert_eq!(parse_app_deep_link(&url.parse().unwrap()), Some(expected));
-        }
+        assert_eq!(
+            parse_app_deep_link(&"tironian://app/dictation".parse().unwrap()),
+            Some(BuiltInApp::Dictation)
+        );
 
         for denied in [
+            // The retired Home window resolves like any unknown app.
+            "tironian://app/home",
             // Both retired spellings. Neither is kept as a compatibility alias.
             "tironian://surface/home",
             "tironian://window/home",
@@ -1999,10 +1782,7 @@ mod tests {
             "tironian://app/home",
         ]
         .map(String::from);
-        assert_eq!(
-            apps_from_arguments(&arguments),
-            vec![BuiltInApp::Dictation, BuiltInApp::Home]
-        );
+        assert_eq!(apps_from_arguments(&arguments), vec![BuiltInApp::Dictation]);
     }
 
     #[test]
@@ -2011,7 +1791,9 @@ mod tests {
         let json = boot_frame_json(&token, PRODUCTION_PORT).unwrap();
         assert_eq!(
             json,
-            format!("{{\"type\":\"boot\",\"protocolVersion\":3,\"token\":\"{token}\",\"port\":41730}}")
+            format!(
+                "{{\"type\":\"boot\",\"protocolVersion\":3,\"token\":\"{token}\",\"port\":41730}}"
+            )
         );
         assert!(!token.contains('='));
     }

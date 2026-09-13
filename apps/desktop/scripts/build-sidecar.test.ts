@@ -2,8 +2,8 @@
  * Tironian Bun Host Packaging Tests
  *
  * Verifies the compiled Bun child runs without a system Bun on PATH, accepts
- * only the fixed production boot contract, finds packaged Home and Dictation
- * assets through the Rust-supplied resource path, and exits when the parent
+ * only the fixed production boot contract, finds the packaged Dictation assets
+ * through the Rust-supplied resource path, and exits when the parent
  * pipe closes.
  */
 
@@ -121,11 +121,8 @@ test('compiled production host serves packaged apps and exits on parent EOF', as
 		expect(cookie).toBeDefined();
 		const session = { headers: { cookie: cookie ?? '' } };
 
-		const home = await fetch(`${origin}/apps/home/`, session);
-		expect(home.status).toBe(200);
-		expect(await home.text()).toContain(
-			'<title>Tironian: Model settings</title>',
-		);
+		const retiredHome = await fetch(`${origin}/apps/home/`, session);
+		expect(retiredHome.status).toBe(404);
 		const dictation = await fetch(`${origin}/apps/dictation/`, session);
 		expect(dictation.status).toBe(200);
 		const dictationPage = await dictation.text();

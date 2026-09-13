@@ -32,6 +32,7 @@
 	import { createCopyFn } from '$lib/utils/createCopyFn';
 	import { tauri } from '#platform/tauri';
 	import AdvancedDisclosure from './AdvancedDisclosure.svelte';
+	import LocalModelAdministration from './LocalModelAdministration.svelte';
 	import ProviderConfigFields from './ProviderConfigFields.svelte';
 	import { getTironianApp } from '$lib/app/context';
 
@@ -145,11 +146,9 @@
 </Field.Group>
 
 {#snippet onDeviceSection()}
-	<!-- Tironian chooses the transcription route; Tironian owns which local
-	     model runs and administers downloads, deletion, and the unload policy
-	     (ADR-0180). This section reports whether the route is ready and hands off
-	     to Home; it names no model, because model identity is administration data
-	     this app is not given. -->
+	<!-- The route's readiness, then the model it runs on. The one active local
+	     model is administered here, in the app's own Settings (ADR-0245):
+	     chosen, downloaded, deleted, and unloaded when idle. -->
 	<Field.Field orientation="horizontal">
 		<Field.Content>
 			<Field.Label>{m.transcription_runtime_config_on_device_transcription()}</Field.Label>
@@ -159,23 +158,16 @@
 				{:else if localRouteBlocker}
 					{localRouteBlocker}
 				{:else}
-					Ready. Tironian runs local transcription on the model you chose in
-					Home, and reports which model produced each transcript.
+					Ready. Local transcription runs on the active model below, and each
+					transcript records which model produced it.
 				{/if}
 			</Field.Description>
 		</Field.Content>
 		{#if localRouteChecked && !localRouteBlocker}
 			<Badge variant="secondary" class="text-xs">{m.transcription_runtime_config_ready()}</Badge>
-		{:else if localRouteBlocker}
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={() => localRoute.openHomeTranscription()}
-			>
-				{m.transcription_runtime_config_open_home()}
-			</Button>
 		{/if}
 	</Field.Field>
+	<LocalModelAdministration />
 {/snippet}
 
 {#snippet keyProviderCard(entry: KeyEntry)}
