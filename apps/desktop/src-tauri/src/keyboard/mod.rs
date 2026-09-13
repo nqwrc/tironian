@@ -1,8 +1,11 @@
-//! The macOS Accessibility-grant watch for auto-paste-at-cursor.
+//! The macOS Accessibility-grant watch for auto-paste-at-cursor, and the
+//! Windows modifier-only hold.
 //!
 //! Global-shortcut input is `tauri-plugin-global-shortcut` chords on every
-//! platform (registered and dispatched by the Rust shell); this module owns no shortcut input
-//! (ADR-0117). What survives is a macOS-only keyboard tap kept alive for one
+//! platform (registered and dispatched by the Rust shell), with one Windows
+//! exception: a modifier-only push-to-talk hold such as Ctrl+Win, which
+//! `RegisterHotKey` cannot express, comes from the low-level hook in
+//! `modifier_hold` (ADR-0246). What else survives is a macOS-only keyboard tap kept alive for one
 //! reason: auto-paste-at-cursor writes a synthetic Cmd+V through the macOS
 //! Accessibility grant, and a stale post-update grant reads as trusted through
 //! `AXIsProcessTrusted` yet silently drops the paste. The only reliable way to
@@ -11,6 +14,7 @@
 //! `DictationCapability` the paste path (`write_text`) gates on.
 //!
 //! Layering:
+//! - `modifier_hold` the Windows modifier-only hold (hook, tracker, triggers)
 //! - `mac_tap`    the macOS tap (owned CGEventTap); it decodes nothing, it just
 //!                lives so its death signals a stale grant
 //! - `supervisor` the pure tap-lifecycle decision core (unit-tested)
@@ -22,6 +26,7 @@
 
 pub mod commands;
 pub mod event;
+pub mod modifier_hold;
 #[cfg(target_os = "macos")]
 mod mac_tap;
 #[cfg(target_os = "macos")]

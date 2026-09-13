@@ -2,10 +2,44 @@
 import { expect, test } from 'bun:test';
 import {
 	domCodeToKey,
+	isModifierHold,
 	isRegistrableChord,
 	keyBindingToAccelerator,
+	keyBindingToHoldModifiers,
+	keyBindingToLabel,
 	realizedReach,
 } from './key-binding';
+
+test('a modifier-only hold needs two distinct non-Fn modifiers and no key', () => {
+	expect(isModifierHold({ modifiers: ['ctrl', 'meta'], keys: [] })).toBe(true);
+	expect(isModifierHold({ modifiers: ['ctrl'], keys: [] })).toBe(false);
+	expect(isModifierHold({ modifiers: ['ctrl', 'ctrl'], keys: [] })).toBe(false);
+	expect(isModifierHold({ modifiers: ['ctrl', 'fn'], keys: [] })).toBe(false);
+	expect(isModifierHold({ modifiers: ['ctrl', 'meta'], keys: ['space'] })).toBe(
+		false,
+	);
+});
+
+test('a hold resolves to the host modifier tokens in a fixed order', () => {
+	expect(
+		keyBindingToHoldModifiers({ modifiers: ['meta', 'ctrl'], keys: [] }),
+	).toEqual(['Control', 'Super']);
+	expect(
+		keyBindingToHoldModifiers({ modifiers: ['ctrl'], keys: ['space'] }),
+	).toBeNull();
+});
+
+test('Windows labels the meta key Win; Linux keeps Super', () => {
+	const ctrlWin = { modifiers: ['ctrl', 'meta'] as const, keys: [] };
+	expect(keyBindingToLabel(ctrlWin, false, true)).toBe('Ctrl+Win');
+	expect(keyBindingToLabel(ctrlWin, false)).toBe('Ctrl+Super');
+});
+
+test('a hold reaches globally on desktop and in-app on the web', () => {
+	const ctrlWin = { modifiers: ['ctrl', 'meta'] as const, keys: [] };
+	expect(realizedReach('global', ctrlWin, 'global')).toBe('global');
+	expect(realizedReach('global', ctrlWin, 'focused')).toBe('focused');
+});
 
 test('a chord maps to a global-hotkey accelerator', () => {
 	// meta -> Super, space -> Space: the default macOS toggle. Modifiers emit in

@@ -1,25 +1,29 @@
 /** Reserved global-chord policy and the shipped-default contract. */
 import { expect, test } from 'bun:test';
-import { defaultGlobalBindings } from './default-global-bindings';
+import {
+	defaultGlobalBindings,
+	type GlobalBindingPlatform,
+} from './default-global-bindings';
 import { type BindingLike, bindingsEqual } from './key-binding';
 import { validateGlobalBinding } from './reserved-shortcuts';
 
-function shippedChords(isApple: boolean): BindingLike[] {
-	return Object.values(defaultGlobalBindings(isApple)).filter(
+function shippedChords(platform: GlobalBindingPlatform): BindingLike[] {
+	return Object.values(defaultGlobalBindings(platform)).filter(
 		(binding) => binding !== null,
 	);
 }
 
 /**
- * The chords a build ships, one row per platform branch, read from the real
- * table. `defaultGlobalBindings` takes the platform as a boolean and touches
- * nothing else, so both rows are reachable from a bun test on either OS and
- * neither can drift away from what ships. Unbound commands drop out here:
- * `null` is not a chord, and both `findConflict` and `push` skip it.
+ * The gestures a build ships, one row per platform branch, read from the real
+ * table. `defaultGlobalBindings` takes the platform as a value and touches
+ * nothing else, so every row is reachable from a bun test on any OS and none
+ * can drift away from what ships. Unbound commands drop out here: `null` is
+ * not a chord, and both `findConflict` and `push` skip it.
  */
 const SHIPPED_DEFAULTS = {
-	apple: shippedChords(true),
-	other: shippedChords(false),
+	apple: shippedChords('apple'),
+	windows: shippedChords('windows'),
+	other: shippedChords('other'),
 };
 
 test('an empty binding is treated as unset and passes', () => {
@@ -33,7 +37,9 @@ test('shipped defaults pass the policy', () => {
 	const refused: string[] = [];
 	for (const [platform, chords] of Object.entries(SHIPPED_DEFAULTS)) {
 		for (const binding of chords) {
-			const reason = validateGlobalBinding(binding);
+			const reason = validateGlobalBinding(binding, {
+				modifierHolds: platform === 'windows',
+			});
 			if (reason)
 				refused.push(`${platform} ${JSON.stringify(binding)}: ${reason}`);
 		}
@@ -59,13 +65,38 @@ test('shipped defaults are distinct within a platform', () => {
 	expect(duplicates).toEqual([]);
 });
 
-test('Fn and modifier-only holds are refused', () => {
+test('an Fn hold is refused everywhere', () => {
 	expect(validateGlobalBinding({ modifiers: ['fn'], keys: [] })).toContain(
 		'Only a chord',
 	);
 	expect(
-		validateGlobalBinding({ modifiers: ['ctrl', 'meta'], keys: [] }),
+		validateGlobalBinding(
+			{ modifiers: ['fn'], keys: [] },
+			{ modifierHolds: true },
+		),
 	).toContain('Only a chord');
+});
+
+test('a modifier-only hold passes only where the host can detect it', () => {
+	const ctrlWin = { modifiers: ['ctrl', 'meta'] as const, keys: [] };
+	expect(validateGlobalBinding(ctrlWin)).toContain('Windows');
+	expect(validateGlobalBinding(ctrlWin, { modifierHolds: true })).toBeNull();
+	// One held modifier is part of nearly every chord: never a hold.
+	expect(
+		validateGlobalBinding(
+			{ modifiers: ['ctrl'], keys: [] },
+			{ modifierHolds: true },
+		),
+	).toContain('Only a chord');
+});
+
+test('Windows ships Ctrl+Win as the push-to-talk hold; other rows keep a key', () => {
+	expect(defaultGlobalBindings('windows').pushToTalk).toEqual({
+		modifiers: ['ctrl', 'meta'],
+		keys: [],
+	});
+	expect(defaultGlobalBindings('other').pushToTalk.keys).toEqual(['space']);
+	expect(defaultGlobalBindings('apple').pushToTalk.keys).toEqual(['space']);
 });
 
 test('a reserved combo is refused with its label', () => {

@@ -57,6 +57,7 @@ import type {
 	DownloadProgress,
 	GlobalShortcutRegistration,
 	MicrophonePermission,
+	ModifierHoldRegistration,
 } from '$lib/tauri/commands';
 import { Channel, commands, events } from '$lib/tauri/commands';
 
@@ -68,6 +69,13 @@ const log = createLogger('tironian/tauri');
  * so `registerChords` registers the string instead of re-deriving it.
  */
 export type ChordRegistration = GlobalShortcutRegistration;
+
+/**
+ * A modifier-only hold the Windows host detects with its keyboard hook, since
+ * the plugin cannot register one (ADR-0246). Registered in the same
+ * replace-all call as the chords.
+ */
+export type HoldRegistration = ModifierHoldRegistration;
 
 // fs ----------------------------------------------------------------
 const FsError = defineErrors({
@@ -298,12 +306,14 @@ const keyboard = {
 	 * Replace the Rust-owned chord set and subscribe once to its typed trigger
 	 * event. Rust owns plugin registration and rollback; this adapter dispatches
 	 * Pressed/Released into the command layer (the convergence point the browser
-	 * backend also feeds). A binding with no accelerator (Fn or modifier-only) is
-	 * refused upstream, so nothing reaches here but chords. Carbon's
+	 * backend also feeds). Chords go to the plugin; holds go to the Windows
+	 * keyboard hook in the same call, and trigger through the same event
+	 * (ADR-0246). An Fn binding is refused upstream. Carbon's
 	 * `RegisterEventHotKey` needs no Accessibility grant.
 	 */
 	registerChords: async (
 		chords: GlobalShortcutRegistration[],
+		holds: ModifierHoldRegistration[],
 		onTrigger: (commandId: string, state: 'Pressed' | 'Released') => void,
 	) => {
 		onShortcutTriggered = onTrigger;
@@ -315,13 +325,13 @@ const keyboard = {
 			);
 		}
 		await shortcutListenerPromise;
-		const { error } = await commands.replaceGlobalShortcuts(chords);
+		const { error } = await commands.replaceGlobalShortcuts(chords, holds);
 		if (error !== null) throw new Error(error);
 	},
 
-	/** Unregister every plugin-registered chord (teardown). */
+	/** Unregister every chord and hold (teardown). */
 	unregisterChords: async () => {
-		const { error } = await commands.replaceGlobalShortcuts([]);
+		const { error } = await commands.replaceGlobalShortcuts([], []);
 		if (error !== null) throw new Error(error);
 	},
 

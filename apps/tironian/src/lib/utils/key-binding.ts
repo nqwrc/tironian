@@ -108,7 +108,9 @@ export type Modifier = 'ctrl' | 'alt' | 'shift' | 'meta' | 'fn';
 
 /**
  * A shortcut binding. A registrable global chord is exactly one key plus at
- * least one non-Fn modifier; focused shortcuts may also use bare keys.
+ * least one non-Fn modifier; focused shortcuts may also use bare keys. On
+ * Windows, push-to-talk may instead be a modifier-only hold such as Ctrl+Win
+ * (`keys` empty, ADR-0246).
  */
 export type KeyBinding = {
 	modifiers: Modifier[];
@@ -190,16 +192,28 @@ function keyLabel(key: string): string {
 	return key;
 }
 
+/** Windows prints the key it is: Win, not Linux's Super. */
+const MODIFIER_LABELS_WINDOWS: Record<Modifier, string> = {
+	...MODIFIER_LABELS_OTHER,
+	meta: 'Win',
+};
+
 /**
  * Render a binding as a compact label: `⌘⇧D` on macOS, `Ctrl+Shift+D`
- * elsewhere. Modifiers come first in a fixed order, then keys. An empty binding
- * renders as the empty string (callers show a placeholder).
+ * elsewhere, `Ctrl+Win` for the Windows hold. Modifiers come first in a fixed
+ * order, then keys. An empty binding renders as the empty string (callers show
+ * a placeholder).
  */
 export function keyBindingToLabel(
 	binding: BindingLike,
 	isApple: boolean,
+	isWindows = false,
 ): string {
-	const labels = isApple ? MODIFIER_LABELS_APPLE : MODIFIER_LABELS_OTHER;
+	const labels = isApple
+		? MODIFIER_LABELS_APPLE
+		: isWindows
+			? MODIFIER_LABELS_WINDOWS
+			: MODIFIER_LABELS_OTHER;
 	const separator = isApple ? '' : '+';
 	const modifiers = MODIFIER_ORDER.filter((modifier) =>
 		binding.modifiers.includes(modifier),
@@ -266,10 +280,11 @@ function acceleratorKey(key: string): string | null {
  * Render a binding as a `tauri-plugin-global-shortcut` accelerator string (for
  * example `Control+Shift+Space`), or `null` when the plugin cannot register it.
  * A binding has no accelerator when it carries Fn (no accelerator spelling) or is
- * not exactly one key plus at least one modifier. Fn and modifier-only holds are
- * refused as a product surface (ADR-0117), so a binding with no accelerator is
- * simply not a valid global shortcut. Modifiers are emitted in a fixed order so
- * the same binding always produces the same accelerator.
+ * not exactly one key plus at least one modifier. An Fn hold is refused as a
+ * product surface (ADR-0117); a modifier-only hold has no accelerator either and
+ * registers through the Windows hook instead ({@link keyBindingToHoldModifiers},
+ * ADR-0246). Modifiers are emitted in a fixed order so the same binding always
+ * produces the same accelerator.
  */
 export function keyBindingToAccelerator(binding: BindingLike): string | null {
 	const [key, ...rest] = binding.keys;
@@ -291,22 +306,58 @@ export function keyBindingToAccelerator(binding: BindingLike): string | null {
  * Whether a binding is a registrable global chord: exactly one key plus at least
  * one non-Fn modifier, which `tauri-plugin-global-shortcut` can register with no
  * Accessibility grant. An Fn hold, a modifier-only hold, and a bare key are not
- * registrable global shortcuts.
+ * registrable chords; of those, only the Windows modifier-only hold is a global
+ * shortcut at all ({@link isModifierHold}).
  */
 export function isRegistrableChord(binding: BindingLike): boolean {
 	return keyBindingToAccelerator(binding) !== null;
 }
 
 /**
+ * The host's spelling of a hold modifier, matching the Rust `HoldModifier`.
+ * The accelerator tokens already name the same four keys.
+ */
+export type HoldModifierToken = 'Control' | 'Alt' | 'Shift' | 'Super';
+
+/**
+ * Whether a binding is a modifier-only hold: no key, and at least two distinct
+ * non-Fn modifiers. One held modifier is part of nearly every chord, so it
+ * would fire on ordinary typing. Only the Windows host can detect a hold
+ * (`RegisterHotKey` has no modifier-only form, ADR-0246); whether one may be
+ * stored is the caller's platform decision, not this predicate's.
+ */
+export function isModifierHold(binding: BindingLike): boolean {
+	if (binding.keys.length > 0) return false;
+	const distinct = new Set(binding.modifiers);
+	return !distinct.has('fn') && distinct.size >= 2;
+}
+
+/**
+ * A hold as the host registers it: its modifiers in a fixed order, or `null`
+ * when the binding is not a hold.
+ */
+export function keyBindingToHoldModifiers(
+	binding: BindingLike,
+): HoldModifierToken[] | null {
+	if (!isModifierHold(binding)) return null;
+	return MODIFIER_ORDER.filter((modifier) =>
+		binding.modifiers.includes(modifier),
+	).map((modifier) => ACCELERATOR_MODIFIERS[modifier] as HoldModifierToken);
+}
+
+/**
  * How far a key can fire, by its physical shape alone (the second term of the
  * reach formula, ADR-0052). A registrable chord (a non-Fn modifier plus a key)
- * fires globally with no permission. Anything else (a bare key, or a refused Fn /
- * modifier-only hold) reaches at most in-app: a global bare key would swallow
- * that key in every app, and holds are not valid global shortcuts. No shortcut
- * reach needs an Accessibility grant (ADR-0117). Callers pass a non-empty binding.
+ * fires globally with no permission, and so does a modifier-only hold where the
+ * host can see one (ADR-0246; the global backend refuses it elsewhere). Anything
+ * else (a bare key, or an Fn hold) reaches at most in-app: a global bare key
+ * would swallow that key in every app. No shortcut reach needs an Accessibility
+ * grant (ADR-0117). Callers pass a non-empty binding.
  */
 function keyCapability(binding: BindingLike): Reach {
-	return isRegistrableChord(binding) ? 'global' : 'focused';
+	return isRegistrableChord(binding) || isModifierHold(binding)
+		? 'global'
+		: 'focused';
 }
 
 /** `focused` is more restrictive than `global`; the smaller reach wins a min(). */
