@@ -152,10 +152,10 @@
 			</button>
 		</div>
 	{:else if processing}
-		<!-- P1, taken literally: an eighth note (♪) sits on the resting line
-		     like a note on a staff and passes slowly left to right. Drawn as
-		     geometry rather than set as U+266A, which some Windows fonts turn
-		     into a color emoji. -->
+		<!-- P1, taken literally: an eighth note (♪) passes slowly left to right,
+		     alone, with no line under it (Nicola's call). Drawn as geometry
+		     rather than set as U+266A, which some Windows fonts turn into a
+		     color emoji. The group is nudged down so the note sits centred. -->
 		<svg
 			width="22"
 			height="14"
@@ -163,9 +163,7 @@
 			fill="none"
 			aria-hidden="true"
 		>
-			<path d="M1 7h20" stroke="#a39d93" stroke-width="2" stroke-linecap="round"
-			></path>
-			<g class="vv-mark">
+			<g class="vv-mark" transform="translate(0 1.3)">
 				<ellipse
 					cx="2.4"
 					cy="8.6"
