@@ -218,7 +218,6 @@
 	"recipes_one_line_telling_the_ai_what_to_do": "One line telling the AI what to do with the text.",
 	"recipes_this_removes_the_recipe_everywhere_it_cannot": "This removes the recipe everywhere. It cannot be undone.",
 	"recipes_reusable_text_actions_you_run_on_demand_over": "Reusable text actions you run on demand over a selection, your clipboard, or a transcript. Cleanup is automatic (that is Polish); recipes are the reshapes you pick.",
-	"recipes_your_library": "Your library",
 	"recipes_new_recipe": "New recipe",
 	"recipes_from_a_file": "From a file",
 	"recipes_a_name_and_one_instruction_the_instruction_is": "A name and one instruction. The instruction is the whole recipe: text in, text out.",

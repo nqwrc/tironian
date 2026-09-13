@@ -2,7 +2,6 @@
 	import { m } from '$lib/paraglide/messages';
 	import { Badge } from '@tironian/ui/badge';
 	import { Button } from '@tironian/ui/button';
-	import { Card } from '@tironian/ui/card';
 	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
 	import { Input } from '@tironian/ui/input';
 	import { Label } from '@tironian/ui/label';
@@ -70,31 +69,30 @@
 
 <svelte:head> <title>{m.nav_recipes()}</title> </svelte:head>
 
-<main class="flex w-full flex-1 flex-col gap-2 px-4 py-4 sm:px-8 mx-auto">
-	<SectionHeader.Root>
-		<SectionHeader.Title
-			level={1}
-			class="scroll-m-20 text-4xl tracking-tight lg:text-5xl"
-		>
-			{m.nav_recipes()}
-		</SectionHeader.Title>
-		<SectionHeader.Description>
-			{m.recipes_reusable_text_actions_you_run_on_demand_over()}
-		</SectionHeader.Description>
-	</SectionHeader.Root>
+<!-- Vivavoce 4g: the library as a plain list under one heading, built-ins
+     marked and without actions, a user's own recipes editable on hover. -->
+<main class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-9 pt-6 pb-8">
+	<div class="flex items-start justify-between gap-6 pb-4">
+		<SectionHeader.Root>
+			<SectionHeader.Title level={1} class="text-xl font-semibold tracking-tight">
+				{m.nav_recipes()}
+			</SectionHeader.Title>
+			<SectionHeader.Description class="max-w-lg text-sm">
+				{m.recipes_reusable_text_actions_you_run_on_demand_over()}
+			</SectionHeader.Description>
+		</SectionHeader.Root>
+		<Button variant="outline" size="sm" class="shrink-0" onclick={openNew}>
+			<PlusIcon class="size-4" />
+			{m.recipes_new_recipe()}
+		</Button>
+	</div>
 
-	<Card class="flex flex-col gap-4 p-6">
-		<div class="flex items-center justify-between gap-2">
-			<h2 class="text-lg font-semibold">{m.recipes_your_library()}</h2>
-			<Button variant="outline" onclick={openNew}>
-				<PlusIcon class="size-4" /> {m.recipes_new_recipe()}
-			</Button>
-		</div>
-
-		<ul class="flex flex-col divide-y">
+	<ul class="-mx-3 flex flex-col">
 			{#each app.recipes.pickable as recipe (recipe.id)}
 				{@const builtin = isBuiltinRecipeId(recipe.id)}
-				<li class="flex items-start justify-between gap-4 py-3">
+				<li
+					class="group flex items-start justify-between gap-4 rounded-md px-3 py-3 transition-colors duration-(--motion-micro) hover:bg-accent/50"
+				>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-2">
 							{#if recipe.icon}
@@ -112,7 +110,9 @@
 						</p>
 					</div>
 					{#if !builtin}
-						<div class="flex shrink-0 items-center gap-1">
+						<div
+							class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--motion-micro) group-focus-within:opacity-100 group-hover:opacity-100"
+						>
 							<Button
 								tooltip={m.recipes_edit_recipe()}
 								variant="ghost"
@@ -134,7 +134,6 @@
 				</li>
 			{/each}
 		</ul>
-	</Card>
 </main>
 
 <Modal.Root bind:open={editorOpen}>
