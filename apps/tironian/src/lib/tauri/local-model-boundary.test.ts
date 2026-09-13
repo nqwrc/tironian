@@ -3,13 +3,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Applications may inspect the *readiness and capabilities* of the local
- * transcription route, and never model identity, catalog inventory, or
- * selection (ADR-0180).
+ * Model administration and transcription are two namespaces of the Tauri
+ * facade (ADR-0245): Settings chooses, downloads, and deletes models through
+ * `models`, and the capture path transcribes through `transcription` without
+ * ever naming a model.
  *
- * The generated bindings are where that boundary is real: they are the complete
- * list of commands this app can name, regenerated from Rust, so a command
- * reappearing in Tironian's facade is exactly how the boundary would erode.
  * Reading the facade as text rather than importing it keeps this test off the
  * Tauri runtime, which does not exist under `bun test`.
  */
@@ -18,39 +16,48 @@ const facade = readFileSync(
 	'utf8',
 );
 
-/** The `transcription` namespace block of the Tauri facade. */
-const transcriptionNamespace = facade.slice(
-	facade.indexOf('const transcription = {'),
-	facade.indexOf('};', facade.indexOf('const transcription = {')),
-);
+/** The body of one `const <name> = {` namespace block in the facade. */
+function namespace(name: string): string {
+	const start = facade.indexOf(`const ${name} = {`);
+	return facade.slice(start, facade.indexOf('\n};', start));
+}
 
-describe('the local transcription boundary Tironian sits behind', () => {
-	it('reaches no administration or identity command', () => {
-		// `getActiveModel` is in this list on purpose: model identity is
-		// administration data, so even the read is Home's.
-		for (const command of [
-			'getActiveModel',
-			'setActiveModel',
-			'listModels',
-			'downloadModel',
-			'deleteModel',
-			'cancelDownload',
-			'getUnloadPolicy',
-			'setUnloadPolicy',
-		]) {
-			expect(transcriptionNamespace).not.toContain(command);
+const ADMINISTRATION = [
+	'getActiveModel',
+	'setActiveModel',
+	'listModels',
+	'downloadModel',
+	'deleteModel',
+	'cancelDownload',
+	'getUnloadPolicy',
+	'setUnloadPolicy',
+];
+
+describe('the local model boundary inside the Tauri facade', () => {
+	it('keeps administration out of the transcription namespace', () => {
+		const transcription = namespace('transcription');
+		for (const command of ADMINISTRATION) {
+			expect(transcription).not.toContain(command);
 		}
 	});
 
-	it('reaches readiness, transcription, and shell navigation', () => {
+	it('puts every administration command in the models namespace', () => {
+		const models = namespace('models');
+		for (const command of ADMINISTRATION) {
+			expect(models).toContain(command);
+		}
+	});
+
+	it('transcribes and reads readiness without a second window to open', () => {
+		const transcription = namespace('transcription');
 		for (const command of [
 			'getLocalTranscriptionReadiness',
 			'transcribeRecording',
 			'prewarmModel',
-			'openHomeTranscription',
 		]) {
-			expect(transcriptionNamespace).toContain(command);
+			expect(transcription).toContain(command);
 		}
+		expect(facade).not.toContain('openHome');
 	});
 
 	it('cannot name a model when it asks for a transcription', () => {

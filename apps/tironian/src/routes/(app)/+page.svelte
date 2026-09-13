@@ -37,7 +37,6 @@
 		getTranscriptionReadiness,
 	} from '$lib/settings/transcription-validation';
 	import { captureSurface } from '$lib/state/capture-surface.svelte';
-	import { localRoute } from '$lib/state/local-route.svelte';
 	import { getRecordingShortcutLabel } from '$lib/utils/recording-shortcut';
 	import { viewTransition } from '$lib/utils/viewTransitions';
 	import { getTironianApp } from '$lib/app/context';
@@ -69,12 +68,10 @@
 		const provider = getSelectedTranscriptionProvider(app);
 		return provider?.access === 'key' ? provider : null;
 	});
-	// The local route is the one blocker Tironian cannot clear anywhere in its
-	// own settings: there is no key, endpoint, or model for this app to set, and
-	// the active model belongs to the host (ADR-0180). So the action goes to the
-	// surface that owns the fix rather than to a Tironian page that would only
-	// repeat the same sentence and a second button.
-	const needsHomeTranscriptionSetup = $derived(
+	// The local route has no key to paste here: its fix is choosing and
+	// downloading a model, which lives in Privacy & Processing (ADR-0245). So
+	// the record screen links there rather than repeating that panel.
+	const needsLocalModelSetup = $derived(
 		Boolean(tauri) &&
 			getSelectedTranscriptionProvider(app)?.access === 'onDevice',
 	);
@@ -196,13 +193,13 @@
 						{m.app_change_provider_model_or_endpoint_in_privacy_amp()}
 					</Link>
 				</p>
-			{:else if needsHomeTranscriptionSetup}
+			{:else if needsLocalModelSetup}
 				<Button
 					variant="outline"
 					class="w-full"
-					onclick={() => localRoute.openHomeTranscription()}
+					href={dictationPath('/settings/processing')}
 				>
-					{m.app_set_up_in_home({ productName: PRODUCT_NAME })}
+					{m.app_choose_a_local_model()}
 				</Button>
 				<p class="text-muted-foreground text-sm">
 					{m.app_or()} <Link href={dictationPath('/settings/processing')}>

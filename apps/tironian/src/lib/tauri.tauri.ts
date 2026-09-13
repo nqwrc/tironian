@@ -54,10 +54,11 @@ import {
 import { Ok, tryAsync } from 'wellcrafted/result';
 import type {
 	DictationCapability,
+	DownloadProgress,
 	GlobalShortcutRegistration,
 	MicrophonePermission,
 } from '$lib/tauri/commands';
-import { commands, events } from '$lib/tauri/commands';
+import { Channel, commands, events } from '$lib/tauri/commands';
 
 const log = createLogger('tironian/tauri');
 
@@ -367,20 +368,10 @@ const media = {
 // `#platform/tauri` seam. Keeping the raw generated bindings here prevents a
 // browser build from retaining native invoke names merely because it shares the
 // orchestration module with the desktop host.
-// Transcription, not model administration: Dictation asks the host to
+// Transcription, not model administration: the capture path asks the host to
 // transcribe on whichever model is active, and reads advisory readiness so it
-// can warn before capture. Choosing, downloading, and deleting models, and even
-// learning which model is active, belong to Tironian Home (ADR-0180); no
-// Dictation window is granted those commands.
-//
-// These are raw Tauri shapes and are internal on purpose. ADR-0181 replaces
-// them with one portable `tironian` handle whose members are the same in every
-// runtime: this namespace becomes `tironian.transcription`
-// (`capabilities()` / `transcribe()` / `prewarm()`) and the navigation below
-// becomes `tironian.shell.openHome('transcription')`. Nothing here claims to
-// be that handle. What this wave does establish is the substrate it will wrap:
-// the host-side contract, and the two behaviours the SDK shape depends on, kept
-// here so the next wave moves them rather than redesigns them.
+// can warn before capture. Choosing, downloading, and deleting models is the
+// `models` namespace below, which only Settings calls (ADR-0245).
 const transcription = {
 	encodeRecordingForUpload: commands.encodeRecordingForUpload,
 	getLocalTranscriptionReadiness: commands.getLocalTranscriptionReadiness,
@@ -409,16 +400,33 @@ const transcription = {
 			},
 		);
 	},
+};
 
+// models ------------------------------------------------------------
+// The one active local model and its files, administered from Settings
+// (ADR-0245): the catalog, downloads, the active choice, and the unload policy.
+// A transcription request never names a model; this is where one is chosen.
+const models = {
+	listModels: commands.listModels,
+	getActiveModel: commands.getActiveModel,
+	setActiveModel: commands.setActiveModel,
+	getUnloadPolicy: commands.getUnloadPolicy,
+	setUnloadPolicy: commands.setUnloadPolicy,
+	deleteModel: commands.deleteModel,
+	cancelDownload: commands.cancelDownload,
 	/**
-	 * Ask the shell to open Home's transcription section. Fire-and-forget for
-	 * the same reason: the outcome a caller cares about is the user arriving,
-	 * which is not something this promise reports.
+	 * Download a model into the shared Hugging Face cache, reporting progress
+	 * through `onProgress`. The IPC channel is built here so callers pass a
+	 * plain callback and never touch the Tauri core API.
 	 */
-	openHomeTranscription: (): void => {
-		void commands.openHome().catch((cause) => {
-			log.info('Opening Tironian Home was refused', { cause });
-		});
+	downloadModel: (
+		modelId: string,
+		downloadId: string,
+		onProgress: (progress: DownloadProgress) => void,
+	) => {
+		const channel = new Channel<DownloadProgress>();
+		channel.onmessage = onProgress;
+		return commands.downloadModel(modelId, downloadId, channel);
 	},
 };
 
@@ -470,6 +478,7 @@ export const tauriOnly = {
 	autostart,
 	media,
 	transcription,
+	models,
 	opener,
 	mainWindow,
 };

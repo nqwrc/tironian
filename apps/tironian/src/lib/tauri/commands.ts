@@ -104,7 +104,18 @@ export const commands = {
 	encodeRecordingForUpload,
 };
 
+/**
+ * The IPC channel type the model download streams progress over. Re-exported
+ * here so the platform facade can build one without a second importer of
+ * `@tauri-apps/api/core` in `src/lib`.
+ */
+export { Channel } from '@tauri-apps/api/core';
+
 export type {
+	ActiveModel,
+	DownloadProgress,
+	ModelInfo,
+	UnloadPolicy,
 	DeviceAcquisition,
 	DictationCapability,
 	EndedReason,
