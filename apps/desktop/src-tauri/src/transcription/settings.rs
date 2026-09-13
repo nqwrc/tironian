@@ -2,8 +2,8 @@
 //! **active**, and when to drop it from memory.
 //!
 //! Tironian has exactly one active local transcription model per device
-//! (ADR-0180). The host owns it and Tironian Home administers it; no
-//! application carries a model name into a transcribe call, so no ordinary
+//! (ADR-0245). The host owns it and the dictation app's Settings administers
+//! it; no transcribe call carries a model name, so no ordinary
 //! request can reassign the shared model cache behind the user's back.
 //!
 //! Device-local on purpose, and durable here rather than in any workspace: the
@@ -55,7 +55,7 @@ struct Stored {
     unload_policy: UnloadPolicy,
 }
 
-/// Failures the Home administration commands can report. Both are actionable:
+/// Failures the model administration commands can report. Both are actionable:
 /// the id is not a model this build knows, or the choice could not be made
 /// durable.
 #[derive(Error, Debug, Serialize, Deserialize, specta::Type)]
@@ -81,7 +81,7 @@ pub struct LocalTranscriptionSettings {
 impl LocalTranscriptionSettings {
     /// Load the settings file, falling back to the defaults (no active model,
     /// default unload policy) when it is missing or unreadable. A corrupt file
-    /// is a warning, not a startup failure: the user re-picks in Home, and the
+    /// is a warning, not a startup failure: the user re-picks in Settings, and the
     /// next successful write replaces it.
     pub fn load(path: PathBuf) -> Self {
         let state = match std::fs::read_to_string(&path) {

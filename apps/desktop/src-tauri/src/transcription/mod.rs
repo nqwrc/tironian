@@ -18,8 +18,8 @@ use tauri::{AppHandle, State};
 
 /// Why the local transcription route cannot run right now.
 ///
-/// A compact reason, deliberately not a model. It is enough for an application
-/// to write an honest sentence and name Home as the fix, and it carries no
+/// A compact reason, deliberately not a model. It is enough for the app to
+/// write an honest sentence and point at Settings as the fix, and it carries no
 /// identity, no inventory, and nothing about what is cached or resident.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
@@ -34,7 +34,7 @@ pub enum UnavailableReason {
 /// What an application may learn about the local transcription route: whether it
 /// is ready, and which advisory inputs it accepts.
 ///
-/// Readiness and capability, never identity (ADR-0180). This is advisory UI
+/// Readiness and capability, never identity (ADR-0245). This is advisory UI
 /// state, not a preflight gate: a caller uses it to warn before capture and to
 /// decide whether to offer a prompt or language field, never to decide whether
 /// `transcribe_recording` may be called. Transcription resolves the active model
@@ -63,7 +63,7 @@ pub enum LocalTranscriptionReadiness {
 
 /// The advisory hints an application supplies with a transcription.
 ///
-/// Model identity is deliberately absent (ADR-0180): the host resolves the one
+/// Model identity is deliberately absent (ADR-0245): the host resolves the one
 /// active model at use, so an ordinary request cannot reassign the shared model
 /// cache. Language and prompt stay application-owned and read-at-use, exactly as
 /// ADR-0012 left them; nothing here is retained between calls.
@@ -117,16 +117,16 @@ pub enum TranscriptionOutcome {
     EmptyAudio,
 }
 
-// ── Home: model administration ────────────────────────────────────────
+// ── Settings: model administration ────────────────────────────────────
 
 /// The active local model's identity and whether it can run right now, or
 /// `None` when nobody has chosen one.
 ///
-/// **Administration only.** Home holds this grant because Home chooses the
-/// active model and must show which one that is. Applications are not granted
-/// it and read `get_local_transcription_readiness` instead, which answers the
-/// question they actually have without handing them an identity they could
-/// start keying behaviour off.
+/// **Administration.** The dictation window's Settings holds this grant because
+/// it chooses the active model and must show which one that is (ADR-0245). The
+/// public app client is not granted it and reads
+/// `get_local_transcription_readiness` instead, which answers whether the route
+/// can run without handing it an identity to start keying behaviour off.
 #[tauri::command]
 #[specta::specta]
 pub fn get_active_model(model_cache: State<'_, ModelCache>) -> Option<ActiveModel> {
@@ -138,7 +138,7 @@ pub fn get_active_model(model_cache: State<'_, ModelCache>) -> Option<ActiveMode
 }
 
 /// Make `model_id` the active local model, or clear the choice with `null`.
-/// Home's administration write: the only way the active model changes.
+/// The Settings administration write: the only way the active model changes.
 #[tauri::command]
 #[specta::specta]
 pub fn set_active_model(

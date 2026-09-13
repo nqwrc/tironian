@@ -4,9 +4,9 @@
  *
  * Every route contributes exactly one row, on-device included. Choosing "Local"
  * picks a route; it does not pick a model, because the host owns the one active
- * local model and Tironian Home administers it (ADR-0180). The local row names
- * no model at all: model identity is administration data this app never
- * receives, and a row that named one would be a picker growing back.
+ * local model and Settings administers it (ADR-0245). The local row names no
+ * model at all: the switcher picks a route, and a row that named a model would
+ * be a second model picker beside the one in Settings.
  *
  * The local row is present on desktop whether or not the host can currently run
  * it, so the selector can warn about it. Readiness is surfaced as a warning by
@@ -72,7 +72,7 @@ function toTranscriber(
 	entry: TranscriptionProviderEntry,
 ): Transcriber {
 	// Selecting a route writes exactly one setting. Picking a local model is a
-	// separate act by a different owner (Home), which is the point of ADR-0180.
+	// separate act, made in Settings (ADR-0245).
 	const base = {
 		key: entry.id,
 		icon: entry.icon,

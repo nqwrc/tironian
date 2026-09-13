@@ -85,7 +85,7 @@ impl ModelCache {
         }
     }
 
-    /// The host-owned settings store, for the Home administration commands.
+    /// The host-owned settings store, for the model administration commands.
     pub fn settings(&self) -> &LocalTranscriptionSettings {
         &self.settings
     }

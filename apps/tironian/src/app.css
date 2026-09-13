@@ -2,8 +2,7 @@
  * The dictation window's own stylesheet.
  *
  * Loaded last, after `@tironian/ui/app.css` and then `./brand.css`, which holds
- * the tokens and typefaces both windows share. What stays here is only what
- * this window renders and Home does not.
+ * the tokens and typefaces. What stays here is rules for particular elements.
  */
 
 /* Native audio players (home result, recordings row, detail modal). The controls
