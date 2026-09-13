@@ -136,7 +136,9 @@ function createLocalModels() {
 		return failure === null;
 	}
 
-	void refresh();
+	// No read at import. The settings barrel reaches this module from screens
+	// that never show the panel, so the view asks for the first scan when it
+	// mounts rather than every importer paying three host calls.
 
 	return {
 		/** Whether this device can administer local models at all. */
@@ -176,8 +178,9 @@ function createLocalModels() {
 		},
 
 		/**
-		 * Re-read the catalog and host settings. The shared HF cache can change
-		 * outside the app, so the view calls this on window focus.
+		 * Read the catalog and host settings. The view calls this when it mounts
+		 * and on window focus, because the shared HF cache can change outside
+		 * the app.
 		 */
 		refresh,
 

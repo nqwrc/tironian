@@ -6,6 +6,7 @@
 	import * as Item from '@tironian/ui/item';
 	import { Progress } from '@tironian/ui/progress';
 	import * as Select from '@tironian/ui/select';
+	import { onMount } from 'svelte';
 	import { localModels } from '$lib/state/local-models.svelte';
 	import type { ModelInfo } from '$lib/tauri/commands';
 	import { LOCAL_MODEL_UNLOAD_POLICY_OPTIONS } from './local-model-unload-policy';
@@ -48,6 +49,9 @@
 		const size = formatSize(model.sizeBytes);
 		return size ? `${model.description} · ${size}` : model.description;
 	}
+
+	// The first scan belongs to the view: the store reads nothing at import.
+	onMount(() => void localModels.refresh());
 </script>
 
 <svelte:window onfocus={() => localModels.refresh()} />
