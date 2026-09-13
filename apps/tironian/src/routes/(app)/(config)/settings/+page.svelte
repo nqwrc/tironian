@@ -84,7 +84,9 @@
 	>
 {/snippet}
 
-<section class="flex flex-col gap-4 pb-6">
+<!-- Section ids are link targets: /settings/recording and /settings/sound
+     redirect to #recording and #sounds. -->
+<section id="app" class="flex scroll-mt-20 flex-col gap-4 pb-6">
 	<Field.Set>
 		{@render legend(m.settings_app())}
 		<Field.Group class="gap-4">
@@ -101,7 +103,10 @@
 	</Field.Set>
 </section>
 
-<section class="flex flex-col gap-4 border-t border-border/60 py-6">
+<section
+	id="recording"
+	class="flex scroll-mt-20 flex-col gap-4 border-t border-border/60 py-6"
+>
 	<Field.Set>
 		{@render legend(m.settings_capture())}
 		<Field.Group class="gap-4">
@@ -138,12 +143,17 @@
 				description={m.settings_tironian_pauses_media_playing_on_your()}
 			/>
 
-			<SoundsSetting />
+			<div id="sounds" class="flex scroll-mt-20 flex-col gap-4">
+				<SoundsSetting />
+			</div>
 		</Field.Group>
 	</Field.Set>
 </section>
 
-<section class="flex flex-col gap-4 border-t border-border/60 py-6">
+<section
+	id="output"
+	class="flex scroll-mt-20 flex-col gap-4 border-t border-border/60 py-6"
+>
 	<Field.Set>
 		{@render legend(m.settings_output())}
 		<Field.Group class="gap-4">

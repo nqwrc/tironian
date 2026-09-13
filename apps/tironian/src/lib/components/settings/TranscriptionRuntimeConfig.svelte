@@ -43,19 +43,35 @@
 
 	const app = getTironianApp();
 
-	// The Audio stage of the capture pipeline, one route at a time. "Transcribe
-	// with" picks the active route (the same one setting the recorder switcher on
-	// Home writes), and only that route's setup shows underneath: its key and
-	// model, its local model, or its server. Showing every provider's card at
-	// once made the page a catalog to scroll past; a person sets up the one they
-	// use. Like {@link CompletionRuntimeConfig}, it owns its routing surface and
-	// takes no props, so the page renders it as `<TranscriptionRuntimeConfig />`.
+	// The Audio stage of the capture pipeline, one provider at a time. The select
+	// chooses whose setup shows underneath (its key and model, its local model,
+	// or its server), opening on the route in use. Showing every provider's card
+	// at once made the page a catalog to scroll past.
+	//
+	// Browsing is not switching: the select never writes `transcriptionService`.
+	// Adding an OpenAI key while dictating through Groq must not point capture at
+	// a provider that has no key yet, so the route changes only through the
+	// explicit "Use" button, offered once the shown provider is configured (the
+	// same bar the recorder switcher on Home applies). Like
+	// {@link CompletionRuntimeConfig}, it takes no props.
 
 	const activeService = $derived(app.settings.get('transcriptionService'));
 
+	/** The provider whose setup is shown; `null` follows the route in use. */
+	let browsing = $state<TranscriptionServiceId | null>(null);
+	const shownService = $derived(browsing ?? activeService);
+
 	const selected = $derived(
-		TRANSCRIPTION_PROVIDERS.find((entry) => entry.id === activeService),
+		TRANSCRIPTION_PROVIDERS.find((entry) => entry.id === shownService),
 	);
+	const selectedConfigured = $derived(
+		selected ? isTranscriptionServiceConfigured(selected) : false,
+	);
+
+	function useShown() {
+		app.settings.set('transcriptionService', shownService);
+		browsing = null;
+	}
 
 	const destination = $derived(
 		describeTranscriptionDestinationFromConfig({
@@ -119,7 +135,7 @@
 	<Field.Field orientation="horizontal">
 		<Field.Content>
 			<Field.Label for="transcription-route">
-				{m.transcription_runtime_config_transcribe_with()}
+				{m.transcription_runtime_config_provider()}
 			</Field.Label>
 			{#if readiness.isReady}
 				<Field.Description>{destination.summary}</Field.Description>
@@ -133,9 +149,10 @@
 		<Select.Root
 			type="single"
 			bind:value={
-				() => activeService,
-				(value) =>
-					app.settings.set('transcriptionService', value as TranscriptionServiceId)
+				() => shownService,
+				(value) => {
+					browsing = value as TranscriptionServiceId;
+				}
 			}
 		>
 			<Select.Trigger id="transcription-route" size="sm" class="w-44 shrink-0">
@@ -155,7 +172,11 @@
 								<span class="flex items-center gap-2">
 									{@render renderServiceIcon(entry)}
 									{entry.label}
-									{#if !isTranscriptionServiceConfigured(entry)}
+									{#if entry.id === activeService}
+										<span class="text-voce text-xs">
+											{m.transcription_runtime_config_active()}
+										</span>
+									{:else if !isTranscriptionServiceConfigured(entry)}
 										<span class="text-muted-foreground text-xs">
 											{m.transcription_runtime_config_needs_setup()}
 										</span>
@@ -168,6 +189,21 @@
 			</Select.Content>
 		</Select.Root>
 	</Field.Field>
+
+	{#if selected && shownService !== activeService}
+		<div
+			class="bg-muted/50 flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm"
+		>
+			<span class="text-muted-foreground">
+				{selectedConfigured
+					? m.transcription_runtime_config_not_in_use()
+					: m.transcription_runtime_config_finish_setup_to_use()}
+			</span>
+			<Button size="sm" disabled={!selectedConfigured} onclick={useShown}>
+				{m.transcription_runtime_config_use_provider({ provider: selected.label })}
+			</Button>
+		</div>
+	{/if}
 
 	{#if selected?.access === 'onDevice'}
 		{@render onDeviceSection()}
