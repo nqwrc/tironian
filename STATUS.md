@@ -24,5 +24,5 @@ stale-after-days: 30
 
 ## blockers
 - D: has 0.7 GB free of 64 GB (2026-09-13); the largest folders are `D:\_cache` 19.1 GB and the cargo target `D:\ct` 15.8 GB. Builds on D: fail with os error 112, so this session builds into `C:\ct`. Freeing space is Nicola's call.
-- The weekly `DevDriveSnapshot` task (Sundays 18:00, `C:\dotfiles\machines\windows\devdrive-snapshot.ps1`) dismounts D: for the whole copy of `Developer.vhdx` (63.4 GB on 2026-09-13), so every running shell, dev server and build on D: loses its files mid-flight; it remounted in `finally` within about 90 s. Recommendation: move the trigger to a night hour, or skip when a process holds files on D:.
+- The weekly `DevDriveSnapshot` task (Sundays 18:00, `D:\.dotfiles\machines\windows\devdrive-snapshot.ps1`) dismounts D: for the whole copy of `Developer.vhdx` (63.4 GB on 2026-09-13), so every running shell, dev server and build on D: loses its files mid-flight; it remounted in `finally` within about 90 s. Recommendation: move the trigger to a night hour, or skip when a process holds files on D:.
 - Tironian Dev and the installed app share the data root `%APPDATA%\app.tironian`, so a dev launch sweeps production's `.staging/rust` (seen 2026-09-13, nothing was in flight). Do not run the two side by side while dictating until the sweep or the root is scoped.
