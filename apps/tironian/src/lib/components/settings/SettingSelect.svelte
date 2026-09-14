@@ -36,8 +36,15 @@
 	);
 </script>
 
-<Field.Field>
-	<Field.Label for={id}>{label}</Field.Label>
+<!-- One settings row (Vivavoce 4d): what it is on the left, the choice on the
+     right, so a select reads at the same height as a switch. -->
+<Field.Field orientation="horizontal">
+	<Field.Content>
+		<Field.Label for={id}>{label}</Field.Label>
+		{#if description}
+			<Field.Description>{description}</Field.Description>
+		{/if}
+	</Field.Content>
 	<Select.Root
 		type="single"
 		bind:value={
@@ -50,7 +57,7 @@
 			}
 		}
 	>
-		<Select.Trigger {id} class="w-full">
+		<Select.Trigger {id} size="sm" class="w-44 shrink-0">
 			{selectedLabel ?? 'Select an option'}
 		</Select.Trigger>
 		<Select.Content>
@@ -59,7 +66,4 @@
 			{/each}
 		</Select.Content>
 	</Select.Root>
-	{#if description}
-		<Field.Description>{description}</Field.Description>
-	{/if}
 </Field.Field>

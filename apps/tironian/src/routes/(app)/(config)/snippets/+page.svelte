@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { Button } from '@tironian/ui/button';
-	import { Card } from '@tironian/ui/card';
 	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
 	import { Input } from '@tironian/ui/input';
 	import { Label } from '@tironian/ui/label';
@@ -143,23 +142,19 @@
 
 <svelte:head> <title>{m.nav_snippets()}</title> </svelte:head>
 
-<main class="flex w-full flex-1 flex-col gap-2 px-4 py-4 sm:px-8 mx-auto">
-	<SectionHeader.Root>
-		<SectionHeader.Title
-			level={1}
-			class="scroll-m-20 text-4xl tracking-tight lg:text-5xl"
-		>
-			{m.nav_snippets()}
-		</SectionHeader.Title>
-		<SectionHeader.Description>
-			{m.snippets_say_a_short_phrase_and_deliver_saved_text()}
-		</SectionHeader.Description>
-	</SectionHeader.Root>
-
-	<Card class="flex flex-col gap-4 p-6">
-		<div class="flex items-center justify-between gap-2">
-			<h2 class="text-lg font-semibold">{m.recipes_your_library()}</h2>
-			<div class="flex items-center gap-1">
+<!-- Vivavoce 4h: the trigger in sans, the delivered text in mono, so what is
+     spoken and what is typed read apart at a glance. -->
+<main class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-9 pt-6 pb-8">
+	<div class="flex items-start justify-between gap-6 pb-4">
+		<SectionHeader.Root>
+			<SectionHeader.Title level={1} class="text-xl font-semibold tracking-tight">
+				{m.nav_snippets()}
+			</SectionHeader.Title>
+			<SectionHeader.Description class="max-w-lg text-sm">
+				{m.snippets_say_a_short_phrase_and_deliver_saved_text()}
+			</SectionHeader.Description>
+		</SectionHeader.Root>
+		<div class="flex shrink-0 items-center gap-1">
 				<Button tooltip={m.snippets_export_snippets_as_json()} variant="ghost" size="icon" onclick={exportLibrary}>
 					<DownloadIcon class="size-4" />
 				</Button>
@@ -171,11 +166,12 @@
 				>
 					<UploadIcon class="size-4" />
 				</Button>
-				<Button variant="outline" onclick={openNew}>
-					<PlusIcon class="size-4" /> {m.snippets_new_snippet()}
+				<Button variant="outline" size="sm" onclick={openNew}>
+					<PlusIcon class="size-4" />
+					{m.snippets_new_snippet()}
 				</Button>
-			</div>
 		</div>
+	</div>
 		<input
 			bind:this={importInput}
 			type="file"
@@ -189,16 +185,22 @@
 				{m.snippets_no_snippets_yet_add_one_to_speak_a()}
 			</p>
 		{:else}
-			<ul class="flex flex-col divide-y">
+			<ul class="-mx-3 flex flex-col">
 				{#each app.snippets.all as snippet (snippet.id)}
-					<li class="flex items-start justify-between gap-4 py-3">
+					<li
+						class="group flex items-start justify-between gap-4 rounded-md px-3 py-3 transition-colors duration-(--motion-micro) hover:bg-accent/50"
+					>
 						<div class="min-w-0 flex-1">
-							<span class="font-medium">{snippet.trigger}</span>
-							<p class="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
+							<span class="font-medium">“{snippet.trigger}”</span>
+							<p
+								class="mt-1 line-clamp-2 font-mono text-xs whitespace-pre-wrap text-muted-foreground"
+							>
 								{snippet.replacement}
 							</p>
 						</div>
-						<div class="flex shrink-0 items-center gap-1">
+						<div
+							class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--motion-micro) group-focus-within:opacity-100 group-hover:opacity-100"
+						>
 							<Button
 								tooltip={m.snippets_edit_snippet()}
 								variant="ghost"
@@ -220,7 +222,6 @@
 				{/each}
 			</ul>
 		{/if}
-	</Card>
 </main>
 
 <Modal.Root bind:open={editorOpen}>

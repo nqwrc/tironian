@@ -3,7 +3,6 @@
 	import { pageTitle } from '$lib/constants/brand';
 	import { Badge } from '@tironian/ui/badge';
 	import { Button } from '@tironian/ui/button';
-	import { Card } from '@tironian/ui/card';
 	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
 	import { Input } from '@tironian/ui/input';
 	import { Label } from '@tironian/ui/label';
@@ -190,32 +189,37 @@
 
 <svelte:head> <title>{pageTitle(m.page_title_app_rules())}</title> </svelte:head>
 
-<main class="flex w-full flex-1 flex-col gap-2">
-	<SectionHeader.Root>
-		<SectionHeader.Title level={1}>{m.page_title_app_rules()}</SectionHeader.Title>
-		<SectionHeader.Description>
-			{m.apps_shape_dictation_per_app_when_you_start_dictating()}
-		</SectionHeader.Description>
-	</SectionHeader.Root>
+<!-- Vivavoce 4g's list shape: the settings header names the page, so it opens
+     on one sentence and the New button, then plain rows with actions on hover. -->
+<section class="flex w-full flex-col gap-4">
+	<div class="flex items-center justify-between gap-4">
+		<SectionHeader.Root>
+			<SectionHeader.Title level={1} class="sr-only">
+				{m.page_title_app_rules()}
+			</SectionHeader.Title>
+			<SectionHeader.Description class="text-sm">
+				{m.apps_shape_dictation_per_app_when_you_start_dictating()}
+			</SectionHeader.Description>
+		</SectionHeader.Root>
+		<Button variant="outline" size="sm" onclick={openNew} class="shrink-0">
+			<PlusIcon class="size-4" />
+			{m.apps_new_rule()}
+		</Button>
+	</div>
 
-	<Card class="flex flex-col gap-4 p-6">
-		<div class="flex items-center justify-between gap-2">
-			<h2 class="text-lg font-semibold">{m.apps_your_rules()}</h2>
-			<Button variant="outline" onclick={openNew}>
-				<PlusIcon class="size-4" /> {m.apps_new_rule()}
-			</Button>
-		</div>
-
+	<div>
 		{#if app.appRules.count === 0}
 			<p class="text-muted-foreground text-sm">
 				{m.apps_no_rules_yet_add_one_to_give_an()}
 			</p>
 		{:else}
-			<ul class="flex flex-col divide-y">
+			<ul class="-mx-3 flex flex-col" aria-label={m.apps_your_rules()}>
 				{#each app.appRules.all as rule (rule.id)}
-					<li class="flex items-start justify-between gap-4 py-3">
+					<li
+						class="group flex items-start justify-between gap-4 rounded-md px-3 py-2 transition-colors duration-(--motion-micro) hover:bg-accent/50"
+					>
 						<div class="min-w-0 flex-1">
-							<span class="font-medium" class:opacity-50={!rule.enabled}>
+							<span class="text-sm font-medium" class:opacity-50={!rule.enabled}>
 								{rule.name}
 							</span>
 							{#if !rule.trusted}
@@ -228,7 +232,9 @@
 								{/if}
 							</p>
 						</div>
-						<div class="flex shrink-0 items-center gap-1">
+						<div
+							class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--motion-micro) group-focus-within:opacity-100 group-hover:opacity-100"
+						>
 							<Button
 								tooltip={m.apps_edit_rule()}
 								variant="ghost"
@@ -250,8 +256,8 @@
 				{/each}
 			</ul>
 		{/if}
-	</Card>
-</main>
+	</div>
+</section>
 
 <Modal.Root bind:open={editorOpen}>
 	<Modal.Content>

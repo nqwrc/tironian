@@ -30,13 +30,16 @@
 	import BottomNav from './_components/BottomNav.svelte';
 	import ContentShell from './_components/ContentShell.svelte';
 	import GlobalDialogs from './_components/GlobalDialogs.svelte';
+	import Onboarding from './_components/Onboarding.svelte';
 	import VerticalNav from './_components/VerticalNav.svelte';
 
 	const log = createLogger('tironian/app-layout');
 
 	let { children } = $props();
 
-	let sidebarOpen = $state(false);
+	// Open by default: the sidebar names its destinations and carries the
+	// dictation stats, which the icon rail hides.
+	let sidebarOpen = $state(true);
 
 	// Sidebar when wide, bottom bar on narrow viewports (phone, small window).
 	const isNarrow = new MediaQuery('(max-width: 767px)');
@@ -72,7 +75,7 @@
 					<BottomNav />
 				</div>
 			{:else}
-				<Sidebar.Provider bind:open={sidebarOpen}>
+				<Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 13rem">
 					<VerticalNav />
 					<Sidebar.Inset>
 						<ContentShell>{@render children()}</ContentShell>
@@ -82,6 +85,8 @@
 
 			<GlobalDialogs />
 			<DictationIndicator />
+			<!-- First run only (Vivavoce 4e); gates itself on a device flag. -->
+			<Onboarding />
 		</Tooltip.Provider>
 	</TironianUiSessionProvider>
 {:catch error}

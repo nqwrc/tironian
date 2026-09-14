@@ -14,7 +14,7 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { resultMutationOptions } from 'wellcrafted/query';
-	import { SettingSwitch } from '$lib/components/settings';
+	import { AdvancedDisclosure, SettingSwitch } from '$lib/components/settings';
 	import { logAnalyticsEvent } from '$lib/operations/analytics';
 	import { report } from '$lib/report';
 	import { getTironianApp } from '$lib/app/context';
@@ -200,36 +200,58 @@
 
 <svelte:head> <title>{pageTitle(m.page_title_account_and_data())}</title> </svelte:head>
 
+<!-- Vivavoce 4d rows: what each action does on the left, its button on the
+     right. The 14-box export checklist waits behind "Choose what to include",
+     because the common case is a full backup and every box starts checked. -->
+{#snippet legend(text: string)}
+	<Field.Legend
+		variant="label"
+		class="font-mono text-[10px] font-normal tracking-[0.12em] text-muted-foreground uppercase"
+		>{text}</Field.Legend
+	>
+{/snippet}
+
 <Field.Set>
-	<Field.Legend>{m.account_account_amp_data()}</Field.Legend>
-	<Field.Description>
-		{m.account_who_you_are_signed_in_as_what_moves()}
-	</Field.Description>
-	<Field.Separator />
+	<Field.Legend class="sr-only">{m.account_account_amp_data()}</Field.Legend>
 	<Field.Group>
 		<Field.Set id="data" class="scroll-mt-20">
-			<Field.Legend variant="label">{m.account_export()}</Field.Legend>
-			<Field.Description>
-				{m.account_pick_what_to_include_then_save_it_as()}
-			</Field.Description>
-			<Field.Group>
-				<CategoryCheckboxList
-					idPrefix="export"
-					items={exportItems}
-					bind:selected={exportSelected}
-				/>
-				<div class="flex">
-					<Button onclick={handleExport} disabled={exportSelected.size === 0}>
-						<DownloadIcon class="size-4" />
-						{m.account_export_selected()}
-					</Button>
-				</div>
-
-				<Field.Field>
-					<Field.Label>{m.account_export_recordings()}</Field.Label>
+			{@render legend(m.account_export())}
+			<Field.Group class="gap-4">
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label>{m.account_settings_file()}</Field.Label>
+						<Field.Description>
+							{m.account_pick_what_to_include_then_save_it_as()}
+						</Field.Description>
+					</Field.Content>
 					<Button
 						variant="outline"
-						class="w-fit"
+						size="sm"
+						onclick={handleExport}
+						disabled={exportSelected.size === 0}
+					>
+						<DownloadIcon class="size-4" />
+						{m.account_export()}
+					</Button>
+				</Field.Field>
+				<AdvancedDisclosure label={m.account_choose_what_to_include()}>
+					<CategoryCheckboxList
+						idPrefix="export"
+						items={exportItems}
+						bind:selected={exportSelected}
+					/>
+				</AdvancedDisclosure>
+
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label>{m.account_export_recordings()}</Field.Label>
+						<Field.Description>
+							{m.account_download_every_recording_as_a_zip_of_markdown({ productName: PRODUCT_NAME })}
+						</Field.Description>
+					</Field.Content>
+					<Button
+						variant="outline"
+						size="sm"
 						onclick={() => {
 							exportRecordings.mutate(undefined, {
 								onSuccess: (data) => {
@@ -257,13 +279,8 @@
 						}}
 						disabled={exportRecordings.isPending}
 					>
-						{exportRecordings.isPending
-							? 'Exporting...'
-							: 'Export recordings (.zip)'}
+						{exportRecordings.isPending ? 'Exporting...' : 'Export .zip'}
 					</Button>
-					<Field.Description>
-						{m.account_download_every_recording_as_a_zip_of_markdown({ productName: PRODUCT_NAME })}
-					</Field.Description>
 				</Field.Field>
 			</Field.Group>
 		</Field.Set>
@@ -271,11 +288,8 @@
 		<Field.Separator />
 
 		<Field.Set id="import" class="scroll-mt-20">
-			<Field.Legend variant="label">{m.account_import()}</Field.Legend>
-			<Field.Description>
-				{m.account_checked_preferences_replace_your_current()}
-			</Field.Description>
-			<Field.Group>
+			{@render legend(m.account_import())}
+			<Field.Group class="gap-4">
 				<input
 					bind:this={importInput}
 					type="file"
@@ -283,12 +297,22 @@
 					class="hidden"
 					onchange={onImportFileChosen}
 				/>
-				<div class="flex">
-					<Button variant="outline" onclick={() => importInput?.click()}>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label>{m.account_settings_file()}</Field.Label>
+						<Field.Description>
+							{m.account_checked_preferences_replace_your_current()}
+						</Field.Description>
+					</Field.Content>
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={() => importInput?.click()}
+					>
 						<UploadIcon class="size-4" />
 						{m.account_choose_file()}
 					</Button>
-				</div>
+				</Field.Field>
 
 				{#if importProblem}
 					<p class="text-destructive text-sm">{importProblem}</p>
@@ -315,11 +339,8 @@
 		<Field.Separator />
 
 		<Field.Set id="analytics" class="scroll-mt-20">
-			<Field.Legend variant="label">{m.account_analytics()}</Field.Legend>
-			<Field.Description>
-				{m.account_off_unless_you_turn_it_on_with_it({ productName: PRODUCT_NAME })}
-			</Field.Description>
-			<Field.Group>
+			{@render legend(m.account_analytics())}
+			<Field.Group class="gap-4">
 				<SettingSwitch
 					key="analyticsEnabled"
 					label={m.account_share_anonymized_events()}
@@ -335,6 +356,7 @@
 					}}
 				/>
 
+				<AdvancedDisclosure label={m.account_what_gets_logged()}>
 				<div class="grid gap-x-8 gap-y-4 sm:grid-cols-2">
 					<div class="space-y-1.5">
 						<p class="text-sm font-medium">{m.account_events_we_log()}</p>
@@ -378,6 +400,7 @@
 						Aptabase
 					</Link>{m.account_the_service_that_receives_them()}
 				</Field.Description>
+				</AdvancedDisclosure>
 			</Field.Group>
 		</Field.Set>
 	</Field.Group>

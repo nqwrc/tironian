@@ -4,7 +4,6 @@
 	import { Button } from '@tironian/ui/button';
 	import { confirmationDialog } from '@tironian/ui/confirmation-dialog';
 	import * as SectionHeader from '@tironian/ui/section-header';
-	import { Separator } from '@tironian/ui/separator';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { report } from '$lib/report';
 	import { deviceConfig } from '$lib/state/device-config.svelte';
@@ -16,20 +15,18 @@
 	let { children } = $props();
 </script>
 
-<main class="flex w-full flex-1 flex-col pb-4 pt-2 px-4 mx-auto max-w-6xl">
-	<div
-		class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-	>
+<main class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-9 pt-6 pb-4">
+	<div class="flex items-center justify-between gap-4 pb-4">
 		<SectionHeader.Root class="space-y-0.5">
-			<SectionHeader.Title level={2} class="text-2xl font-bold tracking-tight"
+			<SectionHeader.Title level={2} class="text-xl font-semibold tracking-tight"
 				>{m.nav_settings()}</SectionHeader.Title
 			>
-			<SectionHeader.Description>
+			<SectionHeader.Description class="sr-only">
 				{m.settings_customize({ productName: PRODUCT_NAME })}
 			</SectionHeader.Description>
 		</SectionHeader.Root>
 		<Button
-			variant="outline"
+			variant="ghost"
 			size="sm"
 			onclick={() => {
 				confirmationDialog.open({
@@ -47,13 +44,12 @@
 					},
 				});
 			}}
-			class="shrink-0"
+			class="shrink-0 text-muted-foreground"
 		>
 			<RotateCcw class="size-4" />
 			{m.settings_reset_to_defaults()}
 		</Button>
 	</div>
-	<Separator class="my-6" />
 	<GroupNav />
-	<main class="flex-1 p-1.5 pt-6 lg:max-w-3xl">{@render children()}</main>
+	<div class="flex-1 pt-6">{@render children()}</div>
 </main>

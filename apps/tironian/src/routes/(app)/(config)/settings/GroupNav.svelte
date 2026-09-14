@@ -1,33 +1,31 @@
 <!--
-	The settings groups, as a horizontal strip.
+	The settings groups, as tabs across the top of the page (Vivavoce 4d: one
+	navigation, the sections become tabs at the head of the page).
 
 	This was a second left column beside the app rail, which meant two vertical
 	menus on every settings screen. The rail is the app's only vertical
-	navigation: it is icon-collapsed at medium widths and replaced by BottomNav
-	below 768px, and a column that survives none of those transitions was
-	competing with it rather than nesting under it.
+	navigation, and a column that survives none of its breakpoints was competing
+	with it rather than nesting under it.
 
 	Five groups, not nine pages. Four of the old pages were under 80 lines, so
-	they were a menu entry each for a handful of switches. Shortcuts sits second
+	they were a menu entry each for a handful of switches. Shortcuts comes first
 	because it is the first thing a new person needs and the only home of the
-	global hotkey.
+	global hotkey. The design's separate Dictation and Sounds tabs are not here:
+	Dictation is already a page of its own, and sounds live under Recording.
 -->
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
-	import { Button } from '@tironian/ui/button';
 	import { cn } from '@tironian/ui/utils';
-	import { cubicInOut } from 'svelte/easing';
-	import { crossfade } from 'svelte/transition';
 	import { page } from '$app/state';
 	import { dictationPath } from '$lib/constants/urls';
 
 	const items = [
-		{ title: 'Capture', href: dictationPath('/settings') },
 		{
 			title: 'Shortcuts',
 			href: dictationPath('/settings/shortcuts'),
 			activePathPrefix: dictationPath('/settings/shortcuts'),
 		},
+		{ title: m.group_nav_recording(), href: dictationPath('/settings') },
 		{
 			title: m.settings_title_processing(),
 			href: dictationPath('/settings/processing'),
@@ -43,15 +41,10 @@
 		 */
 		activePathPrefix?: string;
 	}[];
-
-	const [send, receive] = crossfade({
-		duration: 250,
-		easing: cubicInOut,
-	});
 </script>
 
 <nav
-	class="border-border/40 -mx-1 flex gap-1 overflow-x-auto border-b px-1 pb-2"
+	class="flex gap-1 overflow-x-auto border-b border-border/60 [scrollbar-width:none]"
 	aria-label={m.group_nav_settings_navigation()}
 >
 	{#each items as item (item.href)}
@@ -59,27 +52,18 @@
 			? page.url.pathname.startsWith(item.activePathPrefix)
 			: page.url.pathname === item.href}
 
-		<Button
+		<a
 			href={item.href}
-			variant="ghost"
-			size="sm"
 			class={cn(
-				'relative shrink-0 font-normal transition-colors',
+				'-mb-px shrink-0 border-b-2 px-3 pt-1.5 pb-2.5 text-[13px] transition-colors duration-(--motion-micro) outline-none focus-visible:ring-2 focus-visible:ring-ring',
 				isActive
-					? 'text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
-					: 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+					? 'border-voce font-medium text-foreground'
+					: 'border-transparent text-muted-foreground hover:text-foreground',
 			)}
 			aria-current={isActive ? 'page' : undefined}
 			data-sveltekit-noscroll
 		>
-			{#if isActive}
-				<div
-					class="bg-sidebar-accent absolute inset-0 rounded-md"
-					in:send={{ key: 'active-settings-group' }}
-					out:receive={{ key: 'active-settings-group' }}
-				></div>
-			{/if}
-			<span class="relative z-10">{item.title}</span>
-		</Button>
+			{item.title}
+		</a>
 	{/each}
 </nav>

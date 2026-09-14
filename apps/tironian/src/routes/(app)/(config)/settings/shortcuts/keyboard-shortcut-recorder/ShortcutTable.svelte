@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { Input } from '@tironian/ui/input';
-	import * as Table from '@tironian/ui/table';
 	import Search from '@lucide/svelte/icons/search';
 	import type { Snippet } from 'svelte';
 	import { type Command, commands } from '$lib/commands';
 
-	// Platform-agnostic chrome: a searchable table of every command. The caller
-	// owns what a row's shortcut control is (the reach-routed keyboard recorder)
-	// and supplies it through the `row` snippet, so this component holds no
+	// Platform-agnostic chrome: a searchable list of every command (Vivavoce 4j:
+	// one list, the key you press decides where it works). The caller owns what
+	// a row's shortcut control is (the reach-routed keyboard recorder) and
+	// supplies it through the `row` snippet, so this component holds no
 	// local/global discriminator.
 	let { row }: { row: Snippet<[Command]> } = $props();
 
@@ -21,41 +21,27 @@
 	);
 </script>
 
-<div class="space-y-4">
-	<!-- Search input -->
+<div class="flex flex-col gap-3">
 	<div class="relative">
 		<Search
-			class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+			class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
 		/>
 		<Input
 			type="search"
 			placeholder={m.shortcut_table_search_commands()}
-			class="pl-10"
+			class="h-8 pl-8 text-sm"
 			bind:value={searchQuery}
 		/>
 	</div>
 
-	<!-- Command list with shortcuts -->
-	<div class="overflow-x-auto rounded-lg border">
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head class="min-w-[150px]">{m.shortcut_table_command()}</Table.Head>
-					<Table.Head class="text-right min-w-[200px]">{m.shortcut_table_shortcut()}</Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each filteredCommands as command}
-					<Table.Row>
-						<Table.Cell class="font-medium">
-							<span class="block truncate pr-2">{command.title}</span>
-						</Table.Cell>
-						<Table.Cell class="text-right">
-							{@render row(command)}
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	</div>
+	<ul class="-mx-3 flex flex-col" aria-label={m.settings_title_shortcuts()}>
+		{#each filteredCommands as command (command.id)}
+			<li
+				class="flex items-center justify-between gap-4 rounded-md px-3 py-1.5 transition-colors duration-(--motion-micro) hover:bg-accent/50"
+			>
+				<span class="min-w-0 truncate text-sm">{command.title}</span>
+				{@render row(command)}
+			</li>
+		{/each}
+	</ul>
 </div>

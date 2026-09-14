@@ -2,7 +2,6 @@
 	import { PRODUCT_NAME } from '$lib/constants/brand';
 	import { m } from '$lib/paraglide/messages';
 	import { Button } from '@tironian/ui/button';
-	import { Card } from '@tironian/ui/card';
 	import * as Field from '@tironian/ui/field';
 	import { Input } from '@tironian/ui/input';
 	import { Link } from '@tironian/ui/link';
@@ -93,22 +92,26 @@
 
 <svelte:head> <title>{m.nav_dictation()}</title> </svelte:head>
 
-<main class="mx-auto flex w-full flex-1 flex-col gap-2 px-4 py-4 sm:px-8">
-	<SectionHeader.Root>
-		<SectionHeader.Title
-			level={1}
-			class="scroll-m-20 text-4xl tracking-tight lg:text-5xl"
-		>
+<!-- Vivavoce 4f: three stacked groups under one heading, divided by hairlines
+     rather than boxed in cards, each named by a small mono label. -->
+<main class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-9 pt-6 pb-8">
+	<SectionHeader.Root class="pb-2">
+		<SectionHeader.Title level={1} class="text-xl font-semibold tracking-tight">
 			{m.nav_dictation()}
 		</SectionHeader.Title>
-		<SectionHeader.Description>
+		<SectionHeader.Description class="text-sm">
 			{m.dictation_what_happens_to_your_words_between_the({ productName: PRODUCT_NAME })}
 		</SectionHeader.Description>
 	</SectionHeader.Root>
 
-	<Card class="flex flex-col gap-4 p-6">
+	<section
+		class="flex flex-col gap-4 border-t border-border/60 py-6 first-of-type:border-t-0"
+	>
 		<Field.Set>
-			<Field.Legend variant="label">{m.dictation_polish()}</Field.Legend>
+			<Field.Legend
+				variant="label"
+				class="font-mono text-[10px] font-normal tracking-[0.12em] text-muted-foreground uppercase"
+			>{m.dictation_polish()}</Field.Legend>
 			<Field.Description>
 				{m.dictation_an_always_on_ai_pass_that_fixes_grammar()}
 			</Field.Description>
@@ -160,11 +163,16 @@
 				{/if}
 			</Field.Group>
 		</Field.Set>
-	</Card>
+	</section>
 
-	<Card class="flex flex-col gap-4 p-6">
+	<section
+		class="flex flex-col gap-4 border-t border-border/60 py-6 first-of-type:border-t-0"
+	>
 		<Field.Set>
-			<Field.Legend variant="label">{m.dictation_command_mode()}</Field.Legend>
+			<Field.Legend
+				variant="label"
+				class="font-mono text-[10px] font-normal tracking-[0.12em] text-muted-foreground uppercase"
+			>{m.dictation_command_mode()}</Field.Legend>
 			<Field.Description>
 				{m.dictation_a_short_list_of_spoken_phrases_that_do()}
 			</Field.Description>
@@ -190,11 +198,16 @@
 				{/if}
 			</Field.Group>
 		</Field.Set>
-	</Card>
+	</section>
 
-	<Card class="flex flex-col gap-4 p-6">
+	<section
+		class="flex flex-col gap-4 border-t border-border/60 py-6 first-of-type:border-t-0"
+	>
 		<Field.Set>
-			<Field.Legend variant="label">{m.dictation_dictionary()}</Field.Legend>
+			<Field.Legend
+				variant="label"
+				class="font-mono text-[10px] font-normal tracking-[0.12em] text-muted-foreground uppercase"
+			>{m.dictation_dictionary()}</Field.Legend>
 			<Field.Description>
 				{m.dictation_proper_nouns_and_domain_terms_tironian({ productName: PRODUCT_NAME })}
 			</Field.Description>
@@ -261,5 +274,5 @@
 				{/if}
 			</Field.Group>
 		</Field.Set>
-	</Card>
+	</section>
 </main>

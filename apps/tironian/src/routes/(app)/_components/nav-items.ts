@@ -12,6 +12,12 @@ export type NavItem = {
 	href: string;
 	icon: Component;
 	isActive: (pathname: string) => boolean;
+	/**
+	 * Pinned below the dictation stats in the wide sidebar rather than listed
+	 * with the other destinations. The bottom bar has no footer and lists it
+	 * with the rest.
+	 */
+	footer?: true;
 };
 
 /** Matches a route and all its sub-routes (e.g., `/settings` matches `/settings/audio`). */
@@ -61,5 +67,6 @@ export const NAV_ITEMS = [
 		href: dictationPath('/settings'),
 		icon: SettingsIcon,
 		isActive: matchesRoute(dictationPath('/settings')),
+		footer: true,
 	},
 ] as const satisfies readonly NavItem[];
