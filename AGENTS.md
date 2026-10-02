@@ -16,11 +16,11 @@ packages/
 
 ## Runtime
 
-One runtime: a desktop SPA in a WebView over a client-owned store (ADR-0227). The host serves bundles and brokers credentials and owns no application data (ADR-0226).
+One runtime: a desktop SPA in a WebView over a client-owned store. The host serves bundles and brokers credentials and owns no application data.
 
-This is a single-app dictation product: the Home chat pane, `packages/chat`, and app-shell's agent chat are gone, not broken-on-purpose. `apps/tironian` declares a real workspace with `defineData` (`src/lib/workspace/index.ts:283`) and opens its one device document through `openDevice`, composing settings, recordings, recipes, snippets, and app rules over it (`src/lib/app/app.ts`); there is no account store and no sync attach. Its suite runs green. `apps/desktop` compiles, bundles, and serves.
+This is a single-app dictation product with no Home chat pane, no `packages/chat` and no app-shell agent chat. `apps/tironian` declares a real workspace with `defineData` (`src/lib/workspace/index.ts:283`) and opens its one device document through `openDevice`, composing settings, recordings, recipes, snippets, and app rules over it (`src/lib/app/app.ts`); there is no account store and no sync attach.
 
-This fork carries no hosted cloud or self-host deployable: `apps/api`, `apps/self-host`, `packages/server`, and `ops/` (upstream's Cloudflare DNS and redirect tooling) were pruned because nothing in the kept apps imports them.
+This fork has no hosted cloud or self-host deployable: there is no `apps/api`, `apps/self-host`, `packages/server` or `ops/`.
 
 ## License boundary
 
@@ -39,15 +39,6 @@ Start apps from the repo root with `bun dev:<app>`. Do not cd into an app to sta
 - `bun dev:<app>` runs every process the app needs.
 - `bun dev:<app>:ui` is the frontend alone, where that split exists.
 - Details in the `monorepo` skill.
-
-## Script suffix convention
-
-The suffix tells you whether a script touches production.
-
-| Suffix | Meaning |
-| --- | --- |
-| `:local` | works on a fresh clone without Infisical login; reads committed config like `wrangler.jsonc` |
-| `:remote` | wraps with `infisical run --env=prod` and requires Infisical auth. Treat as a production admin operation. |
 
 ## Git hygiene
 
@@ -110,7 +101,7 @@ Audience decides vocabulary: what a person reads uses the word they already have
 | UI copy, errors shown to them, deep links, README front doors | types, functions, library error messages |
 
 - Do not soften `authority`, `replica`, `projection`, or `principal` in code to sound friendlier, and do not let one of them reach a person.
-- A library states a failure precisely; the app decides what a person is told about it. Vocabulary decision: ADR-0244.
+- A library states a failure precisely; the app decides what a person is told about it.
 - Keep user-facing text direct and concrete.
 
 **Punctuation.** Avoid en dash characters (`U+2013`). Prefer colon, comma, semicolon, or sentence break over em dash characters (`U+2014`), especially in UI strings, docs, comments, JSDoc, and commit messages.
@@ -119,13 +110,13 @@ Audience decides vocabulary: what a person reads uses the word they already have
 
 **Generated prose.** Applies to everything the agent writes unless a more specific skill owns the destination.
 
-- Cut AI vocabulary and puffery: delve, crucial, pivotal, showcase, testament, underscore, vibrant, abstract "landscape" or "tapestry", and "serves as" or "stands as" where "is" works.
+- Use plain words: "is" over "serves as" or "stands as", and the specific claim over praise or puffery.
 - State the point directly. No "not just X, but Y", no forced groups of three, no vague attributions like "experts believe".
 - Prefer the concrete word over the abstract metaphor: substrate, wedge, vector, nexus, flywheel, north star. Load-bearing repo vocabulary is exempt: `primitive` as in the Item primitive, API `surface`, `harness`, `authority`, `replica`, `projection`, `principal`.
 - Say what the thing does, not how it feels. If a sentence could appear unchanged in another project's docs, cut it.
 - One idea per sentence. Active voice: name the actor ("the compiler validates queries", not "queries are validated").
 - Cut adverbs and hedging; use the stronger verb or the number. "In order to" is "To"; "utilize" and "leverage" are "use".
-- Formatting tells: sentence-case headings, no decorative emoji, no bold-label-colon bullets that restate the line, no chatbot phrases ("I hope this helps!", "Great question!").
+- Formatting tells: sentence-case headings, no decorative emoji, no bold-label-colon bullets that restate the line.
 
 Load `writing-voice` for substantial prose or explicit tone/rewrite work.
 

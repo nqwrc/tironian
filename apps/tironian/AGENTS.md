@@ -6,7 +6,7 @@ Browser-hostable Svelte 5 speech-to-text SPA. The desktop host owns its only nat
 
 - Three-layer architecture: Service -> Query -> UI
 - Services are pure functions returning `Result<T, E>`
-- Build-time platform seams use `#platform/*` imports: `tironian-host` when the Bun host owns the thing (credential, deployment choice, asset base), `tauri` when the leaf calls a native command. The replica is NOT one of those things any more: there is no host-owned data plane, so every build opens its own store and a storage seam is the thing to delete rather than to route. Tironian has no build where `tironian-host` and `tauri` come apart, so the whole seam collapses to one leaf when it is rebuilt.
+- Build-time platform seams use `#platform/*` imports: `tironian-host` when the Bun host owns the thing (credential, deployment choice, asset base), `tauri` when the leaf calls a native command. There is no host-owned data plane: every build opens its own store, so there is no storage seam to route; do not add one. Tironian has no build where `tironian-host` and `tauri` come apart, so the whole seam collapses to one leaf when it is rebuilt.
 - Tauri-only capabilities live in `$lib/tauri.tauri.ts`; shared consumers go through `#platform/*`.
 - Query layer handles reactivity, caching, and error transformation
 - See `ARCHITECTURE.md` for detailed patterns
@@ -29,12 +29,3 @@ Every command change must keep `make_specta_builder()` in
 `src/lib/tauri/commands.ts` in sync. The command boundary file is the only place
 in `src/lib/**` that may import `invoke` from `@tauri-apps/api/core` for app
 commands.
-
-## Specs and Docs
-
-- App-specific specs: `./specs/`
-- App-specific docs: `./docs/` (if needed)
-- Cross-cutting specs: `/specs/`
-- Cross-cutting docs: `/docs/`
-
-See root `AGENTS.md` for the full organization guide.
