@@ -126,13 +126,11 @@ Be direct about flawed assumptions, weak designs, and regressions. Do not agree 
 
 ## Agent collaboration
 
-Codex is the primary continuity, judgment, execution, testing, and integration owner for repository work. It gathers the evidence, makes the final decision, edits the active worktree, and integrates the result.
+Codex and Claude Code are both full executors. The agent the user starts a session with owns that session's work: it gathers the evidence, decides, edits the active worktree, tests, commits, and integrates the result.
 
-Claude is an independent laboratory. Do not invoke Claude automatically because a task is complex. Invoke the `consult-claude` skill only when the user explicitly names Claude as the researcher or reviewer, or asks for a Claude Code consultation. A consultation can happen before a high-leverage decision, after a meaningful implementation slice, or at both points.
+Two agents never edit the same branch at once. Before editing, read `STATUS.md` and `git log --all` for work another agent left in flight, and work on your own `feature/*` or `bugfix/*` branch. Record what you leave in flight in `STATUS.md`, so the next session, of either agent, can pick it up.
 
-Consultation runs against a sealed snapshot: Claude may research, edit, test, and experiment there, but cannot access or author the living checkout. The `consult-claude` skill owns the isolation, native-session follow-ups, checkpoints, and review procedure.
-
-Codex decides which feedback is valid, re-verifies it against live state, applies any changes, and reruns verification. Claude delegation never transfers live-checkout authorship.
+A consultation is a separate mode, used only when the user asks one agent to research or review for the other. Do not start one automatically because a task is complex. From a Codex session, the `consult-claude` skill runs Claude against a sealed snapshot of the checkout and owns the isolation, follow-ups, and checkpoints; the requesting agent decides which feedback is valid, re-verifies it against live state, and applies it.
 
 ## Review routing
 

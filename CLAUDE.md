@@ -2,16 +2,11 @@
 
 # Claude-specific notes
 
-Codex is the primary continuity, judgment, execution, testing, and integration
-owner for repository work. When the user explicitly asks for a Claude consult,
-Claude is an advisory review lane: read the seeded context, explore related
-repository evidence read-only when needed, and return tradeoffs, objections,
-missing invariants, risks, and a strong recommendation.
-
-A consult must not edit files, create a worktree, commit, publish, or become a
-second executor. The starting paths in the consult brief are investigation
-seeds, not a narrow boundary. Codex decides which feedback is valid and owns
-any resulting changes.
+Claude Code is a full executor here, on the same terms as Codex: see "Agent
+collaboration" in `AGENTS.md`. When a session was started as a consultation
+through the `consult-claude` skill, Claude works only on the sealed snapshot it
+was given and returns tradeoffs, objections, risks, and a recommendation;
+the requesting agent applies the changes.
 
 `/codex:review`, `/codex:adversarial-review`, `/codex:transfer`,
 `/codex:status`, `/codex:result`, and `/codex:cancel` remain user-invoked and
