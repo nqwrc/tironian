@@ -5,7 +5,12 @@
  * undo record before it knows whether anything will be written, and toasts a
  * success copy meant for a fresh transcription. A repeat wants none of that, so
  * it re-runs the two pieces it does want, the secure-field guard and the
- * cursor sink, here.
+ * cursor sink, here. The undo record is replaced only when the paste reached
+ * the cursor: a clipboard fallback leaves the previous record, whose text is
+ * still where it was put.
+ *
+ * One repeat runs at a time (see `exclusive`), and everything a write depends
+ * on is read just before it, after the wait for the chord's modifiers.
  *
  * Paste writes at the cursor whatever the output settings say, and presses no
  * Enter. On macOS with cursor output off the paste ends on the clipboard
@@ -90,69 +95,103 @@ function textToRepeat(app: TironianApp): string | null {
 	return text;
 }
 
-export async function pasteLastDictation(app: TironianApp): Promise<void> {
-	const text = textToRepeat(app);
-	if (text === null) return;
-	// Always probed: the guard reads the field, the undo record reads the app.
-	const foreground = await probeForegroundContext();
-	const decision = decideSecureFieldGuard({
-		focusedField: foreground.focusedField,
-		enabled: app.settings.get('secureFieldGuardEnabled'),
-	});
-	if (decision === 'withhold') {
-		announce(m.repeat_withheld());
+/**
+ * Whether a paste or copy is already running. Both end in a clipboard write,
+ * and the host's clipboard borrow (save the person's clipboard, write, paste,
+ * restore) assumes one write at a time: a second chord landing inside the
+ * first's borrow would snapshot the dictation as if it were the person's own
+ * clipboard and restore that. A tap of the chord twice fires two releases
+ * within milliseconds, so this is reachable, not theoretical.
+ */
+let repeatRunning = false;
+
+async function exclusive(run: () => Promise<void>): Promise<void> {
+	if (repeatRunning) {
+		announce(m.repeat_busy());
 		return;
 	}
-	// The paste synthesizes Ctrl/Cmd+V, and the chord that fired this may still
-	// have Ctrl+Shift or Ctrl+Alt down. If its modifiers do not lift, pasting
-	// would send a different shortcut, so the text goes to the clipboard instead
-	// and the person pastes it themselves. The guard has already passed above.
-	const modifiersUp = await services.text.waitForModifiersReleased(
-		MODIFIER_RELEASE_WAIT_MS,
-	);
-	if (!modifiersUp) {
+	repeatRunning = true;
+	await run().finally(() => {
+		repeatRunning = false;
+	});
+}
+
+export function pasteLastDictation(app: TironianApp): Promise<void> {
+	return exclusive(async () => {
+		if (textToRepeat(app) === null) return;
+		// The paste synthesizes Ctrl/Cmd+V, and the chord that fired this may still
+		// have Ctrl+Shift or Ctrl+Alt down. If its modifiers do not lift, pasting
+		// would send a different shortcut, so the text goes to the clipboard instead
+		// and the person pastes it themselves.
+		const modifiersUp = await services.text.waitForModifiersReleased(
+			MODIFIER_RELEASE_WAIT_MS,
+		);
+		// Everything the write depends on is read after the wait, which can take
+		// up to MODIFIER_RELEASE_WAIT_MS: focus can move, and a dictation can start
+		// or finish. The guard reads the field and the undo record reads the app,
+		// so the probe always runs.
+		const foreground = await probeForegroundContext();
+		const decision = decideSecureFieldGuard({
+			focusedField: foreground.focusedField,
+			enabled: app.settings.get('secureFieldGuardEnabled'),
+		});
+		if (decision === 'withhold') {
+			announce(m.repeat_withheld());
+			return;
+		}
+		const text = textToRepeat(app);
+		if (text === null) return;
+		if (!modifiersUp) {
+			const { error } = await services.text.copyToClipboard(text);
+			if (error !== null) {
+				report.error({ title: m.repeat_copy_failed(), cause: error });
+				return;
+			}
+			announce(m.repeat_keys_held());
+			return;
+		}
+		const sink = createCursorSink({
+			keepOnClipboard: app.settings.get('outputTranscriptionClipboard'),
+			pressEnter: false,
+		});
+		const { reach } = await sink.deliver(text);
+		if (reach !== 'output') {
+			// The previous record stays: its text is still where it was put, and a
+			// clipboard fallback is not something "scratch that" can undo.
+			announce(m.repeat_left_on_clipboard());
+			return;
+		}
+		// "Scratch that" now undoes this repeat, in the app it went to.
+		lastDelivery.record({
+			text,
+			sinkKind: 'cursor',
+			reach,
+			pressedEnter: false,
+			appId: foreground.appId,
+		});
+	});
+}
+
+export function copyLastDictation(app: TironianApp): Promise<void> {
+	return exclusive(async () => {
+		if (textToRepeat(app) === null) return;
+		if (app.settings.get('secureFieldGuardEnabled')) {
+			const { focusedField } = await probeForegroundContext();
+			if (
+				decideSecureFieldGuard({ focusedField, enabled: true }) === 'withhold'
+			) {
+				announce(m.repeat_withheld());
+				return;
+			}
+		}
+		// The probe is async: a dictation may have started behind it.
+		const text = textToRepeat(app);
+		if (text === null) return;
 		const { error } = await services.text.copyToClipboard(text);
 		if (error !== null) {
 			report.error({ title: m.repeat_copy_failed(), cause: error });
 			return;
 		}
-		announce(m.repeat_keys_held());
-		return;
-	}
-	// A new write at the cursor: whatever was held no longer ends there.
-	lastDelivery.clear();
-	const sink = createCursorSink({
-		keepOnClipboard: app.settings.get('outputTranscriptionClipboard'),
-		pressEnter: false,
+		announce(m.repeat_copied());
 	});
-	const { reach } = await sink.deliver(text);
-	// "Scratch that" now undoes this repeat, in the app it went to.
-	lastDelivery.record({
-		text,
-		sinkKind: 'cursor',
-		reach,
-		pressedEnter: false,
-		appId: foreground.appId,
-	});
-	if (reach !== 'output') announce(m.repeat_left_on_clipboard());
-}
-
-export async function copyLastDictation(app: TironianApp): Promise<void> {
-	const text = textToRepeat(app);
-	if (text === null) return;
-	if (app.settings.get('secureFieldGuardEnabled')) {
-		const { focusedField } = await probeForegroundContext();
-		if (
-			decideSecureFieldGuard({ focusedField, enabled: true }) === 'withhold'
-		) {
-			announce(m.repeat_withheld());
-			return;
-		}
-	}
-	const { error } = await services.text.copyToClipboard(text);
-	if (error !== null) {
-		report.error({ title: m.repeat_copy_failed(), cause: error });
-		return;
-	}
-	announce(m.repeat_copied());
 }

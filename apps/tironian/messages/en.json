@@ -26,6 +26,7 @@
 	"repeat_nothing_to_paste": "Nothing to paste yet",
 	"repeat_nothing_to_paste_description": "Dictate something first. The last dictation is kept until the app closes, or until its recording is deleted or edited.",
 	"repeat_in_flight": "A dictation is still being delivered",
+	"repeat_busy": "Already pasting or copying the last dictation",
 	"repeat_withheld": "Not pasted: a password field has focus",
 	"repeat_keys_held": "Shortcut keys still held, so the last dictation is on the clipboard",
 	"repeat_left_on_clipboard": "Couldn't paste, so the last dictation is on the clipboard",
