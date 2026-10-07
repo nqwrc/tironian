@@ -26,6 +26,8 @@ let failingRuns: number[] = [];
 let transcribeCalls = 0;
 
 const delivered: string[] = [];
+/** Whether the next delivery reports the secure-field guard withheld it. */
+let withheld = false;
 const deliverTranscriptionResult = mock(async ({ text }: { text: string }) => {
 	delivered.push(text);
 	return {
@@ -33,12 +35,13 @@ const deliverTranscriptionResult = mock(async ({ text }: { text: string }) => {
 			reach: 'output',
 			sinkKind: 'cursor',
 			pressedEnter: false,
-			withheld: false,
+			withheld,
 		} as const,
 		notice: { title: 'done' },
 	};
 });
 const record = mock();
+const recordDictation = mock();
 
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // Command mode is off in this fixture: these exist so the pipeline's own
@@ -106,6 +109,9 @@ mock.module('$lib/state/last-delivery.svelte', () => ({
 		take: () => null,
 	},
 }));
+mock.module('$lib/state/last-dictation.svelte', () => ({
+	lastDictation: { record: recordDictation, peek: () => null, clear: mock() },
+}));
 mock.module('$lib/state/polish-hud.svelte', () => ({
 	polishHud: { begin: mock(), end: mock() },
 }));
@@ -119,6 +125,12 @@ const app = {
 		create(fields: Record<string, unknown>) {
 			return { ...fields, id: 'recording-1' as RecordingId };
 		},
+		// The row as the pipeline reads it back after the transcript was patched in.
+		get: (id: string) => ({
+			id,
+			transcript: 'raw words',
+			polishedTranscript: null,
+		}),
 		update: mock(async () => Ok(undefined)),
 	},
 	snippets: { all: [] },
@@ -138,7 +150,9 @@ afterEach(() => {
 	failingRuns = [];
 	transcribeCalls = 0;
 	delivered.length = 0;
+	withheld = false;
 	record.mockClear();
+	recordDictation.mockClear();
 });
 
 /**
@@ -194,4 +208,34 @@ test('a failed run does not poison the queue behind it', async () => {
 	await second;
 
 	expect(delivered).toEqual(['delivered anyway']);
+});
+
+/**
+ * "Paste last dictation" repeats what shipped, so the pipeline hands the
+ * holder the delivered text with the row's transcript fields as they stand
+ * when it ships. The row is read back, not taken from the one `create`
+ * returned, which still has an empty transcript.
+ */
+test('a delivered dictation is held with the row it came from', async () => {
+	transcripts = ['hello there'];
+
+	await start();
+
+	expect(recordDictation).toHaveBeenCalledTimes(1);
+	expect(recordDictation).toHaveBeenCalledWith({
+		text: 'hello there',
+		recordingId: 'recording-1',
+		transcript: 'raw words',
+		polishedTranscript: null,
+	});
+});
+
+/** The guard promised withheld text lives only in history. */
+test('a withheld dictation is not held', async () => {
+	transcripts = ['a secret'];
+	withheld = true;
+
+	await start();
+
+	expect(recordDictation).not.toHaveBeenCalled();
 });

@@ -22,6 +22,7 @@ import { saveRecordingHistory } from '$lib/operations/transcription-history';
 import { report } from '$lib/report';
 import { dictationLifecycle } from '$lib/state/dictation-lifecycle.svelte';
 import { lastDelivery } from '$lib/state/last-delivery.svelte';
+import { lastDictation } from '$lib/state/last-dictation.svelte';
 import { polishHud } from '$lib/state/polish-hud.svelte';
 import { m } from '../paraglide/messages';
 import type { ForegroundSnapshot } from './foreground-context';
@@ -395,6 +396,20 @@ async function runRecordingPipeline(
 			pressedEnter: transcriptDelivery.pressedEnter,
 			appId: transcriptDelivery.deliveredToAppId,
 		});
+		// What "paste/copy last dictation" repeats: the text as shipped, held past
+		// Enter and later deliveries, and never when the guard withheld it. The
+		// row is read now, not taken from `recording` above, which is the row as
+		// created: the transcript and the polished text were patched in since.
+		// The snapshot lets the repeat notice an edit made in Recordings.
+		const row = app.recordings.get(recording.id);
+		if (row !== undefined) {
+			lastDictation.record({
+				text: deliveredText,
+				recordingId: row.id,
+				transcript: row.transcript,
+				polishedTranscript: row.polishedTranscript,
+			});
+		}
 	}
 	if (isDictation) {
 		if (transcriptDelivery.withheld) {

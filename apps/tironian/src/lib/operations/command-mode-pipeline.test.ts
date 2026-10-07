@@ -94,6 +94,9 @@ mock.module('$lib/state/dictation-lifecycle.svelte', () => ({
 mock.module('$lib/state/polish-hud.svelte', () => ({
 	polishHud: { begin: mock(), end: mock() },
 }));
+mock.module('$lib/state/last-dictation.svelte', () => ({
+	lastDictation: { record: mock(), peek: () => null, clear: mock() },
+}));
 mock.module('$lib/state/last-delivery.svelte', () => ({
 	lastDelivery: { record: recordDelivery, take: mock(), clear: clearDelivery },
 }));
@@ -111,6 +114,7 @@ const app = {
 			...fields,
 			id: 'recording-1' as RecordingId,
 		}),
+		get: (id: string) => ({ id, transcript: '', polishedTranscript: null }),
 		update: mock(async () => Ok(undefined)),
 	},
 	snippets: { all: [] },
