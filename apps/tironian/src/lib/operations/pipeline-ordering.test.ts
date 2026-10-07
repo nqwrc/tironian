@@ -10,6 +10,8 @@
  * - `lastDelivery` is left holding the run that actually delivered last, which
  *   is what "scratch that" backspaces
  * - A failed run does not poison the queue for the runs behind it
+ * - A run that throws mid-dictation marks the lifecycle failed, so the pill
+ *   and the repeat commands are not left reading `transcribing`
  */
 import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
@@ -92,10 +94,20 @@ mock.module('$lib/report', () => ({
 		loading: () => ({ resolve: mock(), reject: mock() }),
 	},
 }));
+/** What the lifecycle outcome reads, driven by the markers the fake receives. */
+let outcomeKind = 'none';
+const markFailed = mock((_failure: { tier: string }) => {
+	outcomeKind = 'failed';
+});
 mock.module('$lib/state/dictation-lifecycle.svelte', () => ({
 	dictationLifecycle: {
-		markTranscribing: mock(),
-		markFailed: mock(),
+		get current() {
+			return { capture: { kind: 'idle' }, outcome: { kind: outcomeKind } };
+		},
+		markTranscribing: mock(() => {
+			outcomeKind = 'transcribing';
+		}),
+		markFailed,
 		markPolishing: mock(),
 		markDelivered: mock(),
 		markWithheld: mock(),
@@ -151,6 +163,8 @@ afterEach(() => {
 	transcribeCalls = 0;
 	delivered.length = 0;
 	withheld = false;
+	outcomeKind = 'none';
+	markFailed.mockClear();
 	record.mockClear();
 	recordDictation.mockClear();
 });
@@ -208,6 +222,39 @@ test('a failed run does not poison the queue behind it', async () => {
 	await second;
 
 	expect(delivered).toEqual(['delivered anyway']);
+});
+
+/**
+ * The repeat commands refuse while the outcome reads in-flight, so a throw
+ * that skipped every terminal marker would lock them until the next dictation.
+ * The throw still reaches the caller.
+ */
+test('a run that throws mid-dictation marks the lifecycle failed and still rejects', async () => {
+	failingRuns = [0];
+
+	await expect(start()).rejects.toThrow('transcription 0 failed');
+
+	expect(markFailed).toHaveBeenCalledTimes(1);
+	expect(markFailed.mock.calls[0]?.[0]).toMatchObject({
+		tier: 'transcription',
+	});
+	expect(outcomeKind).toBe('failed');
+});
+
+test('a file import that throws leaves the dictation lifecycle alone', async () => {
+	failingRuns = [0];
+	// An in-flight outcome, so only the delivery source can explain the skip.
+	outcomeKind = 'transcribing';
+
+	await expect(
+		processRecordingPipeline(app, {
+			audioBlobId: generateBlobId(),
+			durationMs: 100,
+			deliverySource: 'import',
+		}),
+	).rejects.toThrow('transcription 0 failed');
+
+	expect(markFailed).not.toHaveBeenCalled();
 });
 
 /**

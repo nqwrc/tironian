@@ -1,5 +1,6 @@
 import type { BlobId } from '@tironian/blobs';
 import { InstantString } from '@tironian/field';
+import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import type { TironianApp } from '$lib/app/app';
 import {
 	deliverTranscriptionResult,
@@ -28,6 +29,13 @@ import { m } from '../paraglide/messages';
 import type { ForegroundSnapshot } from './foreground-context';
 import { matchAppRule } from './match-app-rule';
 import { deadlineForCapture } from './transcription-deadline';
+
+const PipelineError = defineErrors({
+	RunFailed: ({ cause }: { cause: unknown }) => ({
+		message: `Dictation pipeline threw: ${extractErrorMessage(cause)}`,
+		cause,
+	}),
+});
 
 /**
  * Argument shape for the pipeline. The recorder produces a
@@ -96,10 +104,39 @@ export function processRecordingPipeline(
 }
 
 /**
- * One run, start to finish. `deliverySource` only shapes the success copy
- * (recording vs file import).
+ * One run, start to finish, with a throw from anywhere in it kept from
+ * stranding the dictation pill.
+ *
+ * `markTranscribing` is the first thing a live dictation does, and the outcome
+ * stays `transcribing` or `polishing` until a terminal marker lands. A throw
+ * (row creation rethrows, for one) skips every marker, and the repeat commands
+ * refuse for as long as the outcome reads in-flight, so the stuck pill would
+ * lock them until the next dictation. The throw still reaches the caller: this
+ * only settles the lifecycle. A run that already reached a terminal outcome
+ * keeps it.
  */
-async function runRecordingPipeline(
+function runRecordingPipeline(
+	app: TironianApp,
+	input: PipelineInput,
+): Promise<void> {
+	return pipelineBody(app, input).catch((cause: unknown) => {
+		const { kind } = dictationLifecycle.current.outcome;
+		const inFlight = kind === 'transcribing' || kind === 'polishing';
+		if ((input.deliverySource ?? 'recording') === 'recording' && inFlight) {
+			dictationLifecycle.markFailed({
+				tier: 'transcription',
+				error: PipelineError.RunFailed({ cause }).error,
+			});
+		}
+		throw cause;
+	});
+}
+
+/**
+ * The run itself. `deliverySource` only shapes the success copy (recording vs
+ * file import).
+ */
+async function pipelineBody(
 	app: TironianApp,
 	{
 		audioBlobId,
