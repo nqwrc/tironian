@@ -1,6 +1,7 @@
 import type { Result } from 'wellcrafted/result';
 import type { TextError } from '#platform/text';
 import { services } from '$lib/services';
+import { MODIFIER_RELEASE_WAIT_MS } from '../constants/modifier-release';
 
 /**
  * How long to wait after the synthetic copy before reading the clipboard. The OS
@@ -24,6 +25,14 @@ const COPY_SETTLE_MS = 100;
 export async function captureSelection(): Promise<
 	Result<string | null, TextError>
 > {
+	// The recipe picker's chord carries Ctrl/Cmd+Shift, and the copy below
+	// synthesizes Ctrl/Cmd+C. Let the chord's modifiers lift first or the app in
+	// front sees Ctrl+Shift+C. The wait is bounded and the copy goes ahead
+	// either way, as it did before the wait existed: a key still held after a
+	// bounded wait is the person's, and refusing here would turn a slow release
+	// into a dead shortcut.
+	await services.text.waitForModifiersReleased(MODIFIER_RELEASE_WAIT_MS);
+
 	const saved = await services.text.readFromClipboard();
 	if (saved.error) return saved;
 	const originalClipboard = saved.data;

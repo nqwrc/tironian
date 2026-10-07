@@ -23,6 +23,7 @@
 		"allow-simulate-enter-keystroke",
 		"allow-simulate-copy-keystroke",
 		"allow-simulate-backspaces",
+		"allow-wait-for-modifiers-released",
 		"allow-enumerate-recording-devices",
 		"allow-start-recording",
 		"allow-stop-recording",

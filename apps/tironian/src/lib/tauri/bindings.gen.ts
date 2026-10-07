@@ -59,6 +59,18 @@ export const commands = {
 	 */
 	simulateBackspaces: (count: number) =>
 		typedError<null, string>(__TAURI_INVOKE('simulate_backspaces', { count })),
+	/**
+	 *  Waits, bounded, until Ctrl, Shift, Alt and Win (Control, Shift, Option and
+	 *  Command on macOS) are all up, so a synthetic Ctrl/Cmd+V or Ctrl/Cmd+C sent
+	 *  from a global chord does not inherit the chord's modifiers. The webview
+	 *  cannot see the global keyboard state, so the wait runs here.
+	 *
+	 *  Returns whether the modifiers lifted within `timeout_ms` (capped at one
+	 *  second). The caller decides what to do when they did not. Platforms with no
+	 *  modifier read answer `true` at once.
+	 */
+	waitForModifiersReleased: (timeoutMs: number) =>
+		__TAURI_INVOKE<boolean>('wait_for_modifiers_released', { timeoutMs }),
 	enumerateRecordingDevices: () =>
 		typedError<string[], RecorderError>(
 			__TAURI_INVOKE('enumerate_recording_devices'),

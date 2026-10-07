@@ -423,6 +423,104 @@ pub async fn simulate_copy_keystroke() -> Result<(), String> {
     Ok(())
 }
 
+/// How often `wait_for_modifiers_released` re-reads the keyboard.
+#[cfg(any(target_os = "windows", target_os = "macos", test))]
+const MODIFIER_POLL: std::time::Duration = std::time::Duration::from_millis(10);
+
+/// The longest a caller can make `wait_for_modifiers_released` wait. A chord
+/// that has not lifted after a second is a held key, not a slow release.
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+const MAX_MODIFIER_WAIT_MS: u32 = 1000;
+
+/// Whether every sampled `GetAsyncKeyState` result reads "up".
+///
+/// Bit 15 is "down now". Bit 0 is "pressed since the last call", which says
+/// nothing about the present, so a state of `1` counts as released.
+#[cfg(any(target_os = "windows", test))]
+fn all_released(states: &[i16]) -> bool {
+    states.iter().all(|state| (*state as u16 & 0x8000) == 0)
+}
+
+/// Whether a macOS `CGEventFlags` mask holds none of the four modifiers a
+/// synthetic Cmd+V would inherit: shift, control, option and command. Caps lock
+/// and the other flag bits do not change what the keystroke means.
+#[cfg(any(target_os = "macos", test))]
+fn mac_modifiers_released(flags: u64) -> bool {
+    const SHIFT: u64 = 0x0002_0000;
+    const CONTROL: u64 = 0x0004_0000;
+    const OPTION: u64 = 0x0008_0000;
+    const COMMAND: u64 = 0x0010_0000;
+    flags & (SHIFT | CONTROL | OPTION | COMMAND) == 0
+}
+
+/// Poll `modifiers_down` until it reads false or `timeout` passes. Returns
+/// whether the modifiers lifted in time. It reads once before it looks at the
+/// clock, so a zero timeout still answers for the present moment.
+#[cfg(any(target_os = "windows", target_os = "macos", test))]
+async fn wait_until_released(
+    timeout: std::time::Duration,
+    poll: std::time::Duration,
+    mut modifiers_down: impl FnMut() -> bool,
+) -> bool {
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        if !modifiers_down() {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        tokio::time::sleep(poll).await;
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn modifiers_down() -> bool {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        GetAsyncKeyState, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
+    };
+    let states = [VK_CONTROL, VK_SHIFT, VK_MENU, VK_LWIN, VK_RWIN]
+        .map(|key| unsafe { GetAsyncKeyState(i32::from(key.0)) });
+    !all_released(&states)
+}
+
+#[cfg(target_os = "macos")]
+fn modifiers_down() -> bool {
+    // `core-graphics` 0.22 does not wrap this call, so declare it, as
+    // `keyboard::mac_tap` does for the event tap. The CoreGraphics framework is
+    // already linked. State id 0 is `kCGEventSourceStateCombinedSessionState`:
+    // the keys down across the whole login session, hardware and synthetic.
+    extern "C" {
+        fn CGEventSourceFlagsState(state_id: i32) -> u64;
+    }
+    const COMBINED_SESSION_STATE: i32 = 0;
+    !mac_modifiers_released(unsafe { CGEventSourceFlagsState(COMBINED_SESSION_STATE) })
+}
+
+/// Waits, bounded, until Ctrl, Shift, Alt and Win (Control, Shift, Option and
+/// Command on macOS) are all up, so a synthetic Ctrl/Cmd+V or Ctrl/Cmd+C sent
+/// from a global chord does not inherit the chord's modifiers. The webview
+/// cannot see the global keyboard state, so the wait runs here.
+///
+/// Returns whether the modifiers lifted within `timeout_ms` (capped at one
+/// second). The caller decides what to do when they did not. Platforms with no
+/// modifier read answer `true` at once.
+#[tauri::command]
+#[specta::specta]
+pub async fn wait_for_modifiers_released(timeout_ms: u32) -> bool {
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    {
+        let timeout =
+            std::time::Duration::from_millis(u64::from(timeout_ms.min(MAX_MODIFIER_WAIT_MS)));
+        wait_until_released(timeout, MODIFIER_POLL, modifiers_down).await
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        let _ = timeout_ms;
+        true
+    }
+}
+
 /// The most backspaces one undo may send.
 ///
 /// Matches the Snippets replacement cap. Without it a five-minute dictation
@@ -449,4 +547,62 @@ pub async fn simulate_backspaces(count: u32) -> Result<(), String> {
             .map_err(|error| format!("Failed to simulate Backspace: {error}"))?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn keys_up_read_as_released() {
+        assert!(all_released(&[0, 0]));
+    }
+
+    #[test]
+    fn a_key_down_now_is_not_released() {
+        assert!(!all_released(&[0, i16::MIN]));
+    }
+
+    #[test]
+    fn the_pressed_since_last_call_bit_is_not_down() {
+        assert!(all_released(&[1, 0]));
+    }
+
+    #[test]
+    fn each_mac_modifier_counts_and_caps_lock_does_not() {
+        assert!(mac_modifiers_released(0));
+        for flag in [0x0002_0000u64, 0x0004_0000, 0x0008_0000, 0x0010_0000] {
+            assert!(!mac_modifiers_released(flag));
+        }
+        assert!(mac_modifiers_released(0x0001_0000), "caps lock alone");
+    }
+
+    #[tokio::test]
+    async fn a_chord_that_lifts_in_time_answers_true() {
+        let mut reads = 0;
+        let lifted =
+            wait_until_released(Duration::from_millis(500), Duration::from_millis(1), || {
+                reads += 1;
+                reads < 4
+            })
+            .await;
+        assert!(lifted);
+        assert_eq!(reads, 4);
+    }
+
+    #[tokio::test]
+    async fn a_chord_that_never_lifts_answers_false_at_the_deadline() {
+        let started = std::time::Instant::now();
+        let lifted =
+            wait_until_released(Duration::from_millis(30), Duration::from_millis(5), || true).await;
+        assert!(!lifted);
+        assert!(started.elapsed() >= Duration::from_millis(30));
+    }
+
+    #[tokio::test]
+    async fn zero_timeout_still_reads_the_keyboard_once() {
+        assert!(wait_until_released(Duration::ZERO, Duration::from_millis(5), || false).await);
+        assert!(!wait_until_released(Duration::ZERO, Duration::from_millis(5), || true).await);
+    }
 }
