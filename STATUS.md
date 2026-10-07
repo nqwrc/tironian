@@ -1,8 +1,8 @@
 # status
 
-state: archived
+state: next
 remote: github-public
-updated: 2026-09-21
+updated: 2026-10-07
 stale-after-days: 30
 
 ## kpi
@@ -15,6 +15,9 @@ stale-after-days: 30
 - Verified at 4735c9804: desktop run 34613692147, macOS smoke 4/4 (dictation window "Tironian" on screen at launch), dictation suite 319/0, `cargo test --release` 129/0, host TypeScript suite 41/0; Windows build and installer audit green. Local Windows: typecheck 0 errors, all checks pass, `cargo test` 118, package tests 12 failures, all Windows-only and present in the baseline.
 
 ## next
+- Reopened 2026-10-07 from `D:\_archive\tironian` to `D:\tironian` on Nicola's word ("continuiamo Tironian"). State is `next`, not `now`: three projects already hold `now` (automazioni-pmi, skin, tallyworks), the harness cap.
+- Roadmap from a private comparison with a commercial dictation app (kept in Nicola's vault, not here), in order: voice Enter (done below), dictionary terms with a replacement applied after Polish, learning terms from corrections made after the paste, and field context for Polish (a privacy decision first: Tironian sends nothing from other apps today). Wispr Flow's default push-to-talk is also Ctrl+Win, so the two cannot run side by side with default chords.
+- `feature/voice-enter`: "press enter" or "premi invio" alone sends Enter; spoken as the last sentence of a dictation it ships the words without it and presses Enter after the paste. Not inside a clause ("type your password and press enter."), not as a question; Windows refuses Enter into a window UIPI shields; history records the shipped text. Dictation suite 345/0, typecheck 0, `cargo test --release` 131/0 plus 4/0 integration. Not yet installed or tried by voice.
 - Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
 - Merged 2026-09-13: nqwrc/tironian#3 (38d7ea2ac) and nqwrc/tironian#4 (4193756b8), CI green on macOS, Windows and quality for both.
 - `bugfix/tray-mark`: the tray shows the brand mark (idle `--text`, recording `--accent`) instead of the two inherited emoji images.
@@ -25,5 +28,6 @@ stale-after-days: 30
 - Follow-ups, not defects: ADR-number citations in comments name design records that no longer ship; the `packages/sqlite` browser adapter has no consumer; seven sound files have no recorded provenance; no generated third-party notices file ships with the installers.
 
 ## blockers
-- D: has 0.7 GB free of 64 GB (2026-09-13); the largest folders are `D:\_cache` 19.1 GB and the cargo target `D:\ct` 15.8 GB. Builds on D: fail with os error 112, so this session builds into `C:\ct`. Freeing space is Nicola's call.
+- Local Rust builds need `CMAKE_POLICY_VERSION_MINIMUM=3.5` since CMake 4.3.3 landed on this machine: `audiopus_sys` 0.2.2 ships opus with a `cmake_minimum_required` that CMake 4 refuses. The shared target `D:\_sys\cargo-target` also holds a `transcribe-cpp-sys` CMake cache made under `C:\ct`, which fails there; `C:\ct` builds clean. Recommendation: set the variable in an `[env]` table of a Cargo config beside `apps/desktop/src-tauri/Cargo.toml` so CI and every shell agree, and check CI's CMake version before it upgrades too.
+- Dependabot alert 1 (moderate): `glib` below 0.20.0 in `apps/desktop/src-tauri/Cargo.lock`, unsound `VariantStrIter`. `glib` is a Linux GTK dependency of Tauri and Tironian ships macOS and Windows only, so no shipped binary links it (`cargo tree -i glib` prints nothing for the Windows and macOS targets); the fix arrives with a Tauri release that moves gtk-rs to 0.20.
 - The weekly `DevDriveSnapshot` task (Sundays 18:00, `D:\.dotfiles\machines\windows\devdrive-snapshot.ps1`) dismounts D: for the whole copy of `Developer.vhdx` (63.4 GB on 2026-09-13), so every running shell, dev server and build on D: loses its files mid-flight; it remounted in `finally` within about 90 s. Recommendation: move the trigger to a night hour, or skip when a process holds files on D:.
