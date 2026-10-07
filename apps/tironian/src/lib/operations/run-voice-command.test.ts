@@ -39,13 +39,19 @@ let focusedNow: string | null = 'Code.exe';
 const reportInfo = mock();
 const reportError = mock();
 const stopVadRecording = mock(async () => {});
+const simulateEnterKeystroke = mock(
+	async (): Promise<Result<void, TextError>> => Ok(undefined),
+);
+const clearHeld = mock(() => {
+	held = null;
+});
 
 mock.module('$lib/operations/recording', () => ({
 	isVadRecordingActive: () => vadActive,
 	stopVadRecording,
 }));
 mock.module('$lib/services', () => ({
-	services: { text: { simulateBackspaces } },
+	services: { text: { simulateBackspaces, simulateEnterKeystroke } },
 }));
 mock.module('$lib/state/last-delivery.svelte', () => ({
 	lastDelivery: {
@@ -53,7 +59,7 @@ mock.module('$lib/state/last-delivery.svelte', () => ({
 		peek,
 		canUndo: () => canUndo,
 		record: mock(),
-		clear: mock(),
+		clear: clearHeld,
 	},
 }));
 mock.module('$lib/report', () => ({
@@ -74,26 +80,62 @@ const { commandApplies, runVoiceCommand } = await import(
 	'./run-voice-command.js'
 );
 
-const app = {} as unknown as TironianApp;
+/** Whether transcriptions write at the cursor, the one setting a command reads. */
+let cursorOutput = true;
+const app = {
+	settings: {
+		get: (key: string) =>
+			key === 'outputTranscriptionCursor' ? cursorOutput : undefined,
+	},
+} as unknown as TironianApp;
 
-test("commandApplies('stopListening') follows whether VAD is live", () => {
+test("commandApplies('pressEnter') follows whether transcriptions write at the cursor", () => {
+	cursorOutput = false;
+	expect(commandApplies(app, 'pressEnter')).toBe(false);
+	cursorOutput = true;
+	expect(commandApplies(app, 'pressEnter')).toBe(true);
+});
+
+test('pressEnter sends one Enter and drops the undo record', async () => {
+	held = { graphemes: 12, appId: 'Code.exe' };
+	simulateEnterKeystroke.mockClear();
+	await runVoiceCommand(app, 'pressEnter');
+	expect(simulateEnterKeystroke).toHaveBeenCalledTimes(1);
+	// Enter may have submitted the text, so "scratch that" must not backspace
+	// into whatever the input holds next.
+	expect(held).toBeNull();
+	expect(simulateBackspaces).not.toHaveBeenCalled();
+});
+
+test('a failing Enter reports an error notice and does not throw', async () => {
+	const cause = { name: 'SimulateKeystroke' } as unknown as TextError;
+	simulateEnterKeystroke.mockImplementationOnce(async () => Err(cause));
+	reportError.mockClear();
+	await runVoiceCommand(app, 'pressEnter');
+	expect(reportError).toHaveBeenLastCalledWith({
+		title: "Couldn't press Enter",
+		cause,
+	});
+});
+
+test("commandApplies(app, 'stopListening') follows whether VAD is live", () => {
 	vadActive = false;
-	expect(commandApplies('stopListening')).toBe(false);
+	expect(commandApplies(app, 'stopListening')).toBe(false);
 	vadActive = true;
-	expect(commandApplies('stopListening')).toBe(true);
+	expect(commandApplies(app, 'stopListening')).toBe(true);
 	vadActive = false;
 });
 
-test("commandApplies('scratchThat') follows whether something undoable is held, regardless of VAD state", () => {
+test("commandApplies(app, 'scratchThat') follows whether something undoable is held, regardless of VAD state", () => {
 	canUndo = false;
 	vadActive = false;
-	expect(commandApplies('scratchThat')).toBe(false);
+	expect(commandApplies(app, 'scratchThat')).toBe(false);
 	vadActive = true;
-	expect(commandApplies('scratchThat')).toBe(false);
+	expect(commandApplies(app, 'scratchThat')).toBe(false);
 	vadActive = false;
 
 	canUndo = true;
-	expect(commandApplies('scratchThat')).toBe(true);
+	expect(commandApplies(app, 'scratchThat')).toBe(true);
 	canUndo = false;
 });
 

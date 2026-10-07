@@ -6,7 +6,10 @@ import {
 	type TranscriptionSource,
 } from '$lib/operations/delivery';
 import { expandSnippets } from '$lib/operations/expand-snippets';
-import { matchCommand } from '$lib/operations/match-command';
+import {
+	matchCommand,
+	splitTrailingEnter,
+} from '$lib/operations/match-command';
 import { polishWillRun, runPolish } from '$lib/operations/run-polish';
 import { runRecipe } from '$lib/operations/run-recipe';
 import {
@@ -199,9 +202,10 @@ async function runRecordingPipeline(
 	// Live capture only, and applicable only. `isDictation` is true in manual
 	// mode as well as VAD, so a phrase whose target is not live falls through and
 	// delivers as ordinary text rather than silently eating the utterance.
-	if (isDictation && app.settings.get('commandModeEnabled')) {
+	const commandMode = isDictation && app.settings.get('commandModeEnabled');
+	if (commandMode) {
 		const command = matchCommand(transcribedText);
-		if (command !== null && commandApplies(command)) {
+		if (command !== null && commandApplies(app, command)) {
 			await runVoiceCommand(app, command);
 			// A command delivers no text, so there is no outcome to show. Clear the
 			// `transcribing` marker set on the way in, or the pill spins forever on
@@ -219,6 +223,17 @@ async function runRecordingPipeline(
 			return;
 		}
 	}
+
+	// A dictation that closes with "press enter" ships without the phrase and
+	// sends Enter after the write. Split here, before Polish, for the reason the
+	// intercept above sits here: Polish would turn the phrase into prose. Like
+	// every command it acts only where it can, so with cursor output off the
+	// words stay text.
+	const trailingEnter =
+		commandMode && commandApplies(app, 'pressEnter')
+			? splitTrailingEnter(transcribedText)
+			: { body: transcribedText, pressEnter: false };
+	const spokenText = trailingEnter.body;
 
 	// Which per-app rule applies, decided from the app in front at capture
 	// start. Resolved after the command-mode intercept (commands stay senior to
@@ -247,7 +262,7 @@ async function runRecordingPipeline(
 	// import has no pill to cancel from and keeps its own progress toast. The pill
 	// shows the HUD only when an AI pass actually runs (not in speed mode); begin/end
 	// bracket the call so the controller is dropped on success, failure, or abort.
-	const willPolish = polishWillRun(app, transcribedText);
+	const willPolish = polishWillRun(app, spokenText);
 	const showPolishHud = willPolish && isDictation;
 	let signal: AbortSignal | undefined;
 	if (showPolishHud) {
@@ -255,7 +270,7 @@ async function runRecordingPipeline(
 		signal = polishHud.begin();
 	}
 	const { data: polishedText, error: polishError } = await runPolish(app, {
-		input: transcribedText,
+		input: spokenText,
 		signal,
 		// The rule's directive and its standing travel together: a rule minted by
 		// a settings bundle is untrusted until the person vouches for it, and a
@@ -343,8 +358,13 @@ async function runRecordingPipeline(
 	// which is the existing speed-mode tradeoff and not something snippets change.
 	// A rule's recipe reshaping also earns the write: even in speed mode, a
 	// reshaped delivery differs from the raw transcript and history should show
-	// what actually shipped.
-	if ((willPolish && !polishError) || recipeReshaped) {
+	// what actually shipped. A closing "press enter" earns it for the same
+	// reason: the phrase is in the raw transcript and not in what shipped.
+	if (
+		(willPolish && !polishError) ||
+		recipeReshaped ||
+		trailingEnter.pressEnter
+	) {
 		const polishedHistory = await saveRecordingHistory(app, recording.id, {
 			polishedTranscript: deliveredText,
 		});
@@ -358,6 +378,7 @@ async function runRecordingPipeline(
 		await deliverTranscriptionResult(app, {
 			text: deliveredText,
 			source: deliverySource,
+			pressEnter: trailingEnter.pressEnter,
 		});
 
 	// Hold what was delivered so "scratch that" has something to take back.

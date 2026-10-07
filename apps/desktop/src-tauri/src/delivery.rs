@@ -353,9 +353,22 @@ fn simulate_paste() -> Result<(), String> {
 }
 
 /// Simulates pressing the Enter/Return key.
+///
+/// Refuses on Windows when injected input cannot reach the foreground window,
+/// like `write_text` and the copy keystroke. After a paste the check repeats one
+/// `write_text` already passed, but a spoken "press enter" alone sends Enter with
+/// no paste before it, and UIPI would drop that key without an error.
 #[tauri::command]
 #[specta::specta]
 pub async fn simulate_enter_keystroke() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    if !crate::foreground::foreground_accepts_synthetic_input() {
+        return Err(
+            "Windows blocked Enter: the focused window runs with higher privileges than Tironian."
+                .to_string(),
+        );
+    }
+
     let mut enigo = Enigo::new(&Settings::default()).map_err(|error| error.to_string())?;
     enigo
         .key(Key::Return, Direction::Click)
@@ -371,8 +384,8 @@ pub async fn simulate_enter_keystroke() -> Result<(), String> {
 /// dropped copy produces a plausible wrong answer: `captureSelection` posts the
 /// copy, waits, then reads the clipboard, so a copy UIPI swallowed hands back
 /// whatever the user already had there as if they had selected it, and that
-/// text goes on to a transformation provider. Enter and Backspace need no such
-/// gate: Enter follows a paste already proved reachable, and backspaces that go
+/// text goes on to a transformation provider. Enter has the same gate
+/// (`simulate_enter_keystroke`). Backspace needs none: backspaces that go
 /// nowhere leave the text visibly undeleted rather than answering wrongly.
 #[tauri::command]
 #[specta::specta]
