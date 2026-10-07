@@ -276,6 +276,10 @@ const settingsKv = {
 	shortcutOpenRecipePickerKeys: field.nullable(field.tags()),
 	shortcutRunRecipeOnClipboardModifiers: shortcut.modifiers,
 	shortcutRunRecipeOnClipboardKeys: field.nullable(field.tags()),
+	shortcutPasteLastDictationModifiers: shortcut.modifiers,
+	shortcutPasteLastDictationKeys: field.nullable(field.tags()),
+	shortcutCopyLastDictationModifiers: shortcut.modifiers,
+	shortcutCopyLastDictationKeys: field.nullable(field.tags()),
 	shortcutOpenSettingsModifiers: shortcut.modifiers,
 	shortcutOpenSettingsKeys: field.nullable(field.tags()),
 } as const;

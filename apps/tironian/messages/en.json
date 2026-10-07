@@ -21,6 +21,8 @@
 	"commands_toggle_voice_activated_recording": "Toggle voice activated recording",
 	"commands_run_recipe_on_clipboard": "Run recipe on clipboard",
 	"commands_open_settings": "Open settings",
+	"commands_paste_last_dictation": "Paste last dictation",
+	"commands_copy_last_dictation": "Copy last dictation",
 	"repeat_nothing_to_paste": "Nothing to paste yet",
 	"repeat_nothing_to_paste_description": "Dictate something first. The last dictation is kept until the app closes, or until its recording is deleted or edited.",
 	"repeat_in_flight": "A dictation is still being delivered",

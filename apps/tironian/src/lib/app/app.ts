@@ -108,6 +108,10 @@ const APPLICATION_DEFAULTS: Partial<TironianSettingValues> = {
 	shortcutOpenRecipePickerKeys: null,
 	shortcutRunRecipeOnClipboardModifiers: null,
 	shortcutRunRecipeOnClipboardKeys: null,
+	shortcutPasteLastDictationModifiers: null,
+	shortcutPasteLastDictationKeys: null,
+	shortcutCopyLastDictationModifiers: null,
+	shortcutCopyLastDictationKeys: null,
 	shortcutOpenSettingsModifiers: null,
 	shortcutOpenSettingsKeys: null,
 };
