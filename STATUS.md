@@ -2,7 +2,7 @@
 
 state: next
 remote: github-public
-updated: 2026-10-07
+updated: 2026-10-08
 stale-after-days: 30
 
 ## kpi
@@ -18,6 +18,7 @@ stale-after-days: 30
 - Reopened 2026-10-07 from `D:\_archive\tironian` to `D:\tironian` on Nicola's word ("continuiamo Tironian"). State is `next`, not `now`: three projects already hold `now` (automazioni-pmi, skin, tallyworks), the harness cap.
 - Roadmap, in order: voice Enter (done below), dictionary terms with a replacement applied after Polish, learning terms from corrections made after the paste, and field context for Polish (a privacy decision first: Tironian sends nothing from other apps today). Wispr Flow's default push-to-talk is also Ctrl+Win, so the two cannot run side by side with default chords.
 - `feature/voice-enter`: "press enter" or "premi invio" alone sends Enter; spoken as the last sentence of a dictation it ships the words without it and presses Enter after the paste. Not inside a clause ("type your password and press enter."), not as a question; Windows refuses Enter into a window UIPI shields; history records the shipped text. Dictation suite 345/0, typecheck 0, `cargo test --release` 131/0 plus 4/0 integration. Not yet installed or tried by voice.
+- `feature/repeat-last-dictation` (stacked on `feature/voice-enter`, plan `docs/plans/2026-10-07-repeat-last-dictation.md`): two global commands, paste last dictation and copy last dictation, both shipped unbound. The newest delivered dictation is held for the session with its recording row's transcript fields; deleting or editing that row takes it out of reach. Both refuse while a dictation is in flight and re-run the secure-field guard. Paste waits up to 600 ms in the host (`wait_for_modifiers_released`) for the chord's modifiers to lift, and copies to the clipboard instead of pasting if they do not; the recipe picker's selection capture waits the same way. Not yet tried by hand in Word or Notepad.
 - Nicola's decisions: Apple Developer ID and Windows code-signing purchases; accent `#D97757`; KPIs for this repo.
 - Merged 2026-09-13: nqwrc/tironian#3 (38d7ea2ac) and nqwrc/tironian#4 (4193756b8), CI green on macOS, Windows and quality for both.
 - `bugfix/tray-mark`: the tray shows the brand mark (idle `--text`, recording `--accent`) instead of the two inherited emoji images.
