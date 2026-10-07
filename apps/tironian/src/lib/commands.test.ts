@@ -23,7 +23,9 @@ const copyLastDictation = mock(async (_app: unknown) => undefined);
 
 mock.module('#platform/commands', () => ({ platformCommands: [] }));
 mock.module('$app/navigation', () => ({ goto: mock() }));
-mock.module('$lib/constants/urls', () => ({ dictationPath: '/dictation' }));
+// The real constants: other files import more names from it than this one does.
+const urls = await import('./constants/urls.js');
+mock.module('$lib/constants/urls', () => urls);
 mock.module('$lib/operations/hands-free-instance', () => ({
 	handsFreePushToTalk: { onPressed: mock(), onReleased: mock() },
 }));
