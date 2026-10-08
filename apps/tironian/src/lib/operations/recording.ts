@@ -2,6 +2,7 @@ import type { BlobId } from '@tironian/blobs';
 import type { DeviceAcquisitionOutcome } from '@tironian/recorder';
 import { createLogger } from 'wellcrafted/logger';
 import { manualRecorderConfig } from '#platform/manual-recorder-config';
+import { os } from '#platform/os';
 import { reportRecordingMicLevel } from '#platform/recording-mic-level';
 import { goto } from '$app/navigation';
 import type { TironianApp } from '$lib/app/app';
@@ -9,6 +10,11 @@ import type { CaptureSurface } from '$lib/constants/audio';
 import { dictationPath } from '$lib/constants/urls';
 import { logAnalyticsEvent } from '$lib/operations/analytics';
 import { correctionLearning } from '$lib/operations/correction-learning';
+import {
+	type CursorContextHolder,
+	captureCursorContext,
+	holdCursorContext,
+} from '$lib/operations/cursor-context-core';
 import {
 	captureForegroundSnapshot,
 	type ForegroundSnapshot,
@@ -20,6 +26,7 @@ import { decideSecureFieldGuard } from '$lib/operations/secure-field-guard';
 import { playSoundIfEnabled } from '$lib/operations/sound';
 import { prewarmOnDeviceModel } from '$lib/operations/transcribe';
 import { report } from '$lib/report';
+import { services } from '$lib/services';
 import {
 	RecorderError,
 	type RecordingEndedReason,
@@ -157,11 +164,15 @@ export function watchManualRecordingEnded(app: TironianApp): void {
 }
 
 /**
- * The foreground snapshots for captures in flight, taken at recording start
- * (manual) or speech start (VAD) and consumed when each capture's pipeline
- * runs. Promises so the probe overlaps the recording instead of delaying its
- * start; a probe failure resolves to null and routing simply does not apply.
- * Skipped entirely while no rules exist, so the zero-rule case costs nothing.
+ * What each capture in flight took at its start (recording start for manual,
+ * speech start for VAD), consumed when its pipeline runs: the app in front,
+ * for per-app routing, and the text around the cursor, for the prompts
+ * (ADR-0272). Promises, so both reads overlap the recording instead of
+ * delaying its start; each resolves to null on any failure. The foreground
+ * probe is skipped while no rules exist, and the field read while the switch
+ * is off or off Windows, so the default case costs nothing. The text rides in
+ * a one-shot holder, so this queue never references the text itself and the
+ * pipeline can empty the holder right after Polish.
  *
  * A FIFO, not a single slot: VAD speech events arrive in order (start 1,
  * end 1, start 2, ...), but utterance 1's async end handler can still be
@@ -172,24 +183,39 @@ export function watchManualRecordingEnded(app: TironianApp): void {
  * an entry behind for the next capture to inherit; consumers shift
  * synchronously, before their first await, to keep the pairing.
  */
-const pendingForeground: Promise<ForegroundSnapshot | null>[] = [];
+type CaptureSnapshot = {
+	foregroundApp: Promise<ForegroundSnapshot | null>;
+	cursorContext: Promise<CursorContextHolder | null>;
+};
 
-function beginForegroundSnapshot(app: TironianApp): void {
-	pendingForeground.push(
-		app.appRules.count > 0
-			? captureForegroundSnapshot().catch(() => null)
-			: Promise.resolve(null),
-	);
+const NO_SNAPSHOT: CaptureSnapshot = {
+	foregroundApp: Promise.resolve(null),
+	cursorContext: Promise.resolve(null),
+};
+
+const pendingCaptures: CaptureSnapshot[] = [];
+
+function beginCaptureSnapshot(app: TironianApp): void {
+	pendingCaptures.push({
+		foregroundApp:
+			app.appRules.count > 0
+				? captureForegroundSnapshot().catch(() => null)
+				: Promise.resolve(null),
+		cursorContext: captureCursorContext(
+			{ windows: os.isWindows, reader: services.context },
+			app.settings.get('cursorContextEnabled'),
+		).then(holdCursorContext),
+	});
 }
 
-async function takeForegroundSnapshot(): Promise<ForegroundSnapshot | null> {
-	return pendingForeground.shift() ?? null;
+function takeCaptureSnapshot(): CaptureSnapshot {
+	return pendingCaptures.shift() ?? NO_SNAPSHOT;
 }
 
 /** Drop a capture's entry when it will never reach a pipeline (a failed
  * start, a cancel, a VAD misfire), so the next capture cannot inherit it. */
-function discardForegroundSnapshot(): void {
-	pendingForeground.shift();
+function discardCaptureSnapshot(): void {
+	pendingCaptures.shift();
 }
 
 /** True while a VAD session is armed, whether or not speech is being heard. */
@@ -231,9 +257,10 @@ export async function startManualRecording(
 	}
 
 	app.settings.set('recordingTrigger', 'manual');
-	// The app in front right now is what this dictation is aimed at; the probe
-	// runs alongside the recorder bring-up and is consumed at stop.
-	beginForegroundSnapshot(app);
+	// The app in front and the text around the cursor right now are what this
+	// dictation is aimed at; both reads run alongside the recorder bring-up and
+	// are consumed at stop.
+	beginCaptureSnapshot(app);
 	correctionLearning.dictationStarting(app);
 	// A new dictation is starting: clear any lingering failed/delivered state so
 	// the pill follows this attempt, not the last one.
@@ -256,7 +283,7 @@ export async function startManualRecording(
 
 	if (error) {
 		void recordingMedia.resume();
-		discardForegroundSnapshot();
+		discardCaptureSnapshot();
 		// The recording never started, so there is no blob to recover: the
 		// loudest tier. The pill glances it and the OS notification always fires, so
 		// there is no toast.
@@ -283,7 +310,7 @@ export async function stopManualRecording(app: TironianApp) {
 
 	if (error) {
 		void recordingMedia.resume();
-		discardForegroundSnapshot();
+		discardCaptureSnapshot();
 		// Finalizing failed, so the captured audio never reached a row: treat it
 		// as a silent loss rather than a retryable transcription.
 		dictationLifecycle.markFailed({ tier: 'silent-loss', error });
@@ -304,10 +331,12 @@ export async function stopManualRecording(app: TironianApp) {
 		duration: durationMs,
 	});
 
+	const capture = takeCaptureSnapshot();
 	await processRecordingPipeline(app, {
 		audioBlobId,
 		durationMs,
-		foregroundApp: await takeForegroundSnapshot(),
+		foregroundApp: await capture.foregroundApp,
+		cursorContext: await capture.cursorContext,
 	});
 }
 
@@ -362,7 +391,7 @@ export async function cancelRecording(app: TironianApp) {
 	}
 	if (data.status === 'cancelled') {
 		void recordingMedia.resume();
-		discardForegroundSnapshot();
+		discardCaptureSnapshot();
 		// The pill vanishing plus the cancel sound is the confirmation; no toast.
 		void playSoundIfEnabled(app, 'manual-cancel');
 		log.info('Recording cancelled');
@@ -443,8 +472,8 @@ export async function startVadRecording(app: TironianApp) {
 		onSpeechStart: () => {
 			// Speaking window opened: pause whatever is playing. The pill's meter
 			// tint shows speech was detected, so there is no toast. Each utterance
-			// is its own pipeline run, so each gets its own foreground snapshot.
-			beginForegroundSnapshot(app);
+			// is its own pipeline run, so each gets its own capture snapshot.
+			beginCaptureSnapshot(app);
 			correctionLearning.dictationStarting(app);
 			pausePlaybackForSpeech(app);
 		},
@@ -452,7 +481,7 @@ export async function startVadRecording(app: TironianApp) {
 			// Claim this utterance's snapshot before the first await: speech
 			// events are ordered, so a synchronous shift here pairs each end
 			// with its own start even while audio storage is still in flight.
-			const foregroundApp = takeForegroundSnapshot();
+			const capture = takeCaptureSnapshot();
 			// Speaking window closed: resume after a short debounce so a quick
 			// next utterance does not flutter the music.
 			scheduleResumeAfterSpeech();
@@ -475,14 +504,15 @@ export async function startVadRecording(app: TironianApp) {
 			await processRecordingPipeline(app, {
 				audioBlobId: finalized.data.audioBlobId,
 				durationMs: null,
-				foregroundApp: await foregroundApp,
+				foregroundApp: await capture.foregroundApp,
+				cursorContext: await capture.cursorContext,
 			});
 		},
 		onVADMisfire: () => {
 			// False start: schedule the same debounced resume as a real speech
 			// end, so an immediate retry does not flutter the music. The
 			// utterance never reaches a pipeline, so its snapshot goes too.
-			discardForegroundSnapshot();
+			discardCaptureSnapshot();
 			scheduleResumeAfterSpeech();
 		},
 	});

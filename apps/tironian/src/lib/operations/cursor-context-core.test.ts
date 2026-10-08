@@ -11,6 +11,7 @@ import {
 	captureCursorContext,
 	clampCursorContext,
 	echoesCursorContext,
+	holdCursorContext,
 	quotesCursorContext,
 } from './cursor-context-core';
 
@@ -181,4 +182,18 @@ test('a provider error that quotes eight words of the field is caught', () => {
 	).toBe(true);
 	expect(quotesCursorContext('Rate limited', ENGLISH_FIELD)).toBe(false);
 	expect(quotesCursorContext('Rate limited', null)).toBe(false);
+});
+
+test('the holder gives the slice back until it is cleared, then nothing', () => {
+	const holder = holdCursorContext(ENGLISH_FIELD);
+	expect(holder?.read()).toEqual(ENGLISH_FIELD);
+	expect(holder?.read()).toEqual(ENGLISH_FIELD);
+	holder?.clear();
+	expect(holder?.read()).toBeNull();
+	holder?.clear();
+	expect(holder?.read()).toBeNull();
+});
+
+test('no slice, no holder', () => {
+	expect(holdCursorContext(null)).toBeNull();
 });

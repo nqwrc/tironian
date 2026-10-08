@@ -14,6 +14,7 @@ import {
 	correctionLearningModule,
 	resetCorrectionLearningFake,
 } from './correction-learning.fake';
+import { holdCursorContext } from './cursor-context-core';
 import { expandSnippets } from './expand-snippets';
 import { matchCommand, splitTrailingEnter } from './match-command';
 
@@ -45,6 +46,22 @@ const deliverTranscriptionResult = mock(async () => {
 const playSoundIfEnabled = mock(async () => Ok(undefined));
 const recordDelivery = mock();
 const dictationReset = mock();
+const transcribeAndPersist = mock(async (..._args: unknown[]) =>
+	Ok({ text: transcript, history: Ok(undefined) }),
+);
+const runPolish = mock(
+	async (
+		_app: unknown,
+		{ input }: { input: string; cursorContext?: unknown },
+	) => Ok(willPolish ? 'Scratch that, please.' : input),
+);
+const reportInfo = mock();
+const reportError = mock();
+const recordLastDictation = mock();
+const createRecording = mock((fields: Record<string, unknown>) => ({
+	...fields,
+	id: 'recording-1' as RecordingId,
+}));
 
 mock.module(
 	'$lib/operations/correction-learning',
@@ -71,14 +88,10 @@ mock.module('$lib/operations/run-polish', () => ({
 	// Reworded regardless of input, so a test that turns Polish on can tell
 	// whether the matcher ran before this (raw phrase, command fires) or after
 	// (reworded prose, no phrase left to match).
-	runPolish: async (_app: unknown, { input }: { input: string }) =>
-		Ok(willPolish ? 'Scratch that, please.' : input),
+	runPolish,
 }));
 mock.module('$lib/operations/sound', () => ({ playSoundIfEnabled }));
-mock.module('$lib/operations/transcribe', () => ({
-	transcribeAndPersist: async () =>
-		Ok({ text: transcript, history: Ok(undefined) }),
-}));
+mock.module('$lib/operations/transcribe', () => ({ transcribeAndPersist }));
 const saveRecordingHistory = mock(async () => Ok(undefined));
 mock.module('$lib/operations/transcription-history', () => ({
 	saveRecordingHistory,
@@ -86,13 +99,14 @@ mock.module('$lib/operations/transcription-history', () => ({
 mock.module('$lib/report', () => ({
 	log: { warn: mock() },
 	report: {
-		info: mock(),
-		error: mock(),
+		info: reportInfo,
+		error: reportError,
 		loading: () => ({ resolve: mock(), reject: mock() }),
 	},
 }));
 mock.module('$lib/state/dictation-lifecycle.svelte', () => ({
 	dictationLifecycle: {
+		current: { outcome: { kind: 'transcribing' } },
 		reset: dictationReset,
 		markTranscribing: mock(),
 		markFailed: mock(),
@@ -104,7 +118,11 @@ mock.module('$lib/state/polish-hud.svelte', () => ({
 	polishHud: { begin: mock(), end: mock() },
 }));
 mock.module('$lib/state/last-dictation.svelte', () => ({
-	lastDictation: { record: mock(), peek: () => null, clear: mock() },
+	lastDictation: {
+		record: recordLastDictation,
+		peek: () => null,
+		clear: mock(),
+	},
 }));
 mock.module('$lib/state/last-delivery.svelte', () => ({
 	lastDelivery: { record: recordDelivery, take: mock(), clear: clearDelivery },
@@ -119,10 +137,7 @@ const app = {
 			key === 'commandModeEnabled' ? commandModeEnabled : false,
 	},
 	recordings: {
-		create: (fields: Record<string, unknown>) => ({
-			...fields,
-			id: 'recording-1' as RecordingId,
-		}),
+		create: createRecording,
 		get: (id: string) => ({ id, transcript: '', polishedTranscript: null }),
 		update: mock(async () => Ok(undefined)),
 	},
@@ -149,6 +164,13 @@ afterEach(() => {
 	playSoundIfEnabled.mockClear();
 	recordDelivery.mockClear();
 	dictationReset.mockClear();
+	transcribeAndPersist.mockClear();
+	runPolish.mockClear();
+	reportInfo.mockClear();
+	reportError.mockClear();
+	recordLastDictation.mockClear();
+	createRecording.mockClear();
+	saveRecordingHistory.mockClear();
 	resetCorrectionLearningFake();
 	correctionLearningFake.wantsToObserve.mockReset();
 	correctionLearningFake.wantsToObserve.mockImplementation(() => false);
@@ -336,4 +358,114 @@ test('an imported file is never observed or handed to the learner', async () => 
 		expect.objectContaining({ observeField: false }),
 	);
 	expect(correctionLearningFake.afterDelivery).not.toHaveBeenCalled();
+});
+
+const FIELD = {
+	before: 'Ciao ZQXJ7731, ti confermo che ',
+	selection: '',
+	after: ' a presto, ZQXJ7731.',
+};
+
+function dictate(
+	cursorContext: ReturnType<typeof holdCursorContext>,
+	deliverySource: 'recording' | 'import' = 'recording',
+) {
+	return processRecordingPipeline(app, {
+		audioBlobId: generateBlobId(),
+		durationMs: 100,
+		deliverySource,
+		cursorContext,
+	});
+}
+
+test('the text around the cursor reaches transcription and Polish, and nothing else', async () => {
+	transcript = 'ordinary speech here';
+	await dictate(holdCursorContext(FIELD));
+	expect(transcribeAndPersist.mock.calls.at(-1)?.[3]).toEqual(
+		expect.objectContaining({ cursorContext: FIELD }),
+	);
+	expect(runPolish.mock.calls.at(-1)?.[1]).toEqual(
+		expect.objectContaining({ cursorContext: FIELD }),
+	);
+	const everywhereElse = JSON.stringify([
+		createRecording.mock.calls,
+		saveRecordingHistory.mock.calls,
+		deliverTranscriptionResult.mock.calls,
+		reportInfo.mock.calls,
+		reportError.mock.calls,
+		recordDelivery.mock.calls,
+		recordLastDictation.mock.calls,
+		correctionLearningFake.afterDelivery.mock.calls,
+	]);
+	expect(everywhereElse).not.toContain('ZQXJ7731');
+});
+
+test('the holder is empty before delivery starts, and again when the run ends', async () => {
+	transcript = 'ordinary speech here';
+	const holder = holdCursorContext(FIELD);
+	let heldAtDelivery: unknown = 'not delivered';
+	deliverTranscriptionResult.mockImplementationOnce(async () => {
+		heldAtDelivery = holder?.read();
+		clearDelivery();
+		return {
+			outcome: {
+				reach: 'output',
+				sinkKind: 'cursor',
+				pressedEnter: false,
+			} as const,
+			notice: { title: 'done' },
+		};
+	});
+	await dictate(holder);
+	expect(heldAtDelivery).toBeNull();
+	expect(holder?.read()).toBeNull();
+});
+
+test('a run that never reaches Polish still empties the holder', async () => {
+	// Silence.
+	transcript = '   ';
+	const silent = holdCursorContext(FIELD);
+	await dictate(silent);
+	expect(runPolish).not.toHaveBeenCalled();
+	expect(silent?.read()).toBeNull();
+
+	// A voice command.
+	transcript = 'scratch that';
+	const command = holdCursorContext(FIELD);
+	await dictate(command);
+	expect(runVoiceCommand).toHaveBeenCalledTimes(1);
+	expect(command?.read()).toBeNull();
+
+	// A throw out of the run.
+	transcript = 'ordinary speech here';
+	runPolish.mockImplementationOnce(async () => {
+		throw new Error('boom');
+	});
+	const thrown = holdCursorContext(FIELD);
+	await expect(dictate(thrown)).rejects.toThrow('boom');
+	expect(thrown?.read()).toBeNull();
+});
+
+test('an imported file never carries the text around the cursor', async () => {
+	transcript = 'ordinary speech here';
+	const holder = holdCursorContext(FIELD);
+	await dictate(holder, 'import');
+	expect(transcribeAndPersist.mock.calls.at(-1)?.[3]).toEqual(
+		expect.objectContaining({ cursorContext: null }),
+	);
+	expect(runPolish.mock.calls.at(-1)?.[1]).toEqual(
+		expect.objectContaining({ cursorContext: null }),
+	);
+	expect(holder?.read()).toBeNull();
+});
+
+test('a dictation without it passes none on', async () => {
+	transcript = 'ordinary speech here';
+	await run();
+	expect(transcribeAndPersist.mock.calls.at(-1)?.[3]).toEqual(
+		expect.objectContaining({ cursorContext: null }),
+	);
+	expect(runPolish.mock.calls.at(-1)?.[1]).toEqual(
+		expect.objectContaining({ cursorContext: null }),
+	);
 });

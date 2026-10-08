@@ -40,6 +40,34 @@ export type CursorContext = {
 	after: string;
 };
 
+/**
+ * A one-shot holder for the slice while a run carries it (ADR-0272). The
+ * capture queue and the pipeline input hold this, never the text itself, and
+ * the pipeline empties it right after Polish, so nothing the run keeps
+ * references the slice while the paste lands. It is a reference drop, not
+ * zeroing: JavaScript offers no stronger guarantee.
+ */
+export type CursorContextHolder = {
+	/** The slice, or null once cleared. */
+	read: () => CursorContext | null;
+	/** Drops the reference; every later read answers null. */
+	clear: () => void;
+};
+
+/** `null` stays `null`: a capture with no context has nothing to hold. */
+export function holdCursorContext(
+	context: CursorContext | null,
+): CursorContextHolder | null {
+	if (context === null) return null;
+	const box: { held: CursorContext | null } = { held: context };
+	return {
+		read: () => box.held,
+		clear: () => {
+			box.held = null;
+		},
+	};
+}
+
 /** The one host call. Production passes `services.context`. */
 export type CursorContextReader = Pick<ContextService, 'readContextAtCapture'>;
 
