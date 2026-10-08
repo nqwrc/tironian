@@ -90,6 +90,13 @@ pub enum FieldRefusal {
     Moved,
     /// The element exposes neither a text pattern nor a value pattern.
     NoTextPattern,
+    /// The text pattern reports no caret or selection to read around
+    /// (ADR-0272).
+    NoCaret,
+    /// The field takes no typing, or does not say whether it does: a page
+    /// body, a PDF, a reading pane (ADR-0272). Only the capture-start read
+    /// asks; correction learning reads fields it just pasted into.
+    ReadOnly,
     /// The pasted text, or an anchor, is not in the field exactly once.
     NotFound,
     /// The field or the region is over its cap.
@@ -225,9 +232,10 @@ pub(crate) fn is_console_class(class: &str) -> bool {
         .any(|known| known.eq_ignore_ascii_case(class))
 }
 
-/// The refusal order is the contract. Every check runs before any text
-/// pattern is queried; the target itself is checked before this runs.
-pub(crate) fn gate(facts: &FocusFacts, expected: &ElementId) -> Result<(), FieldRefusal> {
+/// Every check [`gate`] runs before `Moved`, in the same order, for a read
+/// that has no paste target to compare with: the capture-start read
+/// (ADR-0272). Returns the element it let through.
+pub(crate) fn gate_focus(facts: &FocusFacts) -> Result<&ElementId, FieldRefusal> {
     let Some(element) = &facts.element else {
         return Err(FieldRefusal::NoFocus);
     };
@@ -251,7 +259,13 @@ pub(crate) fn gate(facts: &FocusFacts, expected: &ElementId) -> Result<(), Field
     if !matches!(facts.control_type, Some(EDIT_CONTROL | DOCUMENT_CONTROL)) {
         return Err(FieldRefusal::NotATextField);
     }
-    if element != expected {
+    Ok(element)
+}
+
+/// The refusal order is the contract. Every check runs before any text
+/// pattern is queried; the target itself is checked before this runs.
+pub(crate) fn gate(facts: &FocusFacts, expected: &ElementId) -> Result<(), FieldRefusal> {
+    if gate_focus(facts)? != expected {
         return Err(FieldRefusal::Moved);
     }
     Ok(())
@@ -542,7 +556,7 @@ pub fn end_field_observation(generation: u32) {
 }
 
 #[cfg(target_os = "windows")]
-mod windows_impl {
+pub(crate) mod windows_impl {
     use super::{
         gate, keep_anchors_now, locate_delivered, locate_region, region_cap, take_read_now,
         visible_anchor, Anchors, ElementId, FieldReadOutcome, FieldRefusal, FocusFacts, Span,
@@ -657,7 +671,7 @@ mod windows_impl {
     /// Every fact comes from the focused element and the windows that host it,
     /// never from the foreground window, so one app's id is never attached to
     /// another's element.
-    fn focus_facts(automation: &IUIAutomation, element: &IUIAutomationElement) -> FocusFacts {
+    pub fn focus_facts(automation: &IUIAutomation, element: &IUIAutomationElement) -> FocusFacts {
         let identity = element_id(element);
         let process_id = identity.as_ref().map(|id| id.process_id);
         let hosting = hosting(automation, element);
@@ -733,7 +747,7 @@ mod windows_impl {
         (length > 0).then(|| String::from_utf16_lossy(&buffer[..length]))
     }
 
-    fn text_pattern(element: &IUIAutomationElement) -> Option<IUIAutomationTextPattern> {
+    pub fn text_pattern(element: &IUIAutomationElement) -> Option<IUIAutomationTextPattern> {
         unsafe { element.GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId) }.ok()
     }
 
@@ -1141,6 +1155,84 @@ mod tests {
             ..readable()
         };
         assert_eq!(gate(&other_process, &expected()), Err(FieldRefusal::Moved));
+    }
+
+    #[test]
+    fn the_focus_gate_refuses_what_the_paste_gate_refuses_without_a_target() {
+        let cases = [
+            FocusFacts {
+                element: None,
+                ..readable()
+            },
+            FocusFacts {
+                own_process: true,
+                ..readable()
+            },
+            FocusFacts {
+                reachable: false,
+                ..readable()
+            },
+            FocusFacts {
+                is_password: Some(true),
+                ..readable()
+            },
+            FocusFacts {
+                is_password: None,
+                ..readable()
+            },
+            FocusFacts {
+                app_id: Some("keepassxc.exe".into()),
+                ..readable()
+            },
+            FocusFacts {
+                app_id: None,
+                ..readable()
+            },
+            FocusFacts {
+                window_classes: Some(vec!["ConsoleWindowClass".into()]),
+                ..readable()
+            },
+            FocusFacts {
+                window_classes: None,
+                ..readable()
+            },
+            FocusFacts {
+                control_type: Some(50000),
+                ..readable()
+            },
+        ];
+        for facts in cases {
+            assert!(gate_focus(&facts).is_err(), "{facts:?}");
+            assert_eq!(
+                gate_focus(&facts).map(|_| ()),
+                gate(&facts, &expected()),
+                "{facts:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_focus_gate_passes_a_readable_field_wherever_the_paste_went() {
+        let elsewhere = FocusFacts {
+            element: Some(ElementId {
+                runtime_id: vec![42, 9, 9],
+                process_id: 8,
+            }),
+            ..readable()
+        };
+        assert_eq!(gate(&elsewhere, &expected()), Err(FieldRefusal::Moved));
+        assert_eq!(
+            gate_focus(&elsewhere),
+            Ok(elsewhere.element.as_ref().unwrap())
+        );
+    }
+
+    #[test]
+    fn no_caret_serializes_in_camel_case() {
+        assert_eq!(
+            serde_json::to_string(&FieldReadOutcome::refused(FieldRefusal::NoCaret)).unwrap(),
+            r#"{"kind":"refused","reason":"noCaret","generation":null}"#
+        );
     }
 
     #[cfg(target_os = "windows")]

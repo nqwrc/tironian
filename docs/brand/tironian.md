@@ -104,6 +104,9 @@ the corrections it feeds back. A person who is fine with that has good options.
 
 Tironian is for the person who is not.
 
+Where Tironian offers one of these features, it is off by default, says
+exactly what it reads, and sends it only to the provider you chose.
+
 | | Cloud dictation | Tironian |
 | --- | --- | --- |
 | Where the model runs | the vendor's servers | your machine by default, or a provider you chose and pay directly |
@@ -111,7 +114,7 @@ Tironian is for the person who is not.
 | Account required | usually | no |
 | Source | closed | AGPL-3.0, auditable, forkable |
 | Price shape | subscription per seat | the app is free; you pay the inference provider, or nothing when local |
-| Reads your screen | yes, that is the feature | no. With "Learn from my corrections" on (off by default, Windows only), it takes only the text it just pasted and up to 32 characters either side, on this computer, for 90 seconds, under the caps below |
+| Reads your screen | yes, that is the feature | Not by default. Two opt-in switches, Windows only, each read from the field you are typing in. "Learn from my corrections" keeps what it reads on this computer. "Use the text around my cursor" sends a capped slice to the transcription and Polish providers you chose. Both are described below |
 
 What "Learn from my corrections" reads. The switch is off by default and
 exists on Windows only. When it is on, Tironian looks again at the field it
@@ -129,6 +132,27 @@ or Bitwarden. Nothing it takes is logged or sent. Only a term it suggests is
 stored: it waits on the Dictation page until you accept it or make the same
 correction in a later dictation, and only then goes with your Dictionary to
 your transcription, Polish and Recipe providers.
+
+What "Use the text around my cursor" reads. The switch is off by default and
+exists on Windows only. When it is on, Tironian reads the field that has
+focus once per dictation (once per utterance in hands-free), at the moment it
+starts: up to 400 characters before the cursor, up to 200 after it, and up to
+200 of any selected text, each cut at whole words where the text has spaces.
+It reads nothing for an imported file. It never reads a password field or a
+field that does not say whether it is one, a window running as
+administrator, a console window or terminal (Windows Terminal, WezTerm,
+Alacritty), Remote Desktop, KeePass, KeePassXC, 1Password, Bitwarden or
+Tironian itself. It also never reads a page body, a PDF or a reading pane,
+which accept no typing, or a control that is not a text field. The text
+before the cursor goes with that dictation to the transcription provider when
+it is local Whisper, OpenAI, Groq or Speaches; all of it goes to the Polish
+provider, inside a block that tells the model it is quoted data and not
+instructions. Polish uses an online provider unless you chose a local one, so
+with the defaults this text leaves the computer. It is kept in memory until
+Polish finishes. Tironian never saves or logs it and never adds it to your
+recordings, but a recognizer may repeat part of it into the transcript, and
+the transcript is saved like any other. Lengths count UTF-16 code units, as
+above.
 
 ### What the brand is allowed to claim today
 
@@ -152,12 +176,12 @@ on this branch:
 
 **Roadmap. Do not put on the site.**
 
-- Reading the focused field or the active app as context for Polish. Not built.
-  Deciding what a local-first product is willing to look at comes first, and
-  that is a product decision, not a schedule item. ADR-0271 makes it for one
-  narrow case only: the span around the text Tironian itself just pasted,
-  under the caps stated above, read on the device, behind a switch that ships
-  off.
+- Reading the focused field as context. Available, opt-in and Windows only,
+  in two narrow cases: the span around the text Tironian itself just pasted,
+  kept on this computer (ADR-0271), and the text around the cursor when a
+  dictation starts, sent to the transcription and Polish providers you chose
+  (ADR-0272). Both read under the caps stated above, behind switches that
+  ship off.
 - A dictionary that grows from your own corrections. Available, opt-in and
   Windows only, behind that same switch (ADR-0270, ADR-0271). A learned term
   waits on the Dictation page until you accept it or correct it again, and only

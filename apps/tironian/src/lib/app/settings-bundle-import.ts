@@ -98,10 +98,11 @@ export function availableCategoriesIn(file: SettingsBundleFile): {
  * Categories the import screen leaves unchecked even when the file carries
  * them. Each one turns on something that reads or sends more than the person
  * has agreed to on this device, so it takes a deliberate check: a shared file
- * must never switch field reading on by itself (ADR-0271).
+ * must never switch field reading on by itself (ADR-0271, ADR-0272).
  */
 const IMPORT_OPT_IN_CATEGORIES: readonly PreferenceCategory[] = [
 	'correctionLearning',
+	'cursorContext',
 ];
 
 /** What the import screen checks to start: everything the file offers, bar the opt-in categories. */

@@ -1,10 +1,16 @@
 import type {
+	CursorContextOutcome,
 	FieldReadOutcome,
 	FocusedFieldKind,
 	ForegroundContext,
 } from '$lib/tauri/bindings.gen';
 
-export type { FieldReadOutcome, FocusedFieldKind, ForegroundContext };
+export type {
+	CursorContextOutcome,
+	FieldReadOutcome,
+	FocusedFieldKind,
+	ForegroundContext,
+};
 
 export type ContextService = {
 	/**
@@ -35,4 +41,12 @@ export type ContextService = {
 	 * late close cannot cancel the next dictation's observation.
 	 */
 	endFieldObservation: (generation: number) => Promise<void>;
+	/**
+	 * The text around the caret of the focused field, read once at capture
+	 * start (ADR-0272): `{ before, selection, after }`, capped and cut at whole
+	 * words by the host, or a refusal. Takes no argument, so the webview cannot
+	 * point it anywhere. Never rejects in the host. Callers must not log,
+	 * persist, or display the result.
+	 */
+	readContextAtCapture: () => Promise<CursorContextOutcome>;
 };

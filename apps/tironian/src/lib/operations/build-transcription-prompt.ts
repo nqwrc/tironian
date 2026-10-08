@@ -26,6 +26,10 @@
  */
 
 import type { TranscriptionServiceId } from '$lib/services/transcription/provider-ids';
+import {
+	CURSOR_CONTEXT_WORD_SLACK,
+	isLowSurrogate,
+} from './cursor-context-core';
 
 /**
  * Whisper's prompt ceiling: `n_text_ctx / 2`, which is 224 for every shipped
@@ -123,6 +127,28 @@ export function recognizerPromptCharBudget(
 	}
 }
 
+/**
+ * Whether the route reads its prompt as the transcript so far, so the text
+ * before the cursor can lead into the audio (ADR-0272). Deepgram would send
+ * it as one keyterm in a query string, and ElevenLabs and Mistral never send
+ * the prompt, so `other` routes never get it. Both shapes on OpenAI's menu
+ * read a prompt as preceding text.
+ */
+export function recognizerTakesPrecedingText(
+	service: TranscriptionServiceId,
+): boolean {
+	return PROMPT_SHAPE[service] !== 'other';
+}
+
+/** The most text from before the cursor any route receives. */
+export const PRECEDING_TEXT_MAX_CHARS = 400;
+
+/** Less room than this, and the text before the cursor is left out. */
+export const PRECEDING_TEXT_MIN_CHARS = 24;
+
+/** Between the Dictionary and the text before the cursor. */
+const PRECEDING_TEXT_SEPARATOR = '\n';
+
 export type TranscriptionPrompt = {
 	/** The string handed to the recognizer, already inside the budget. */
 	prompt: string;
@@ -154,12 +180,91 @@ export type TranscriptionPrompt = {
  * first miss rather than skipping ahead to shorter terms is what makes the loss
  * explainable: what did not fit is always a run from one term to the end of the
  * list, so the answer is "everything from here down", not a scattered set.
+ *
+ * `precedingText` is the text before the cursor at capture start (ADR-0272),
+ * already filtered to routes that take it. It is the lowest-priority part:
+ * it goes last, after the user prompt and the Dictionary, gets only the room
+ * they leave, keeps the end nearest the cursor, and never appears in
+ * `dropped`, which stays a count of Dictionary terms.
  */
 export function buildTranscriptionPrompt(
 	userPrompt: string,
 	/** Null when the person has added no terms: the definition cannot default an array. */
 	dictionary: readonly string[] | null,
 	/** From `recognizerPromptCharBudget`. Null leaves the Dictionary whole. */
+	charBudget: number | null,
+	/** The text before the cursor, or null. */
+	precedingText: string | null = null,
+): TranscriptionPrompt {
+	const { prompt, dropped } = buildDictionaryPrompt(
+		userPrompt,
+		dictionary,
+		charBudget,
+	);
+	return {
+		prompt: appendPrecedingText(prompt, precedingText, charBudget),
+		dropped,
+	};
+}
+
+function appendPrecedingText(
+	prompt: string,
+	precedingText: string | null,
+	charBudget: number | null,
+): string {
+	const text = precedingText?.trim() ?? '';
+	if (text === '') return prompt;
+	const separator = prompt === '' ? '' : PRECEDING_TEXT_SEPARATOR;
+	const room =
+		charBudget === null
+			? Number.POSITIVE_INFINITY
+			: charBudget - prompt.length - separator.length;
+	if (Math.min(PRECEDING_TEXT_MAX_CHARS, room) < PRECEDING_TEXT_MIN_CHARS) {
+		return prompt;
+	}
+	const tail = wholeWordTail(text, room);
+	return tail === '' ? prompt : `${prompt}${separator}${tail}`;
+}
+
+/**
+ * What one UTF-16 unit of the text before the cursor costs against the
+ * budget, which counts characters at `CONSERVATIVE_CHARS_PER_TOKEN` to a
+ * token. ASCII costs one character. Anything else costs a whole token, so a
+ * Russian or Chinese slice cannot take more than its share of the 224 tokens
+ * and push the user prompt and the Dictionary, which lead the string, out of
+ * Whisper's window.
+ */
+function budgetCost(unit: number): number {
+	return unit < 0x80 ? 1 : CONSERVATIVE_CHARS_PER_TOKEN;
+}
+
+/**
+ * The end of `text` that costs at most `room` of budget and runs to at most
+ * `PRECEDING_TEXT_MAX_CHARS` characters, starting at a whole word when one is
+ * near.
+ */
+function wholeWordTail(text: string, room: number): string {
+	let start = text.length;
+	let cost = 0;
+	while (start > 0 && text.length - start < PRECEDING_TEXT_MAX_CHARS) {
+		const next = cost + budgetCost(text.charCodeAt(start - 1));
+		if (next > room) break;
+		cost = next;
+		start -= 1;
+	}
+	if (start > 0 && !/\s/.test(text.charAt(start - 1))) {
+		const space = text
+			.slice(start, start + CURSOR_CONTEXT_WORD_SLACK)
+			.search(/\s/);
+		if (space !== -1) start += space + 1;
+	}
+	if (isLowSurrogate(text.charCodeAt(start))) start += 1;
+	return text.slice(start).trimStart();
+}
+
+function buildDictionaryPrompt(
+	userPrompt: string,
+	dictionary: readonly string[] | null,
 	charBudget: number | null,
 ): TranscriptionPrompt {
 	const trimmed = userPrompt.trim();
