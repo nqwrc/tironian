@@ -103,13 +103,22 @@ fn pending_borrow() -> MutexGuard<'static, Option<PendingBorrow>> {
 /// content is the worse loss. A path that means to leave the transcript on the
 /// clipboard, the reach fallback and `keep_on_clipboard`, ends the borrow
 /// without a restore at all.
+///
+/// With `observe`, and only on Windows, it also records where the paste landed,
+/// for correction learning (ADR-0271). Every call ends the previous observation.
 #[tauri::command]
 #[specta::specta]
 pub async fn write_text(
     app: tauri::AppHandle,
     text: String,
     keep_on_clipboard: bool,
+    observe: bool,
 ) -> Result<WriteTextOutcome, String> {
+    // Any delivery ends the previous observation (ADR-0271): the field
+    // Tironian pasted into last is no longer where its newest text went.
+    let delivery = crate::field_text::begin_delivery();
+    let capture = crate::field_text::begin_capture(observe, delivery, &text);
+
     #[cfg(target_os = "macos")]
     let can_paste = {
         use crate::keyboard::{DictationCapability, TapController};
@@ -154,6 +163,7 @@ pub async fn write_text(
             return Ok(WriteTextOutcome::LeftOnClipboard);
         }
         tokio::time::sleep(POST_PASTE_SETTLE).await;
+        crate::field_text::finish_capture(capture).await;
         return Ok(WriteTextOutcome::Pasted);
     }
 
@@ -205,6 +215,7 @@ pub async fn write_text(
     spawn_clipboard_restore(app, generation);
 
     tokio::time::sleep(POST_PASTE_SETTLE).await;
+    crate::field_text::finish_capture(capture).await;
     Ok(WriteTextOutcome::Pasted)
 }
 
@@ -361,6 +372,9 @@ fn simulate_paste() -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn simulate_enter_keystroke() -> Result<(), String> {
+    // An Enter may submit the text out of the field and backspaces remove it;
+    // either way there is nothing left to observe (ADR-0271).
+    crate::field_text::clear_target();
     #[cfg(target_os = "windows")]
     if !crate::foreground::foreground_accepts_synthetic_input() {
         return Err(
@@ -535,6 +549,9 @@ const MAX_BACKSPACES: u32 = 2000;
 #[tauri::command]
 #[specta::specta]
 pub async fn simulate_backspaces(count: u32) -> Result<(), String> {
+    // An Enter may submit the text out of the field and backspaces remove it;
+    // either way there is nothing left to observe (ADR-0271).
+    crate::field_text::clear_target();
     if count > MAX_BACKSPACES {
         return Err(format!(
             "Refusing to send {count} backspaces: the limit is {MAX_BACKSPACES}."

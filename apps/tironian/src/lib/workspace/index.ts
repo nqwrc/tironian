@@ -149,6 +149,25 @@ const appRulesTable = {
 } as const;
 
 /**
+ * Terms learned from the person's corrections (ADR-0270). Only the word they
+ * typed: no recording id, no misheard form, no field text. A pending term
+ * reaches no prompt; Forget deletes the row.
+ */
+const learnedTermsTable = {
+	term: field.string(),
+	status: field.select(['pending', 'active']),
+	learnedAt: field.instant(),
+} as const;
+
+/**
+ * Forgotten learned terms, as the SHA-256 of the fold and nothing else
+ * (ADR-0270). Blocks re-learning without keeping the word.
+ */
+const forgottenTermsTable = {
+	hash: field.string(),
+} as const;
+
+/**
  * A shortcut, as two fields.
  *
  * Same gap as the transcription outcome: a `{ modifiers, keys }` object has no
@@ -262,6 +281,12 @@ const settingsKv = {
 	 * only one that can visibly refuse a recording, so it ships off.
 	 */
 	secureFieldCaptureGateEnabled: field.boolean(),
+	/**
+	 * Watch the span a dictation was pasted into, for up to 90 seconds, and
+	 * suggest the spelling the person fixes (ADR-0271). Windows only. Off by
+	 * default: otherwise the first read would come before any consent moment.
+	 */
+	learnFromCorrectionsEnabled: field.boolean(),
 	analyticsEnabled: field.boolean(),
 
 	shortcutPushToTalkModifiers: shortcut.modifiers,
@@ -293,6 +318,8 @@ export const tironianDefinition = defineData({
 		recipes: recipesTable,
 		snippets: snippetsTable,
 		appRules: appRulesTable,
+		learnedTerms: learnedTermsTable,
+		forgottenTerms: forgottenTermsTable,
 	},
 });
 
@@ -303,6 +330,7 @@ export type Recording = RowOf<typeof recordingsTable>;
 export type Recipe = RowOf<typeof recipesTable>;
 export type Snippet = RowOf<typeof snippetsTable>;
 export type AppRule = RowOf<typeof appRulesTable>;
+export type LearnedTerm = RowOf<typeof learnedTermsTable>;
 /**
  * The settings values an application composes after a read.
  *

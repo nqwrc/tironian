@@ -2,6 +2,7 @@ import type { BlobId } from '@tironian/blobs';
 import { InstantString } from '@tironian/field';
 import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import type { TironianApp } from '$lib/app/app';
+import { correctionLearning } from '$lib/operations/correction-learning';
 import {
 	deliverTranscriptionResult,
 	type TranscriptionSource,
@@ -412,11 +413,16 @@ async function pipelineBody(
 	// The transcript is "ready" once it is polished and about to be delivered, so
 	// the completion sound and the resolved loading notice both fire here.
 	void playSoundIfEnabled(app, 'transcriptionComplete');
+	// Correction learning (ADR-0271) needs the host to record where this paste
+	// lands, so the decision is made before delivery.
+	const observeField =
+		isDictation && correctionLearning.wantsToObserve(app, deliveredText);
 	const { outcome: transcriptDelivery, notice: transcribeNotice } =
 		await deliverTranscriptionResult(app, {
 			text: deliveredText,
 			source: deliverySource,
 			pressEnter: trailingEnter.pressEnter,
+			observeField,
 		});
 
 	// Hold what was delivered so "scratch that" has something to take back.
@@ -449,6 +455,11 @@ async function pipelineBody(
 		}
 	}
 	if (isDictation) {
+		correctionLearning.afterDelivery(app, {
+			deliveredText,
+			observed: observeField,
+			outcome: transcriptDelivery,
+		});
 		if (transcriptDelivery.withheld) {
 			// The secure-field guard refused the configured output; the transcript
 			// lives only in history. This persists on the pill like a reduced reach

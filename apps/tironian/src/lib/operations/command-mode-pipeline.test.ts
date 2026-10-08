@@ -9,6 +9,11 @@ import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
+import {
+	correctionLearningFake,
+	correctionLearningModule,
+	resetCorrectionLearningFake,
+} from './correction-learning.fake';
 import { expandSnippets } from './expand-snippets';
 import { matchCommand, splitTrailingEnter } from './match-command';
 
@@ -41,6 +46,10 @@ const playSoundIfEnabled = mock(async () => Ok(undefined));
 const recordDelivery = mock();
 const dictationReset = mock();
 
+mock.module(
+	'$lib/operations/correction-learning',
+	() => correctionLearningModule,
+);
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // The matcher is pure, so the real one runs here: a stub would hide the very
 // coupling this file exists to check.
@@ -140,6 +149,9 @@ afterEach(() => {
 	playSoundIfEnabled.mockClear();
 	recordDelivery.mockClear();
 	dictationReset.mockClear();
+	resetCorrectionLearningFake();
+	correctionLearningFake.wantsToObserve.mockReset();
+	correctionLearningFake.wantsToObserve.mockImplementation(() => false);
 });
 
 test('a command runs instead of being delivered', async () => {
@@ -169,6 +181,7 @@ test('the setting gates the whole branch', async () => {
 		text: 'scratch that',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 });
 
@@ -181,6 +194,7 @@ test('an inapplicable command delivers as text instead of vanishing', async () =
 		text: 'stop listening',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 });
 
@@ -232,6 +246,7 @@ test('a closing "press enter" ships the words without it and asks for Enter', as
 		text: 'Run the tests.',
 		source: 'recording',
 		pressEnter: true,
+		observeField: false,
 	});
 	// Speed mode writes no polished text, but history must still show what
 	// shipped rather than a phrase that was never typed.
@@ -250,6 +265,7 @@ test('Polish never sees a closing "press enter"', async () => {
 		text: 'Scratch that, please.',
 		source: 'recording',
 		pressEnter: true,
+		observeField: false,
 	});
 });
 
@@ -261,6 +277,7 @@ test('a closing "press enter" stays text where Enter cannot act', async () => {
 		text: 'Run the tests. Press enter.',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 
 	enterApplies = true;
@@ -270,5 +287,53 @@ test('a closing "press enter" stays text where Enter cannot act', async () => {
 		text: 'Run the tests. Press enter.',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
+});
+
+test('a dictation the learner wants to watch is delivered observed and handed back to it', async () => {
+	correctionLearningFake.wantsToObserve.mockImplementation(() => true);
+	transcript = 'ordinary speech here';
+	await run();
+	expect(correctionLearningFake.wantsToObserve).toHaveBeenCalledWith(
+		app,
+		'ordinary speech here',
+	);
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'ordinary speech here',
+		source: 'recording',
+		pressEnter: false,
+		observeField: true,
+	});
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledTimes(1);
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledWith(app, {
+		deliveredText: 'ordinary speech here',
+		observed: true,
+		outcome: {
+			reach: 'output',
+			sinkKind: 'cursor',
+			pressedEnter: false,
+		},
+	});
+});
+
+test('a dictation the learner declines is handed back as not observed', async () => {
+	transcript = 'ordinary speech here';
+	await run();
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledWith(
+		app,
+		expect.objectContaining({ observed: false }),
+	);
+});
+
+test('an imported file is never observed or handed to the learner', async () => {
+	correctionLearningFake.wantsToObserve.mockImplementation(() => true);
+	transcript = 'ordinary speech here';
+	await run('import');
+	expect(correctionLearningFake.wantsToObserve).not.toHaveBeenCalled();
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(
+		app,
+		expect.objectContaining({ observeField: false }),
+	);
+	expect(correctionLearningFake.afterDelivery).not.toHaveBeenCalled();
 });

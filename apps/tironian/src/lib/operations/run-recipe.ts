@@ -10,6 +10,7 @@ import {
 	wrapRecipeInput,
 } from '$lib/operations/build-system-prompt';
 import { completeWithGlobalDefault } from '$lib/operations/completion';
+import { effectiveDictionary } from '$lib/operations/effective-dictionary';
 import type { Recipe } from '$lib/workspace';
 import { m } from '../paraglide/messages';
 
@@ -75,7 +76,7 @@ export async function runRecipe(
 	const result = await completeWithGlobalDefault(app, {
 		systemPrompt: buildRecipeSystemPrompt(
 			recipe.instructions,
-			app.settings.get('dictionary'),
+			effectiveDictionary(app),
 			{ trusted: recipe.trusted },
 		),
 		userPrompt: wrapRecipeInput(input),

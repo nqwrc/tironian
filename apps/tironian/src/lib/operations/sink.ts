@@ -7,6 +7,7 @@
  * construction, so a sink is reusable outside a settings-backed caller too.
  */
 import { services } from '$lib/services';
+import { type CursorSinkOptions, cursorSink } from './cursor-sink';
 import type { DeliveryReach } from './delivery-reach';
 
 /**
@@ -55,54 +56,9 @@ export const ledgerSink: Sink = {
 };
 
 /**
- * Writes at the cursor via a synthetic paste, with the clipboard as staging
- * and fallback.
- *
- * `keepOnClipboard` tells `write_text` what the clipboard should hold
- * afterward (it owns the staging delivery used to pre-copy): when clipboard
- * output is on it leaves the text there; when off it borrows and restores the
- * user's clipboard (full-fidelity on macOS, see `write_text`'s docstring in
- * src-tauri). `write_text` decides from the Accessibility grant whether it can
- * paste and reports where the text landed: `pasted` at the cursor (clean), or
- * `leftOnClipboard` when it could not paste.
+ * The cursor sink over the live text service. The write itself, and what
+ * `keepOnClipboard` and `observeField` mean, is `cursorSink`.
  */
-export function createCursorSink({
-	keepOnClipboard,
-	pressEnter,
-}: {
-	keepOnClipboard: boolean;
-	pressEnter: boolean;
-}): Sink {
-	return {
-		kind: 'cursor',
-		async deliver(text) {
-			const { data: writeOutcome, error: writeError } =
-				await services.text.writeToCursor(text, keepOnClipboard);
-
-			if (writeError) {
-				// The write failed outright (rare). Ensure the text is at least on
-				// the clipboard, and report the reduced reach.
-				await services.text.copyToClipboard(text);
-				return { reach: 'clipboard', pressedEnter: false };
-			}
-
-			let pressedEnter = false;
-			if (writeOutcome === 'pasted' && pressEnter) {
-				// The Enter keystroke is a nicety on top of a successful write, and a
-				// failure here still does not change where the text landed. It does
-				// change whether an undo can reach it, so the attempt is what counts:
-				// a submit may already have taken the text out of the input.
-				await services.text.simulateEnterKeystroke();
-				pressedEnter = true;
-			}
-
-			// A clean `pasted` reached the configured output; a `leftOnClipboard`
-			// fallback is a reduced (but recoverable) reach (see DeliveryReach and
-			// ADR-0039/0040).
-			return {
-				reach: writeOutcome === 'pasted' ? 'output' : 'clipboard',
-				pressedEnter,
-			};
-		},
-	};
+export function createCursorSink(options: CursorSinkOptions): Sink {
+	return cursorSink(services.text, options);
 }

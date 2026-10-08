@@ -5,6 +5,10 @@ import {
 	createTironianAppRules,
 	type TironianAppRules,
 } from './app-rules.svelte';
+import {
+	createTironianLearnedTerms,
+	type TironianLearnedTerms,
+} from './learned-terms.svelte';
 import { createTironianRecipes, type TironianRecipes } from './recipes.svelte';
 import type { TironianBlobs } from './recording-audio';
 import {
@@ -96,6 +100,10 @@ const APPLICATION_DEFAULTS: Partial<TironianSettingValues> = {
 	// a local-first app that phones home by default has given away the one claim
 	// it is built on. The Analytics card on the account page is the opt-in.
 	analyticsEnabled: false,
+	// Off for the same reason as analytics: there is no first-run screen, so a
+	// default-on read would come before any consent moment. Windows only
+	// (ADR-0271); the switch lives under Settings, Privacy & Processing.
+	learnFromCorrectionsEnabled: false,
 	shortcutPushToTalkModifiers: null,
 	shortcutPushToTalkKeys: null,
 	shortcutToggleManualRecordingModifiers: null,
@@ -122,6 +130,7 @@ export type TironianApp = {
 	readonly recipes: TironianRecipes;
 	readonly snippets: TironianSnippets;
 	readonly appRules: TironianAppRules;
+	readonly learnedTerms: TironianLearnedTerms;
 	[Symbol.asyncDispose](): Promise<void>;
 };
 
@@ -156,6 +165,10 @@ export async function openTironianApp(
 	const appRulesDomain = createTironianAppRules({
 		table: deviceData.tables.appRules,
 	});
+	const learnedTermsDomain = createTironianLearnedTerms({
+		table: deviceData.tables.learnedTerms,
+		forgotten: deviceData.tables.forgottenTerms,
+	});
 
 	let disposed = false;
 	return Object.freeze({
@@ -164,9 +177,11 @@ export async function openTironianApp(
 		recipes: recipesDomain,
 		snippets: snippetsDomain,
 		appRules: appRulesDomain,
+		learnedTerms: learnedTermsDomain,
 		async [Symbol.asyncDispose]() {
 			if (disposed) return;
 			disposed = true;
+			learnedTermsDomain[Symbol.dispose]();
 			appRulesDomain[Symbol.dispose]();
 			snippetsDomain[Symbol.dispose]();
 			recipesDomain[Symbol.dispose]();

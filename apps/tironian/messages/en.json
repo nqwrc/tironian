@@ -498,5 +498,20 @@
 	"onboarding_try_press_after": "and speak, then press it again.",
 	"onboarding_try_no_shortcut": "Set a shortcut in Settings to dictate from any app.",
 	"onboarding_try_placeholder": "Your words appear here.",
-	"onboarding_finish": "Done, open {productName}"
+	"onboarding_finish": "Done, open {productName}",
+	"learned_term_pending_title": "New term suggested",
+	"learned_term_pending_description": "From a correction you made. It is not used until you accept it on the Dictation page or correct it the same way in a later dictation.",
+	"learned_term_active_title": "A learned term is now in use",
+	"learned_term_active_description": "You corrected it again, so it now goes with your Dictionary to transcription, Polish and Recipes.",
+	"learned_term_review": "Review",
+	"processing_learning_from_corrections": "Learning from corrections",
+	"processing_learning_from_corrections_description": "After a dictation, {productName} looks again at the field it just pasted into, at most six times within 90 seconds, and only while that field has focus. It takes only its own pasted text as it now stands and up to 32 characters on each side, and nothing once that text has grown past twice its length plus 200 characters, or past its length plus 32 at the start or end of the field. To find that text it may search up to 100,000 characters of the field in memory, and keeps none of the rest. It never looks at password fields, console windows, Windows Terminal, WezTerm, Alacritty, Remote Desktop, KeePass, KeePassXC, 1Password or Bitwarden. What it takes stays on this computer and is never logged. When you fix a misheard name or term, it keeps only your spelling, as a suggestion on the Dictation page.",
+	"processing_learn_from_my_corrections": "Learn from my corrections",
+	"processing_learned_terms_reach_providers_once_accepted": "A suggested term reaches no provider until you accept it or correct it again. From then on it is sent with your Dictionary to your transcription, Polish and Recipe providers.",
+	"dictation_suggested": "Suggested from your corrections",
+	"dictation_suggested_description": "Not used yet. Accept a term to send it with your Dictionary, or forget it.",
+	"dictation_learned": "Learned from your corrections",
+	"dictation_accept_term": "Accept {term}",
+	"dictation_forget_term": "Forget {term}",
+	"dictation_learned_cap": "Learning is paused at {limit} learned and suggested terms. Forget some to resume."
 }

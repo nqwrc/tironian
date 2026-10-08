@@ -8,6 +8,7 @@ import type { TironianApp } from '$lib/app/app';
 import type { CaptureSurface } from '$lib/constants/audio';
 import { dictationPath } from '$lib/constants/urls';
 import { logAnalyticsEvent } from '$lib/operations/analytics';
+import { correctionLearning } from '$lib/operations/correction-learning';
 import {
 	captureForegroundSnapshot,
 	type ForegroundSnapshot,
@@ -233,6 +234,7 @@ export async function startManualRecording(
 	// The app in front right now is what this dictation is aimed at; the probe
 	// runs alongside the recorder bring-up and is consumed at stop.
 	beginForegroundSnapshot(app);
+	correctionLearning.dictationStarting(app);
 	// A new dictation is starting: clear any lingering failed/delivered state so
 	// the pill follows this attempt, not the last one.
 	dictationLifecycle.reset();
@@ -443,6 +445,7 @@ export async function startVadRecording(app: TironianApp) {
 			// tint shows speech was detected, so there is no toast. Each utterance
 			// is its own pipeline run, so each gets its own foreground snapshot.
 			beginForegroundSnapshot(app);
+			correctionLearning.dictationStarting(app);
 			pausePlaybackForSpeech(app);
 		},
 		onSpeechEnd: async (blob) => {

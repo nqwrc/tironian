@@ -50,6 +50,8 @@
 		"allow-set-auto-paste-enabled",
 		"allow-get-dictation-capability",
 		"allow-get-foreground-context",
+		"allow-read-focused-text",
+		"allow-end-field-observation",
 		"allow-replace-global-shortcuts",
 		"allow-is-autostart-enabled",
 		"allow-set-autostart-enabled",

@@ -21,10 +21,13 @@ export const commands = {
 	 *  content is the worse loss. A path that means to leave the transcript on the
 	 *  clipboard, the reach fallback and `keep_on_clipboard`, ends the borrow
 	 *  without a restore at all.
+	 *
+	 *  With `observe`, and only on Windows, it also records where the paste landed,
+	 *  for correction learning (ADR-0271). Every call ends the previous observation.
 	 */
-	writeText: (text: string, keepOnClipboard: boolean) =>
+	writeText: (text: string, keepOnClipboard: boolean, observe: boolean) =>
 		typedError<WriteTextOutcome, string>(
-			__TAURI_INVOKE('write_text', { text, keepOnClipboard }),
+			__TAURI_INVOKE('write_text', { text, keepOnClipboard, observe }),
 		),
 	/**
 	 *  Simulates pressing the Enter/Return key.
@@ -381,6 +384,15 @@ export const commands = {
 	 */
 	getForegroundContext: () =>
 		__TAURI_INVOKE<ForegroundContext>('get_foreground_context'),
+	/**  The span around the observed paste, under the rules in the module doc. */
+	readFocusedText: () => __TAURI_INVOKE<FieldReadOutcome>('read_focused_text'),
+	/**
+	 *  Drops the paste target the observation read, so no later read can run. The
+	 *  frontend calls it with the generation of its last read when its observation
+	 *  closes; a newer target is left alone.
+	 */
+	endFieldObservation: (generation: number) =>
+		__TAURI_INVOKE<void>('end_field_observation', { generation }),
 	/**
 	 *  Replace every global shortcut at once: the plugin chords, and the
 	 *  modifier-only holds only the Windows hook can see (ADR-0246). Either set
@@ -605,6 +617,56 @@ export type FallbackReason =
 	| 'no-device-selected'
 	/**  The requested device is not present, so the system default was used. */
 	| 'preferred-device-unavailable';
+
+export type FieldReadOutcome =
+	| {
+			kind: 'span';
+			/**
+			 *  The paste target this read spent a read of. `end_field_observation`
+			 *  takes it back, so an observation closes only its own target.
+			 */
+			generation: number;
+			before: string;
+			region: string;
+			after: string;
+	  }
+	| {
+			kind: 'refused';
+			reason: FieldRefusal;
+			/**  The target the read was for; `None` when there was none. */
+			generation: number | null;
+	  };
+
+export type FieldRefusal =
+	/**  This platform has no field read. */
+	| 'unsupported'
+	/**  No live paste target: none recorded, expired, or its reads spent. */
+	| 'noTarget'
+	/**  No focused element, or one the OS will not identify. */
+	| 'noFocus'
+	/**  The focused element belongs to Tironian itself. */
+	| 'ownWindow'
+	/**  UIPI: the element's process sits above Tironian's integrity level. */
+	| 'unreachable'
+	/**  A password field, or one whose password state could not be read. */
+	| 'secure'
+	/**
+	 *  A denylisted app or a console or terminal window, or one whose app id
+	 *  or window classes could not be read.
+	 */
+	| 'denied'
+	/**  Neither an Edit nor a Document control. */
+	| 'notATextField'
+	/**  Not the element Tironian pasted into. */
+	| 'moved'
+	/**  The element exposes neither a text pattern nor a value pattern. */
+	| 'noTextPattern'
+	/**  The pasted text, or an anchor, is not in the field exactly once. */
+	| 'notFound'
+	/**  The field or the region is over its cap. */
+	| 'tooLong'
+	/**  COM or UI Automation failed. */
+	| 'platformError';
 
 /**  What the focused UI element revealed about itself. */
 export type FocusedFieldKind =

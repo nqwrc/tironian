@@ -61,7 +61,9 @@ use delivery::{
     wait_for_modifiers_released, write_text,
 };
 
+mod field_text;
 mod foreground;
+use field_text::{end_field_observation, read_focused_text};
 use foreground::get_foreground_context;
 
 pub mod media;
@@ -325,6 +327,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             keyboard::commands::set_auto_paste_enabled,
             keyboard::commands::get_dictation_capability,
             get_foreground_context,
+            read_focused_text,
+            end_field_observation,
             replace_global_shortcuts,
             is_autostart_enabled,
             set_autostart_enabled,

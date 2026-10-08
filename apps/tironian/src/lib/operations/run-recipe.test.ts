@@ -22,6 +22,10 @@ import { Ok } from 'wellcrafted/result';
 const buildSystemPrompt = await import('./build-system-prompt.js');
 mock.module('$lib/operations/build-system-prompt', () => buildSystemPrompt);
 
+// The real composer, under the alias `bun test` cannot resolve.
+const effectiveDictionary = await import('./effective-dictionary.js');
+mock.module('$lib/operations/effective-dictionary', () => effectiveDictionary);
+
 let seen: { systemPrompt: string; userPrompt: string } | null = null;
 mock.module('$lib/operations/completion', () => ({
 	completeWithGlobalDefault: (
@@ -45,7 +49,10 @@ const { RECIPE_INPUT_TAG, UNTRUSTED_REQUEST_TAG } = buildSystemPrompt;
 type TironianApp = import('$lib/app/app').TironianApp;
 type Recipe = import('$lib/workspace').Recipe;
 
-const app = { settings: { get: () => null } } as unknown as TironianApp;
+const app = {
+	settings: { get: () => null },
+	learnedTerms: { activeTerms: [] },
+} as unknown as TironianApp;
 const recipe = {
 	instructions: 'Rewrite this as a short email.',
 	trusted: true,

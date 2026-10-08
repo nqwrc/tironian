@@ -94,6 +94,30 @@ export function availableCategoriesIn(file: SettingsBundleFile): {
 	};
 }
 
+/**
+ * Categories the import screen leaves unchecked even when the file carries
+ * them. Each one turns on something that reads or sends more than the person
+ * has agreed to on this device, so it takes a deliberate check: a shared file
+ * must never switch field reading on by itself (ADR-0271).
+ */
+const IMPORT_OPT_IN_CATEGORIES: readonly PreferenceCategory[] = [
+	'correctionLearning',
+];
+
+/** What the import screen checks to start: everything the file offers, bar the opt-in categories. */
+export function defaultImportSelection(
+	available: ReturnType<typeof availableCategoriesIn>,
+): Set<string> {
+	return new Set<string>([
+		...available.preferences.filter(
+			(category) => !IMPORT_OPT_IN_CATEGORIES.includes(category),
+		),
+		...(available.snippets ? ['snippets'] : []),
+		...(available.recipes ? ['recipes'] : []),
+		...(available.appRules ? ['appRules'] : []),
+	]);
+}
+
 export type SettingsBundleImportSummary = {
 	appliedPreferenceCategories: PreferenceCategory[];
 	skippedFields: number;

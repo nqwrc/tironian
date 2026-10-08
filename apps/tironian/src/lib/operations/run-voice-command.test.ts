@@ -16,6 +16,11 @@ import { beforeEach, expect, mock, test } from 'bun:test';
 import { Err, Ok, type Result } from 'wellcrafted/result';
 import type { TironianApp } from '$lib/app/app';
 import type { TextError } from '$lib/services/text/types';
+import {
+	correctionLearningFake,
+	correctionLearningModule,
+	resetCorrectionLearningFake,
+} from './correction-learning.fake';
 
 let vadActive = false;
 let canUndo = false;
@@ -73,6 +78,10 @@ mock.module('$lib/operations/foreground-probe', () => ({
 }));
 // The real decision, under the alias `bun test` cannot resolve. Faking it would
 // make the two refusal tests assert their own stub.
+mock.module(
+	'$lib/operations/correction-learning',
+	() => correctionLearningModule,
+);
 const undoTarget = await import('./undo-target.js');
 mock.module('$lib/operations/undo-target', () => undoTarget);
 
@@ -109,6 +118,7 @@ beforeEach(() => {
 	]) {
 		fn.mockClear();
 	}
+	resetCorrectionLearningFake();
 });
 
 test("commandApplies('pressEnter') follows whether transcriptions write at the cursor", () => {
@@ -268,4 +278,22 @@ test("runVoiceCommand(app, 'stopListening') reaches the VAD recorder exactly onc
 	await runVoiceCommand(app, 'stopListening');
 	expect(stopVadRecording).toHaveBeenCalledTimes(1);
 	expect(stopVadRecording).toHaveBeenLastCalledWith(app);
+});
+
+test('pressEnter ends correction learning: the submit takes the text away', async () => {
+	await runVoiceCommand(app, 'pressEnter');
+	expect(correctionLearningFake.cancel).toHaveBeenCalledTimes(1);
+});
+
+test('a scratch that which fires ends correction learning; a refused one does not', async () => {
+	held = { graphemes: 12, appId: 'Code.exe' };
+	await runVoiceCommand(app, 'scratchThat');
+	expect(correctionLearningFake.cancel).toHaveBeenCalledTimes(1);
+
+	resetCorrectionLearningFake();
+	held = { graphemes: 12, appId: 'Code.exe' };
+	focusedNow = 'slack.exe';
+	await runVoiceCommand(app, 'scratchThat');
+	expect(simulateBackspaces).toHaveBeenCalledTimes(1);
+	expect(correctionLearningFake.cancel).not.toHaveBeenCalled();
 });

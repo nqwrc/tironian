@@ -24,6 +24,7 @@
  */
 import { osNotify } from '#platform/os-notify';
 import type { TironianApp } from '$lib/app/app';
+import { correctionLearning } from '$lib/operations/correction-learning';
 import { probeForegroundContext } from '$lib/operations/foreground-probe';
 import { decideSecureFieldGuard } from '$lib/operations/secure-field-guard';
 import { createCursorSink } from '$lib/operations/sink';
@@ -150,6 +151,9 @@ export function pasteLastDictation(app: TironianApp): Promise<void> {
 			announce(m.repeat_keys_held());
 			return;
 		}
+		// The paste replaces what correction learning was watching; stop its timers
+		// (the paste's own `write_text` clears the host target).
+		correctionLearning.cancel();
 		const sink = createCursorSink({
 			keepOnClipboard: app.settings.get('outputTranscriptionClipboard'),
 			pressEnter: false,

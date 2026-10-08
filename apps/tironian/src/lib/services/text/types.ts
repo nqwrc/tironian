@@ -64,10 +64,12 @@ export type TextService = {
 	 * @param text The text to write at the cursor position.
 	 * @param keepOnClipboard Whether to leave the transcript on the clipboard after
 	 *   pasting (clipboard output on) instead of restoring the user's clipboard.
+	 * @param observe Ask the host to record where the paste lands, for correction learning (ADR-0271).
 	 */
 	writeToCursor: (
 		text: string,
 		keepOnClipboard: boolean,
+		observe: boolean,
 	) => MaybePromise<Result<WriteTextOutcome, TextError>>;
 
 	/**
