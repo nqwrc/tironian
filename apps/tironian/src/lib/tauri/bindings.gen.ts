@@ -21,10 +21,13 @@ export const commands = {
 	 *  content is the worse loss. A path that means to leave the transcript on the
 	 *  clipboard, the reach fallback and `keep_on_clipboard`, ends the borrow
 	 *  without a restore at all.
+	 *
+	 *  With `observe`, and only on Windows, it also records where the paste landed,
+	 *  for correction learning (ADR-0271). Every call ends the previous observation.
 	 */
-	writeText: (text: string, keepOnClipboard: boolean) =>
+	writeText: (text: string, keepOnClipboard: boolean, observe: boolean) =>
 		typedError<WriteTextOutcome, string>(
-			__TAURI_INVOKE('write_text', { text, keepOnClipboard }),
+			__TAURI_INVOKE('write_text', { text, keepOnClipboard, observe }),
 		),
 	/**
 	 *  Simulates pressing the Enter/Return key.

@@ -416,6 +416,130 @@ pub(crate) fn locate_region(
     })
 }
 
+/// Longest a paste waits for its focused-element capture before giving up on
+/// observing. The capture runs in parallel with the paste's own settle time.
+const CAPTURE_TIMEOUT: Duration = Duration::from_millis(500);
+
+/// A focused-element capture started before a paste and finished after it.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub(crate) struct PendingCapture {
+    #[cfg(target_os = "windows")]
+    element: tauri::async_runtime::JoinHandle<Option<ElementId>>,
+    delivered: String,
+    generation: u64,
+}
+
+/// Starts capturing the focused element when `write_text` was asked to
+/// observe. Captured before the paste because the paste lands wherever focus
+/// is at that instant.
+pub(crate) fn begin_capture(observe: bool, generation: u64, text: &str) -> Option<PendingCapture> {
+    #[cfg(target_os = "windows")]
+    {
+        if !observe || text.encode_utf16().count() > MAX_DELIVERED_UTF16 {
+            return None;
+        }
+        Some(PendingCapture {
+            // Cross-process COM: a hung target blocks for the UIA timeout.
+            element: tauri::async_runtime::spawn_blocking(windows_impl::capture_focused_element),
+            delivered: text.to_owned(),
+            generation,
+        })
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (observe, generation, text);
+        None
+    }
+}
+
+/// After a successful paste: records the target, or nothing when the capture
+/// failed, timed out, or a later delivery has begun.
+pub(crate) async fn finish_capture(pending: Option<PendingCapture>) {
+    #[cfg(target_os = "windows")]
+    if let Some(pending) = pending {
+        if let Ok(Ok(Some(element))) = tokio::time::timeout(CAPTURE_TIMEOUT, pending.element).await
+        {
+            arm(
+                pending.generation,
+                element,
+                &pending.delivered,
+                Instant::now(),
+            );
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    let _ = pending;
+}
+
+#[cfg(target_os = "windows")]
+mod windows_impl {
+    use super::ElementId;
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_INPROC_SERVER,
+        COINIT_MULTITHREADED,
+    };
+    use windows::Win32::System::Ole::{
+        SafeArrayDestroy, SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound,
+    };
+    use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation, IUIAutomationElement};
+
+    /// Runs `body` with COM initialized on this thread and a UIA client. Every
+    /// COM object `body` touches is dropped before `CoUninitialize`. `None`
+    /// when either step fails.
+    pub fn with_automation<T>(body: impl FnOnce(&IUIAutomation) -> T) -> Option<T> {
+        // S_FALSE (already initialized) also counts as success and still needs
+        // the matching CoUninitialize, as in `foreground::focused_field_kind`.
+        if unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) }.is_err() {
+            return None;
+        }
+        let automation: windows::core::Result<IUIAutomation> =
+            unsafe { CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER) };
+        let result = automation.ok().map(|automation| body(&automation));
+        unsafe { CoUninitialize() };
+        result
+    }
+
+    /// The focused element's identity, for `write_text` to record.
+    pub fn capture_focused_element() -> Option<ElementId> {
+        with_automation(|automation| {
+            let element = unsafe { automation.GetFocusedElement() }.ok()?;
+            element_id(&element)
+        })
+        .flatten()
+    }
+
+    pub fn element_id(element: &IUIAutomationElement) -> Option<ElementId> {
+        let process_id = u32::try_from(unsafe { element.CurrentProcessId() }.ok()?)
+            .ok()
+            .filter(|id| *id != 0)?;
+        Some(ElementId {
+            runtime_id: runtime_id(element)?,
+            process_id,
+        })
+    }
+
+    fn runtime_id(element: &IUIAutomationElement) -> Option<Vec<i32>> {
+        let array = unsafe { element.GetRuntimeId() }.ok()?;
+        if array.is_null() {
+            return None;
+        }
+        let parts = (|| -> Option<Vec<i32>> {
+            let lower = unsafe { SafeArrayGetLBound(array, 1) }.ok()?;
+            let upper = unsafe { SafeArrayGetUBound(array, 1) }.ok()?;
+            let mut parts = Vec::with_capacity((upper - lower + 1).max(0) as usize);
+            for index in lower..=upper {
+                let mut value = 0i32;
+                unsafe { SafeArrayGetElement(array, &index, (&mut value as *mut i32).cast()) }
+                    .ok()?;
+                parts.push(value);
+            }
+            Some(parts)
+        })();
+        let _ = unsafe { SafeArrayDestroy(array) };
+        parts.filter(|parts| !parts.is_empty())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
