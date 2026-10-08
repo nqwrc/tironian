@@ -22,6 +22,7 @@ export const PREFERENCE_CATEGORIES = [
 	'dictationPolish',
 	'commandMode',
 	'dictionary',
+	'correctionLearning',
 	'shortcuts',
 	'analytics',
 ] as const;
@@ -37,6 +38,7 @@ export const PREFERENCE_CATEGORY_LABELS: Record<PreferenceCategory, string> = {
 	dictationPolish: 'Dictation & Polish',
 	commandMode: 'Command Mode',
 	dictionary: 'Dictionary',
+	correctionLearning: 'Learning from corrections',
 	shortcuts: 'Shortcuts',
 	analytics: 'Analytics',
 };
@@ -97,6 +99,11 @@ export const PREFERENCE_CATEGORY_KEYS: Record<
 	dictationPolish: ['polishEnabled', 'polishInstructions'],
 	commandMode: ['commandModeEnabled'],
 	dictionary: ['dictionary'],
+	/**
+	 * Its own category, apart from `dictionary`, so importing someone's terms
+	 * never turns field reading on (ADR-0271).
+	 */
+	correctionLearning: ['learnFromCorrectionsEnabled'],
 	shortcuts: [
 		'shortcutPushToTalkModifiers',
 		'shortcutPushToTalkKeys',
