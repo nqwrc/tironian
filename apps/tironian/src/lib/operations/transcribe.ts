@@ -21,6 +21,7 @@ import {
 	buildTranscriptionPrompt,
 	recognizerPromptCharBudget,
 } from '$lib/operations/build-transcription-prompt';
+import { effectiveDictionary } from '$lib/operations/effective-dictionary';
 import {
 	type TranscriptionDeadline,
 	transcriptionTimedOut,
@@ -458,16 +459,14 @@ function recognizerPrompt(
 ): string {
 	const { prompt, dropped } = buildTranscriptionPrompt(
 		app.settings.get('transcriptionPrompt'),
-		app.settings.get('dictionary'),
+		effectiveDictionary(app),
 		recognizerPromptCharBudget(service, model),
 	);
 	if (dropped.length > 0) {
-		// The count and the boundary term are the whole answer. The tail itself can
-		// run to hundreds of the person's proper nouns, and this line is written on
-		// every dictation, so logging the array would trade volume for nothing.
+		// The count is the whole answer. A term is the person's vocabulary, and a
+		// learned term must never reach a log line (ADR-0271), so none is named.
 		log.info('Dictionary terms did not fit the recognizer prompt budget', {
 			droppedCount: dropped.length,
-			firstDropped: dropped[0],
 		});
 	}
 	return prompt;

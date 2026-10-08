@@ -11,6 +11,7 @@ import {
 	resolveCompletionState,
 } from '$lib/operations/completion';
 import { describePolishDestination } from '$lib/operations/completion-target';
+import { effectiveDictionary } from '$lib/operations/effective-dictionary';
 import { resolveTranscriptionLocalityFromConfig } from '$lib/operations/transcription-target';
 import { deviceConfig } from '$lib/state/device-config.svelte';
 
@@ -125,7 +126,7 @@ export async function runPolish(
 	const result = await completeWithGlobalDefault(app, {
 		systemPrompt: buildPolishSystemPrompt(
 			directive.instructions,
-			app.settings.get('dictionary'),
+			effectiveDictionary(app),
 			{ trusted: directive.trusted },
 		),
 		userPrompt: input,

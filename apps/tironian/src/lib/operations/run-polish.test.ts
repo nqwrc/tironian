@@ -17,6 +17,10 @@ import { Ok } from 'wellcrafted/result';
 const buildSystemPrompt = await import('./build-system-prompt.js');
 mock.module('$lib/operations/build-system-prompt', () => buildSystemPrompt);
 
+// The real composer, under the alias `bun test` cannot resolve.
+const effectiveDictionary = await import('./effective-dictionary.js');
+mock.module('$lib/operations/effective-dictionary', () => effectiveDictionary);
+
 let seen: { systemPrompt: string; userPrompt: string } | null = null;
 mock.module('$lib/operations/completion', () => ({
 	completeWithGlobalDefault: (
@@ -55,6 +59,7 @@ type TironianApp = import('$lib/app/app').TironianApp;
 const GLOBAL_DIRECTIVE = 'Fix grammar and punctuation. Keep my wording.';
 
 const app = {
+	learnedTerms: { activeTerms: [] },
 	settings: {
 		get: (key: string) => {
 			if (key === 'polishEnabled') return true;
