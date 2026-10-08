@@ -18,15 +18,11 @@ import {
 } from '$lib/constants/languages';
 import { logAnalyticsEvent } from '$lib/operations/analytics';
 import {
-	buildTranscriptionPrompt,
-	recognizerPromptCharBudget,
-	recognizerTakesPrecedingText,
-} from '$lib/operations/build-transcription-prompt';
-import {
 	type CursorContext,
 	quotesCursorContext,
 } from '$lib/operations/cursor-context-core';
 import { effectiveDictionary } from '$lib/operations/effective-dictionary';
+import { composeRecognizerPrompt } from '$lib/operations/recognizer-prompt';
 import {
 	type TranscriptionDeadline,
 	transcriptionTimedOut,
@@ -492,14 +488,13 @@ function recognizerPrompt(
 	/** The text around the cursor; only `before` is used, and only where the route takes it. */
 	cursorContext: CursorContext | null,
 ): string {
-	const { prompt, dropped } = buildTranscriptionPrompt(
-		app.settings.get('transcriptionPrompt'),
-		effectiveDictionary(app),
-		recognizerPromptCharBudget(service, model),
-		recognizerTakesPrecedingText(service)
-			? (cursorContext?.before ?? null)
-			: null,
-	);
+	const { prompt, dropped } = composeRecognizerPrompt({
+		userPrompt: app.settings.get('transcriptionPrompt'),
+		dictionary: effectiveDictionary(app),
+		service,
+		model,
+		cursorContext,
+	});
 	if (dropped.length > 0) {
 		// The count is the whole answer. A term is the person's vocabulary, and a
 		// learned term must never reach a log line (ADR-0271), so none is named.
