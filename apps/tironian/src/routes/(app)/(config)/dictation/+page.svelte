@@ -7,6 +7,7 @@
 	import { Link } from '@tironian/ui/link';
 	import * as SectionHeader from '@tironian/ui/section-header';
 	import { Textarea } from '@tironian/ui/textarea';
+	import CheckIcon from '@lucide/svelte/icons/check';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -17,6 +18,8 @@
 		buildTranscriptionPrompt,
 		recognizerPromptCharBudget,
 	} from '$lib/operations/build-transcription-prompt';
+	import { composeGlossary } from '$lib/operations/effective-dictionary';
+	import { LIMITS } from '$lib/operations/learn-corrections/rules';
 	import { polishDestination, polishStatus } from '$lib/operations/run-polish';
 	import { PROVIDERS } from '$lib/services/transcription/providers';
 	import { localRoute } from '$lib/state/local-route.svelte';
@@ -52,10 +55,11 @@
 						: null,
 				),
 	);
+	// What the recognizer actually receives: the Dictionary, then active learned terms.
 	const unreached = $derived(
 		buildTranscriptionPrompt(
 			app.settings.get('transcriptionPrompt'),
-			dictionary,
+			composeGlossary(dictionary, app.learnedTerms.activeTerms),
 			promptBudget,
 		).dropped,
 	);
@@ -70,6 +74,10 @@
 	// pipeline ships raw.
 	const polish = $derived(polishStatus(app));
 	const destination = $derived(polishDestination(app));
+
+	const learned = $derived(app.learnedTerms.active);
+	const suggested = $derived(app.learnedTerms.pending);
+	const atCap = $derived(app.learnedTerms.rowCount >= LIMITS.maxLearnedRows);
 
 	let newTerm = $state('');
 
@@ -250,32 +258,89 @@
 							</li>
 						{/each}
 					</ul>
-					{#if unreached.length > 0}
-						<div
-							class="border-amber-500/30 bg-amber-500/10 text-foreground flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-sm"
-						>
-							<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-amber-500" />
-							<p>
-								{m.dictation_everything_from()} <span class="font-medium">{unreached[0]}</span>
-								onward ({unreached.length}
-								{unreached.length === 1 ? 'term' : 'terms'}) does not reach the
-								transcription model: it accepts only a short prompt, and your
-								list is longer than that. Polish and Recipes still use every
-								term.
-								{#if systemPrompt}
-									Your <Link href={dictationPath('/settings/processing')}
-										>{m.dictation_transcription_system_prompt()}</Link
-									> is sent first and takes part of the same room, so remove terms
-									above the cut-off, or shorten that prompt, to make room.
-								{:else}
-									Remove terms above the cut-off to make room.
-								{/if}
-							</p>
-						</div>
-					{/if}
-				{:else}
+				{:else if learned.length === 0 && suggested.length === 0}
 					<Field.Description>
 						{m.dictation_no_terms_yet_add_the_names_and_jargon()}
+					</Field.Description>
+				{/if}
+				{#if unreached.length > 0}
+					<div
+						class="border-amber-500/30 bg-amber-500/10 text-foreground flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-sm"
+					>
+						<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-amber-500" />
+						<p>
+							{m.dictation_everything_from()} <span class="font-medium">{unreached[0]}</span>
+							onward ({unreached.length}
+							{unreached.length === 1 ? 'term' : 'terms'}) does not reach the
+							transcription model: it accepts only a short prompt, and your
+							list is longer than that. Polish and Recipes still use every
+							term.
+							{#if systemPrompt}
+								Your <Link href={dictationPath('/settings/processing')}
+									>{m.dictation_transcription_system_prompt()}</Link
+								> is sent first and takes part of the same room, so remove terms
+								above the cut-off, or shorten that prompt, to make room.
+							{:else}
+								Remove terms above the cut-off to make room.
+							{/if}
+						</p>
+					</div>
+				{/if}
+				{#if suggested.length > 0}
+					<p class="font-mono text-[10px] tracking-[0.12em] text-muted-foreground uppercase">
+						{m.dictation_suggested()}
+					</p>
+					<Field.Description>{m.dictation_suggested_description()}</Field.Description>
+					<ul class="flex flex-wrap gap-2">
+						{#each suggested as row (row.id)}
+							<li class="flex items-center gap-1 rounded-md border border-dashed py-1 pr-1 pl-3 text-sm">
+								<span>{row.term}</span>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-5"
+									aria-label={m.dictation_accept_term({ term: row.term })}
+									onclick={() => app.learnedTerms.activate(row.id)}
+								>
+									<CheckIcon class="size-3.5" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-5"
+									aria-label={m.dictation_forget_term({ term: row.term })}
+									onclick={() => void app.learnedTerms.forget(row.id)}
+								>
+									<XIcon class="size-3.5" />
+								</Button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if learned.length > 0}
+					<p class="font-mono text-[10px] tracking-[0.12em] text-muted-foreground uppercase">
+						{m.dictation_learned()}
+					</p>
+					<ul class="flex flex-wrap gap-2">
+						{#each learned as row (row.id)}
+							<li class="bg-muted/40 flex items-center gap-1 rounded-md border border-dashed py-1 pr-1 pl-3 text-sm">
+								<span>{row.term}</span>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-5"
+									aria-label={m.dictation_forget_term({ term: row.term })}
+									onclick={() => void app.learnedTerms.forget(row.id)}
+								>
+									<XIcon class="size-3.5" />
+								</Button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if atCap}
+					<Field.Description>
+						{m.dictation_learned_cap({ limit: LIMITS.maxLearnedRows })}
 					</Field.Description>
 				{/if}
 			</Field.Group>
