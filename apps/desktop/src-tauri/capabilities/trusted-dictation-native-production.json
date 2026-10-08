@@ -52,6 +52,7 @@
 		"allow-get-foreground-context",
 		"allow-read-focused-text",
 		"allow-end-field-observation",
+		"allow-read-context-at-capture",
 		"allow-replace-global-shortcuts",
 		"allow-is-autostart-enabled",
 		"allow-set-autostart-enabled",
