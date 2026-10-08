@@ -104,11 +104,20 @@ export function defaultGlobalBindings(platform: GlobalBindingPlatform) {
 		toggleVadRecording: null,
 		openRecipePicker: null,
 		runRecipeOnClipboard: null,
-		// Unbound: every obvious chord (Ctrl/Cmd+Shift+V, Ctrl+Alt+V) already
-		// means "paste plain" or "paste special" somewhere, and a global default
-		// takes it from every app. Opt-in, like the recipe gestures.
-		pasteLastDictation: null,
-		copyLastDictation: null,
+		// Windows ships Alt+Shift+Z and Alt+Shift+X: a pair of neighbouring keys
+		// that browsers, terminals and the system leave free, with no Ctrl+Alt
+		// (AltGr on Italian and German layouts). The cost is Word's rarely used
+		// Alt+Shift+X (mark index entry). The obvious Ctrl/Cmd+Shift+V and
+		// Ctrl+Alt+V already mean "paste plain" or "paste special" elsewhere.
+		// Elsewhere unbound until a pair is tested there.
+		pasteLastDictation:
+			platform === 'windows'
+				? { modifiers: ['alt', 'shift'], keys: ['keyZ'] }
+				: null,
+		copyLastDictation:
+			platform === 'windows'
+				? { modifiers: ['alt', 'shift'], keys: ['keyX'] }
+				: null,
 		// Focused-reach command (ADR-0052): its reach ceiling clamps any key to the
 		// in-app store, so the router never writes this global slot. It stays here
 		// only so the system backend's all-commands sync keeps one entry per
