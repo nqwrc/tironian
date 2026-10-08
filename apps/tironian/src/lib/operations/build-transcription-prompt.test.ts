@@ -182,13 +182,12 @@ describe('recognizerTakesPrecedingText', () => {
 });
 
 describe('buildTranscriptionPrompt, text before the cursor', () => {
-	const italian =
-		"Ho sentito l'avvocato Pagnoncelli ieri sera, e mi ha detto che la perizia ";
+	const accented = 'Zorv blenta wuxo, perché la quenta è già prulla da ';
 
 	test('alone, it is the prompt', () => {
 		expect(
-			buildTranscriptionPrompt('', null, WHISPER_PROMPT_CHAR_BUDGET, italian),
-		).toEqual({ prompt: italian.trim(), dropped: [] });
+			buildTranscriptionPrompt('', null, WHISPER_PROMPT_CHAR_BUDGET, accented),
+		).toEqual({ prompt: accented.trim(), dropped: [] });
 	});
 
 	test('it follows the user prompt and the Dictionary on its own line', () => {
@@ -197,11 +196,11 @@ describe('buildTranscriptionPrompt, text before the cursor', () => {
 				'Italian business email.',
 				['Kubernetes', 'Jira'],
 				WHISPER_PROMPT_CHAR_BUDGET,
-				'Thanks for the notes on the migration. ',
+				'Plonk the zibbo flarn. ',
 			),
 		).toEqual({
 			prompt:
-				'Italian business email. Kubernetes, Jira\nThanks for the notes on the migration.',
+				'Italian business email. Kubernetes, Jira\nPlonk the zibbo flarn.',
 			dropped: [],
 		});
 	});
@@ -214,13 +213,14 @@ describe('buildTranscriptionPrompt, text before the cursor', () => {
 			WHISPER_PROMPT_CHAR_BUDGET,
 		);
 		expect(
-			buildTranscriptionPrompt('', terms, WHISPER_PROMPT_CHAR_BUDGET, italian),
+			buildTranscriptionPrompt('', terms, WHISPER_PROMPT_CHAR_BUDGET, accented),
 		).toEqual(without);
 	});
 
 	test('it fills what the budget leaves, from a whole word to the cursor', () => {
 		const term = 'k'.repeat(600);
-		const text = `Ciao Giulia, ti confermo che la riunione con l'avvocato Pagnoncelli è spostata a giovedì alle dieci, `;
+		const text =
+			'Zorv blenta wuxo, perché la quenta è già prulla da jarmex e la flonda vrelta quasi ogni giorno, ';
 		const { prompt, dropped } = buildTranscriptionPrompt(
 			'',
 			[term],
@@ -242,11 +242,60 @@ describe('buildTranscriptionPrompt, text before the cursor', () => {
 			'',
 			['Kubernetes'],
 			null,
-			'parola '.repeat(200),
+			'blorp '.repeat(200),
 		);
 		const tail = prompt.slice('Kubernetes\n'.length);
 		expect(tail.length).toBeLessThanOrEqual(PRECEDING_TEXT_MAX_CHARS);
-		expect(tail.startsWith('parola')).toBe(true);
+		expect(tail.startsWith('blorp')).toBe(true);
+	});
+
+	/** The budget's own estimate of a prompt: ASCII at 3 to a token, the rest at 1. */
+	function estimatedTokens(text: string): number {
+		let ascii = 0;
+		let other = 0;
+		for (const char of text) {
+			if (char.charCodeAt(0) < 0x80) ascii += 1;
+			else other += 1;
+		}
+		return ascii / 3 + other;
+	}
+
+	test.each([
+		['Russian', 'Это вымышленный текст про зорв блента вуксо, '.repeat(12)],
+		['Chinese', '这是虚构的文字关于佐尔夫布伦塔乌克索，'.repeat(20)],
+	])('%s text before the cursor cannot push the Dictionary out of the window', (_name, text) => {
+		const terms = ['Kubernetes', 'Jira'];
+		const without = buildTranscriptionPrompt(
+			'Spell names carefully.',
+			terms,
+			WHISPER_PROMPT_CHAR_BUDGET,
+		);
+		const { prompt, dropped } = buildTranscriptionPrompt(
+			'Spell names carefully.',
+			terms,
+			WHISPER_PROMPT_CHAR_BUDGET,
+			text,
+		);
+		expect(dropped).toEqual([]);
+		expect(
+			prompt.startsWith(`${without.prompt}
+`),
+		).toBe(true);
+		const tail = prompt.slice(without.prompt.length + 1);
+		expect(tail.length).toBeGreaterThan(0);
+		expect(text.trim().endsWith(tail)).toBe(true);
+		expect(estimatedTokens(prompt)).toBeLessThanOrEqual(224);
+	});
+
+	test('an ASCII slice is still measured in characters, not tokens', () => {
+		const { prompt } = buildTranscriptionPrompt(
+			'',
+			null,
+			WHISPER_PROMPT_CHAR_BUDGET,
+			'blorp '.repeat(200),
+		);
+		expect(prompt.length).toBeGreaterThan(300);
+		expect(prompt.length).toBeLessThanOrEqual(PRECEDING_TEXT_MAX_CHARS);
 	});
 
 	test('no text, or only whitespace, changes nothing', () => {

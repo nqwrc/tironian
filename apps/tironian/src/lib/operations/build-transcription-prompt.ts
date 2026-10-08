@@ -215,22 +215,44 @@ function appendPrecedingText(
 	const text = precedingText?.trim() ?? '';
 	if (text === '') return prompt;
 	const separator = prompt === '' ? '' : PRECEDING_TEXT_SEPARATOR;
-	const room = Math.min(
-		PRECEDING_TEXT_MAX_CHARS,
+	const room =
 		charBudget === null
 			? Number.POSITIVE_INFINITY
-			: charBudget - prompt.length - separator.length,
-	);
-	if (room < PRECEDING_TEXT_MIN_CHARS) return prompt;
+			: charBudget - prompt.length - separator.length;
+	if (Math.min(PRECEDING_TEXT_MAX_CHARS, room) < PRECEDING_TEXT_MIN_CHARS) {
+		return prompt;
+	}
 	const tail = wholeWordTail(text, room);
 	return tail === '' ? prompt : `${prompt}${separator}${tail}`;
 }
 
-/** The last `room` characters, starting at a whole word when one is near. */
+/**
+ * What one UTF-16 unit of the text before the cursor costs against the
+ * budget, which counts characters at `CONSERVATIVE_CHARS_PER_TOKEN` to a
+ * token. ASCII costs one character. Anything else costs a whole token, so a
+ * Russian or Chinese slice cannot take more than its share of the 224 tokens
+ * and push the user prompt and the Dictionary, which lead the string, out of
+ * Whisper's window.
+ */
+function budgetCost(unit: number): number {
+	return unit < 0x80 ? 1 : CONSERVATIVE_CHARS_PER_TOKEN;
+}
+
+/**
+ * The end of `text` that costs at most `room` of budget and runs to at most
+ * `PRECEDING_TEXT_MAX_CHARS` characters, starting at a whole word when one is
+ * near.
+ */
 function wholeWordTail(text: string, room: number): string {
-	if (text.length <= room) return text;
-	let start = text.length - room;
-	if (!/\s/.test(text.charAt(start - 1))) {
+	let start = text.length;
+	let cost = 0;
+	while (start > 0 && text.length - start < PRECEDING_TEXT_MAX_CHARS) {
+		const next = cost + budgetCost(text.charCodeAt(start - 1));
+		if (next > room) break;
+		cost = next;
+		start -= 1;
+	}
+	if (start > 0 && !/\s/.test(text.charAt(start - 1))) {
 		const space = text
 			.slice(start, start + CURSOR_CONTEXT_WORD_SLACK)
 			.search(/\s/);
