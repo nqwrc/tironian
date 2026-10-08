@@ -332,6 +332,90 @@ pub(crate) fn keep_anchors_now(generation: u64, anchors: Anchors) {
     keep_anchors(&mut target_slot(), generation, anchors);
 }
 
+/// A located span in UTF-16, before it is converted for IPC.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Span {
+    pub before: Vec<u16>,
+    pub region: Vec<u16>,
+    pub after: Vec<u16>,
+}
+
+impl Span {
+    pub(crate) fn into_outcome(self) -> FieldReadOutcome {
+        FieldReadOutcome::Span {
+            before: String::from_utf16_lossy(&self.before),
+            region: String::from_utf16_lossy(&self.region),
+            after: String::from_utf16_lossy(&self.after),
+        }
+    }
+
+    pub(crate) fn anchors(&self) -> Anchors {
+        Anchors {
+            before: self.before.clone(),
+            after: self.after.clone(),
+        }
+    }
+}
+
+fn find_from(haystack: &[u16], needle: &[u16], from: usize) -> Option<usize> {
+    if needle.is_empty() || from > haystack.len() {
+        return None;
+    }
+    haystack[from..]
+        .windows(needle.len())
+        .position(|window| window == needle)
+        .map(|at| at + from)
+}
+
+/// The start of the only match; `None` for none or several. Overlapping
+/// matches count.
+fn find_once(haystack: &[u16], needle: &[u16]) -> Option<usize> {
+    let at = find_from(haystack, needle, 0)?;
+    find_from(haystack, needle, at + 1).is_none().then_some(at)
+}
+
+/// The first read: the delivered text must occur exactly once. The reference
+/// search, used whenever `FindText` cannot answer.
+pub(crate) fn locate_delivered(field: &[u16], delivered: &[u16]) -> Result<Span, FieldRefusal> {
+    let field = normalize_newlines(field);
+    let at = find_once(&field, delivered).ok_or(FieldRefusal::NotFound)?;
+    let end = at + delivered.len();
+    Ok(Span {
+        before: field[at.saturating_sub(ANCHOR_UNITS)..at].to_vec(),
+        region: field[at..end].to_vec(),
+        after: field[end..(end + ANCHOR_UNITS).min(field.len())].to_vec(),
+    })
+}
+
+/// Later reads: what sits between the anchors now.
+pub(crate) fn locate_region(
+    field: &[u16],
+    anchors: &Anchors,
+    delivered_units: usize,
+) -> Result<Span, FieldRefusal> {
+    let field = normalize_newlines(field);
+    let before = normalize_newlines(&anchors.before);
+    let after = normalize_newlines(&anchors.after);
+    let start = if before.is_empty() {
+        0
+    } else {
+        find_once(&field, &before).ok_or(FieldRefusal::NotFound)? + before.len()
+    };
+    let end = if after.is_empty() {
+        field.len()
+    } else {
+        find_from(&field, &after, start).ok_or(FieldRefusal::NotFound)?
+    };
+    if end - start > region_cap(delivered_units, anchors) {
+        return Err(FieldRefusal::TooLong);
+    }
+    Ok(Span {
+        before,
+        region: field[start..end].to_vec(),
+        after,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -608,6 +692,163 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&FieldReadOutcome::refused(FieldRefusal::NoTarget)).unwrap(),
             r#"{"kind":"refused","reason":"noTarget"}"#
+        );
+    }
+
+    const DELIVERED: &str = "Ho aggiornato il ticket su gira.";
+
+    #[test]
+    fn anchors_keep_32_units_each_side_and_nothing_else() {
+        let field = format!("{} {DELIVERED} {}", "x".repeat(50), "y".repeat(50));
+        let span = locate_delivered(&u(&field), &u(DELIVERED)).unwrap();
+        assert_eq!(span.before, u(&format!("{} ", "x".repeat(31))));
+        assert_eq!(span.region, u(DELIVERED));
+        assert_eq!(span.after, u(&format!(" {}", "y".repeat(31))));
+    }
+
+    #[test]
+    fn a_paste_at_the_end_of_the_field_has_an_empty_after_anchor() {
+        let span = locate_delivered(&u(&format!("Ciao, {DELIVERED}")), &u(DELIVERED)).unwrap();
+        assert_eq!(span.before, u("Ciao, "));
+        assert!(span.after.is_empty());
+    }
+
+    #[test]
+    fn two_copies_of_the_paste_are_not_found() {
+        let field = format!("{DELIVERED} {DELIVERED}");
+        assert_eq!(
+            locate_delivered(&u(&field), &u(DELIVERED)),
+            Err(FieldRefusal::NotFound)
+        );
+    }
+
+    #[test]
+    fn crlf_in_the_field_matches_lf_in_the_delivery() {
+        let span = locate_delivered(
+            &u("Dear Ann,\r\nsee you at nine\r\nBye"),
+            &u("see you at nine"),
+        )
+        .unwrap();
+        assert_eq!(span.before, u("Dear Ann,\n"));
+        assert_eq!(span.after, u("\nBye"));
+    }
+
+    #[test]
+    fn the_region_is_what_sits_between_the_anchors_now() {
+        let anchors = Anchors {
+            before: u("Ciao, "),
+            after: u(" A dopo."),
+        };
+        let field = u("Ciao, Ho aggiornato il ticket su Jira. A dopo.");
+        let span = locate_region(&field, &anchors, u(DELIVERED).len()).unwrap();
+        assert_eq!(span.region, u("Ho aggiornato il ticket su Jira."));
+        assert_eq!(span.before, anchors.before);
+        assert_eq!(span.after, anchors.after);
+    }
+
+    #[test]
+    fn an_empty_after_anchor_runs_to_the_end_of_the_field() {
+        let anchors = Anchors {
+            before: u("Ciao, "),
+            after: Vec::new(),
+        };
+        let span =
+            locate_region(&u("Ciao, Ho aggiornato il ticket su Jira."), &anchors, 32).unwrap();
+        assert_eq!(span.region, u("Ho aggiornato il ticket su Jira."));
+    }
+
+    #[test]
+    fn a_lost_or_repeated_before_anchor_is_not_found() {
+        let anchors = Anchors {
+            before: u("Ciao, "),
+            after: Vec::new(),
+        };
+        assert_eq!(
+            locate_region(&u("Hello there"), &anchors, 10),
+            Err(FieldRefusal::NotFound)
+        );
+        assert_eq!(
+            locate_region(&u("Ciao, a. Ciao, b."), &anchors, 10),
+            Err(FieldRefusal::NotFound)
+        );
+    }
+
+    #[test]
+    fn between_two_anchors_the_region_may_reach_twice_the_paste_plus_200() {
+        let anchors = Anchors {
+            before: u("A "),
+            after: u(" Z"),
+        };
+        assert_eq!(region_cap(10, &anchors), 220);
+        let at_cap = format!("A {} Z", "m".repeat(220));
+        assert!(locate_region(&u(&at_cap), &anchors, 10).is_ok());
+        let over = format!("A {} Z", "m".repeat(221));
+        assert_eq!(
+            locate_region(&u(&over), &anchors, 10),
+            Err(FieldRefusal::TooLong)
+        );
+    }
+
+    #[test]
+    fn next_to_an_empty_anchor_the_region_may_grow_by_one_anchor_only() {
+        let at_end = Anchors {
+            before: u("A "),
+            after: Vec::new(),
+        };
+        assert_eq!(region_cap(10, &at_end), 10 + ANCHOR_UNITS);
+        let fits = format!("A {}", "z".repeat(10 + ANCHOR_UNITS));
+        assert!(locate_region(&u(&fits), &at_end, 10).is_ok());
+        let over = format!("A {}", "z".repeat(10 + ANCHOR_UNITS + 1));
+        assert_eq!(
+            locate_region(&u(&over), &at_end, 10),
+            Err(FieldRefusal::TooLong)
+        );
+        let at_start = Anchors {
+            before: Vec::new(),
+            after: u(" Z"),
+        };
+        assert_eq!(region_cap(10, &at_start), 10 + ANCHOR_UNITS);
+        let over = format!("{} Z", "z".repeat(10 + ANCHOR_UNITS + 1));
+        assert_eq!(
+            locate_region(&u(&over), &at_start, 10),
+            Err(FieldRefusal::TooLong)
+        );
+    }
+
+    #[test]
+    fn a_reply_typed_after_a_paste_at_the_end_never_crosses_ipc() {
+        // A chat box or an email body that held only the paste.
+        let alone = Anchors::default();
+        let delivered = u("Ci vediamo domani con Nicolas.").len();
+        let fixed = u("Ci vediamo domani con Nicola e");
+        assert_eq!(
+            locate_region(&fixed, &alone, delivered).unwrap().region,
+            fixed
+        );
+        let reply = format!(
+            "Ci vediamo domani con Nicola e {}",
+            "poi parliamo del progetto. ".repeat(8)
+        );
+        assert_eq!(
+            locate_region(&u(&reply), &alone, delivered),
+            Err(FieldRefusal::TooLong)
+        );
+    }
+
+    #[test]
+    fn a_span_becomes_three_strings() {
+        let span = Span {
+            before: u("a"),
+            region: u("b"),
+            after: u("c"),
+        };
+        assert_eq!(
+            span.into_outcome(),
+            FieldReadOutcome::Span {
+                before: "a".into(),
+                region: "b".into(),
+                after: "c".into()
+            }
         );
     }
 }
