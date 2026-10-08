@@ -57,7 +57,7 @@ test('the watcher sees a console line that carries the sentinel', async () => {
 test('no console output carries the slice on its way into either prompt', async () => {
 	seen.length = 0;
 	const field = {
-		before: `Ciao Giulia, ho parlato con ${SENTINEL} della perizia `,
+		before: `Zorv blenta, wuxo quenta ${SENTINEL} prulla `,
 		selection: SENTINEL,
 		after: ` e con ${SENTINEL}.`,
 	};
@@ -88,7 +88,7 @@ test('no console output carries the slice on its way into either prompt', async 
 			trusted: false,
 			cursorContext: context,
 		});
-		echoesCursorContext(`ho parlato con ${SENTINEL}`, '', context);
+		echoesCursorContext(`wuxo quenta ${SENTINEL}`, '', context);
 		await captureCursorContext(
 			{
 				windows: true,

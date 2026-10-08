@@ -361,9 +361,9 @@ test('an imported file is never observed or handed to the learner', async () => 
 });
 
 const FIELD = {
-	before: 'Ciao ZQXJ7731, ti confermo che ',
+	before: 'Zorv ZQXJ7731, blenta wuxo ',
 	selection: '',
-	after: ' a presto, ZQXJ7731.',
+	after: ' quenta prulla, ZQXJ7731.',
 };
 
 function dictate(
