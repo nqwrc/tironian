@@ -61,8 +61,10 @@ use delivery::{
     wait_for_modifiers_released, write_text,
 };
 
+mod cursor_context;
 mod field_text;
 mod foreground;
+use cursor_context::read_context_at_capture;
 use field_text::{end_field_observation, read_focused_text};
 use foreground::get_foreground_context;
 
@@ -329,6 +331,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             get_foreground_context,
             read_focused_text,
             end_field_observation,
+            read_context_at_capture,
             replace_global_shortcuts,
             is_autostart_enabled,
             set_autostart_enabled,
