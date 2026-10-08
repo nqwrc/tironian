@@ -9,7 +9,11 @@ import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
-import { correctionLearningModule } from './correction-learning.fake';
+import {
+	correctionLearningFake,
+	correctionLearningModule,
+	resetCorrectionLearningFake,
+} from './correction-learning.fake';
 import { expandSnippets } from './expand-snippets';
 import { matchCommand, splitTrailingEnter } from './match-command';
 
@@ -145,6 +149,9 @@ afterEach(() => {
 	playSoundIfEnabled.mockClear();
 	recordDelivery.mockClear();
 	dictationReset.mockClear();
+	resetCorrectionLearningFake();
+	correctionLearningFake.wantsToObserve.mockReset();
+	correctionLearningFake.wantsToObserve.mockImplementation(() => false);
 });
 
 test('a command runs instead of being delivered', async () => {
@@ -282,4 +289,51 @@ test('a closing "press enter" stays text where Enter cannot act', async () => {
 		pressEnter: false,
 		observeField: false,
 	});
+});
+
+test('a dictation the learner wants to watch is delivered observed and handed back to it', async () => {
+	correctionLearningFake.wantsToObserve.mockImplementation(() => true);
+	transcript = 'ordinary speech here';
+	await run();
+	expect(correctionLearningFake.wantsToObserve).toHaveBeenCalledWith(
+		app,
+		'ordinary speech here',
+	);
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'ordinary speech here',
+		source: 'recording',
+		pressEnter: false,
+		observeField: true,
+	});
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledTimes(1);
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledWith(app, {
+		deliveredText: 'ordinary speech here',
+		observed: true,
+		outcome: {
+			reach: 'output',
+			sinkKind: 'cursor',
+			pressedEnter: false,
+		},
+	});
+});
+
+test('a dictation the learner declines is handed back as not observed', async () => {
+	transcript = 'ordinary speech here';
+	await run();
+	expect(correctionLearningFake.afterDelivery).toHaveBeenCalledWith(
+		app,
+		expect.objectContaining({ observed: false }),
+	);
+});
+
+test('an imported file is never observed or handed to the learner', async () => {
+	correctionLearningFake.wantsToObserve.mockImplementation(() => true);
+	transcript = 'ordinary speech here';
+	await run('import');
+	expect(correctionLearningFake.wantsToObserve).not.toHaveBeenCalled();
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(
+		app,
+		expect.objectContaining({ observeField: false }),
+	);
+	expect(correctionLearningFake.afterDelivery).not.toHaveBeenCalled();
 });
