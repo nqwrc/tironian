@@ -20,7 +20,12 @@ import { logAnalyticsEvent } from '$lib/operations/analytics';
 import {
 	buildTranscriptionPrompt,
 	recognizerPromptCharBudget,
+	recognizerTakesPrecedingText,
 } from '$lib/operations/build-transcription-prompt';
+import {
+	type CursorContext,
+	quotesCursorContext,
+} from '$lib/operations/cursor-context-core';
 import { effectiveDictionary } from '$lib/operations/effective-dictionary';
 import {
 	type TranscriptionDeadline,
@@ -75,6 +80,12 @@ const TranscriptionOperationError = defineErrors({
 	 *  arriving as a provider's 401 after the audio has already been sent. */
 	TranscriptionNotSetUp: ({ issue }: { issue: string }) => ({
 		message: issue,
+	}),
+	/** Fixed copy: the notice, the log and analytics must never carry field
+	 *  text (ADR-0272), and a recognizer error that quoted the prompt would. */
+	RecognizerErrorQuotedField: () => ({
+		message:
+			'The transcription provider returned an error that quoted the text around your cursor, so it is not shown.',
 	}),
 });
 
@@ -256,7 +267,17 @@ async function loadForUpload(
 export async function transcribeAudio(
 	app: TironianApp,
 	audioBlobId: BlobId,
-	{ deadline }: { deadline: TranscriptionDeadline },
+	{
+		deadline,
+		cursorContext = null,
+	}: {
+		deadline: TranscriptionDeadline;
+		/**
+		 * The text around the cursor at capture start (ADR-0272). Only a live
+		 * dictation has one; a retry or an import passes none.
+		 */
+		cursorContext?: CursorContext | null;
+	},
 ): Promise<Result<string, TranscriptionError>> {
 	const selectedService = app.settings.get('transcriptionService');
 
@@ -300,7 +321,7 @@ export async function transcribeAudio(
 	// run blocks on it and expires too until the app restarts. That wedge is
 	// there with or without this deadline. What changes is that it is reported
 	// rather than silent.
-	const transcriptionResult = await withDeadline(
+	const outcome = await withDeadline(
 		transcriptionTimeoutMs(deadline),
 		() => transcriptionTimedOut(deadline),
 		async () => {
@@ -340,10 +361,19 @@ export async function transcribeAudio(
 			// `UploadProviderId` in the other, so each helper receives an
 			// already-narrowed id and neither re-checks.
 			return isOnDeviceProviderId(selectedService)
-				? transcribeOnDevice(app, audioBlobId, selectedService)
-				: transcribeViaUpload(app, audioBlobId, selectedService);
+				? transcribeOnDevice(app, audioBlobId, selectedService, cursorContext)
+				: transcribeViaUpload(app, audioBlobId, selectedService, cursorContext);
 		},
 	);
+
+	// A recognizer error that quotes the text around the cursor is replaced
+	// before it reaches the analytics branch below, the failure notice or a log
+	// line (ADR-0272).
+	const transcriptionResult =
+		outcome.error !== null &&
+		quotesCursorContext(outcome.error.message, cursorContext)
+			? TranscriptionOperationError.RecognizerErrorQuotedField()
+			: outcome;
 
 	const duration = Date.now() - startTime;
 	if (transcriptionResult.error) {
@@ -402,12 +432,15 @@ export async function transcribeAndPersist(
 	app: TironianApp,
 	recordingId: RecordingId,
 	audioBlobId: BlobId,
-	{ deadline }: { deadline: TranscriptionDeadline },
+	{
+		deadline,
+		cursorContext = null,
+	}: { deadline: TranscriptionDeadline; cursorContext?: CursorContext | null },
 ): Promise<Result<TranscriptionSuccess, TranscriptionError>> {
 	return recordTranscriptionOutcome(
 		app,
 		recordingId,
-		await transcribeAudio(app, audioBlobId, { deadline }),
+		await transcribeAudio(app, audioBlobId, { deadline, cursorContext }),
 	);
 }
 
@@ -456,11 +489,16 @@ function recognizerPrompt(
 	service: TranscriptionServiceId,
 	/** The model about to run, where the caller has resolved one. */
 	model: string | null,
+	/** The text around the cursor; only `before` is used, and only where the route takes it. */
+	cursorContext: CursorContext | null,
 ): string {
 	const { prompt, dropped } = buildTranscriptionPrompt(
 		app.settings.get('transcriptionPrompt'),
 		effectiveDictionary(app),
 		recognizerPromptCharBudget(service, model),
+		recognizerTakesPrecedingText(service)
+			? (cursorContext?.before ?? null)
+			: null,
 	);
 	if (dropped.length > 0) {
 		// The count is the whole answer. A term is the person's vocabulary, and a
@@ -488,6 +526,7 @@ async function transcribeOnDevice(
 	app: TironianApp,
 	audioBlobId: BlobId,
 	selectedService: OnDeviceProviderId,
+	cursorContext: CursorContext | null,
 ): Promise<Result<string, TranscriptionError>> {
 	if (!tauri) {
 		return TranscriptionOperationError.LocalTranscriptionUnavailableOnWeb();
@@ -501,7 +540,7 @@ async function transcribeOnDevice(
 	// none is passed: the budget question is answered by the route, and a local
 	// model that takes no prompt has it stripped by the host either way.
 	const language = app.settings.get('transcriptionLanguage');
-	const prompt = recognizerPrompt(app, selectedService, null);
+	const prompt = recognizerPrompt(app, selectedService, null, cursorContext);
 	const { data: outcome, error } =
 		await tauri.transcription.transcribeRecording(audioBlobId, {
 			language: language === 'auto' ? undefined : language,
@@ -530,6 +569,7 @@ async function transcribeViaUpload(
 	app: TironianApp,
 	audioBlobId: BlobId,
 	selectedService: UploadProviderId,
+	cursorContext: CursorContext | null,
 ): Promise<Result<string, TranscriptionError>> {
 	const { data: audio, error: loadError } = await loadForUpload(
 		app,
@@ -558,7 +598,12 @@ async function transcribeViaUpload(
 	switch (entry.kind) {
 		case 'wire': {
 			const model = entry.model();
-			const prompt = recognizerPrompt(app, selectedService, model);
+			const prompt = recognizerPrompt(
+				app,
+				selectedService,
+				model,
+				cursorContext,
+			);
 			return await transcribe(audio, entry.resolve(), {
 				model,
 				language: spokenLanguage === 'auto' ? undefined : spokenLanguage,
@@ -567,7 +612,7 @@ async function transcribeViaUpload(
 		}
 		case 'bespoke':
 			return entry.transcribe(audio, {
-				prompt: recognizerPrompt(app, selectedService, null),
+				prompt: recognizerPrompt(app, selectedService, null, cursorContext),
 				spokenLanguage,
 			});
 	}

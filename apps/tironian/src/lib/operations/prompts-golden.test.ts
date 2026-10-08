@@ -58,5 +58,12 @@ test('recognizer prompts', () => {
 	const prompts = RECOGNIZER_CASES.map(([userPrompt, dictionary, budget]) =>
 		buildTranscriptionPrompt(userPrompt, dictionary, budget),
 	);
+	for (const nothing of [null, '', '  \n ']) {
+		expect(
+			RECOGNIZER_CASES.map(([userPrompt, dictionary, budget]) =>
+				buildTranscriptionPrompt(userPrompt, dictionary, budget, nothing),
+			),
+		).toEqual(prompts);
+	}
 	expect(prompts).toMatchSnapshot();
 });

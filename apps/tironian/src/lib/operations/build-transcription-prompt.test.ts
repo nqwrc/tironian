@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
 	buildTranscriptionPrompt,
+	PRECEDING_TEXT_MAX_CHARS,
+	PRECEDING_TEXT_MIN_CHARS,
 	recognizerPromptCharBudget,
+	recognizerTakesPrecedingText,
 	WHISPER_PROMPT_CHAR_BUDGET,
 } from './build-transcription-prompt';
 
@@ -161,5 +164,107 @@ describe('buildTranscriptionPrompt', () => {
 		expect(result.prompt).toBe(`Hi. ${first}`);
 		expect(result.dropped).toEqual([second, 'Ada']);
 		expect(result.prompt).not.toContain('Ada');
+	});
+});
+
+describe('recognizerTakesPrecedingText', () => {
+	test('Whisper-style routes read the prompt as the transcript so far', () => {
+		for (const service of ['local', 'Groq', 'speaches', 'OpenAI'] as const) {
+			expect(recognizerTakesPrecedingText(service)).toBe(true);
+		}
+	});
+
+	test('keyterm routes and routes that drop the prompt never get it', () => {
+		for (const service of ['Deepgram', 'ElevenLabs', 'Mistral'] as const) {
+			expect(recognizerTakesPrecedingText(service)).toBe(false);
+		}
+	});
+});
+
+describe('buildTranscriptionPrompt, text before the cursor', () => {
+	const italian =
+		"Ho sentito l'avvocato Pagnoncelli ieri sera, e mi ha detto che la perizia ";
+
+	test('alone, it is the prompt', () => {
+		expect(
+			buildTranscriptionPrompt('', null, WHISPER_PROMPT_CHAR_BUDGET, italian),
+		).toEqual({ prompt: italian.trim(), dropped: [] });
+	});
+
+	test('it follows the user prompt and the Dictionary on its own line', () => {
+		expect(
+			buildTranscriptionPrompt(
+				'Italian business email.',
+				['Kubernetes', 'Jira'],
+				WHISPER_PROMPT_CHAR_BUDGET,
+				'Thanks for the notes on the migration. ',
+			),
+		).toEqual({
+			prompt:
+				'Italian business email. Kubernetes, Jira\nThanks for the notes on the migration.',
+			dropped: [],
+		});
+	});
+
+	test('it never displaces a Dictionary term', () => {
+		const terms = ['a'.repeat(660), 'Jira'];
+		const without = buildTranscriptionPrompt(
+			'',
+			terms,
+			WHISPER_PROMPT_CHAR_BUDGET,
+		);
+		expect(
+			buildTranscriptionPrompt('', terms, WHISPER_PROMPT_CHAR_BUDGET, italian),
+		).toEqual(without);
+	});
+
+	test('it fills what the budget leaves, from a whole word to the cursor', () => {
+		const term = 'k'.repeat(600);
+		const text = `Ciao Giulia, ti confermo che la riunione con l'avvocato Pagnoncelli è spostata a giovedì alle dieci, `;
+		const { prompt, dropped } = buildTranscriptionPrompt(
+			'',
+			[term],
+			WHISPER_PROMPT_CHAR_BUDGET,
+			text,
+		);
+		expect(dropped).toEqual([]);
+		expect(prompt.length).toBeLessThanOrEqual(WHISPER_PROMPT_CHAR_BUDGET);
+		expect(prompt.startsWith(`${term}\n`)).toBe(true);
+		const tail = prompt.slice(term.length + 1);
+		expect(tail.length).toBeGreaterThanOrEqual(PRECEDING_TEXT_MIN_CHARS);
+		expect(text.trim().endsWith(tail)).toBe(true);
+		const cutAt = text.trim().length - tail.length;
+		expect(/\s/.test(text.trim().charAt(cutAt - 1))).toBe(true);
+	});
+
+	test('an unbounded route still takes at most 400 characters of it', () => {
+		const { prompt } = buildTranscriptionPrompt(
+			'',
+			['Kubernetes'],
+			null,
+			'parola '.repeat(200),
+		);
+		const tail = prompt.slice('Kubernetes\n'.length);
+		expect(tail.length).toBeLessThanOrEqual(PRECEDING_TEXT_MAX_CHARS);
+		expect(tail.startsWith('parola')).toBe(true);
+	});
+
+	test('no text, or only whitespace, changes nothing', () => {
+		for (const nothing of [null, '', '   \n']) {
+			expect(
+				buildTranscriptionPrompt(
+					'Meeting notes.',
+					['Kubernetes'],
+					WHISPER_PROMPT_CHAR_BUDGET,
+					nothing,
+				),
+			).toEqual(
+				buildTranscriptionPrompt(
+					'Meeting notes.',
+					['Kubernetes'],
+					WHISPER_PROMPT_CHAR_BUDGET,
+				),
+			);
+		}
 	});
 });

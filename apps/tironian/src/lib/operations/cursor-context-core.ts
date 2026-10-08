@@ -148,3 +148,15 @@ export function echoesCursorContext(
 	}
 	return false;
 }
+
+/**
+ * Whether an error message from a provider quotes the field: a run of eight
+ * words of it, whatever the speaker said. A message that does is replaced
+ * with fixed copy before it reaches a notice, a log line or analytics.
+ */
+export function quotesCursorContext(
+	message: string,
+	context: CursorContext | null,
+): boolean {
+	return context !== null && echoesCursorContext(message, '', context);
+}

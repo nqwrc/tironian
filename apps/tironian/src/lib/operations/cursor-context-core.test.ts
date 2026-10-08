@@ -11,6 +11,7 @@ import {
 	captureCursorContext,
 	clampCursorContext,
 	echoesCursorContext,
+	quotesCursorContext,
 } from './cursor-context-core';
 
 const ITALIAN: CursorContextOutcome = {
@@ -164,4 +165,20 @@ test('case and punctuation do not hide an Italian echo', () => {
 			field,
 		),
 	).toBe(true);
+});
+
+test('a provider error that quotes eight words of the field is caught', () => {
+	expect(
+		quotesCursorContext(
+			'Bad request: "send the rollout plan to Siobhan tomorrow, as promised."',
+			{
+				before:
+					'I will send the rollout plan to Siobhan tomorrow, as promised. ',
+				selection: '',
+				after: '',
+			},
+		),
+	).toBe(true);
+	expect(quotesCursorContext('Rate limited', ENGLISH_FIELD)).toBe(false);
+	expect(quotesCursorContext('Rate limited', null)).toBe(false);
 });
