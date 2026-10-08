@@ -23,6 +23,7 @@ export const PREFERENCE_CATEGORIES = [
 	'commandMode',
 	'dictionary',
 	'correctionLearning',
+	'cursorContext',
 	'shortcuts',
 	'analytics',
 ] as const;
@@ -39,6 +40,7 @@ export const PREFERENCE_CATEGORY_LABELS: Record<PreferenceCategory, string> = {
 	commandMode: 'Command Mode',
 	dictionary: 'Dictionary',
 	correctionLearning: 'Learning from corrections',
+	cursorContext: 'Text around the cursor',
 	shortcuts: 'Shortcuts',
 	analytics: 'Analytics',
 };
@@ -104,6 +106,12 @@ export const PREFERENCE_CATEGORY_KEYS: Record<
 	 * never turns field reading on (ADR-0271).
 	 */
 	correctionLearning: ['learnFromCorrectionsEnabled'],
+	/**
+	 * Its own category, apart from `correctionLearning`: that data stays on
+	 * the device, this data goes to providers, so consent to one is not
+	 * consent to the other (ADR-0272).
+	 */
+	cursorContext: ['cursorContextEnabled'],
 	shortcuts: [
 		'shortcutPushToTalkModifiers',
 		'shortcutPushToTalkKeys',

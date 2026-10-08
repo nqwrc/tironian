@@ -121,6 +121,22 @@ test('a file never checks the learning switch for the person', () => {
 	]);
 });
 
+test('a file never checks the text-around-the-cursor switch for the person', () => {
+	const file: SettingsBundleFile = {
+		version: 1,
+		exportedAt: 'now',
+		preferences: {
+			sounds: { soundManualStart: true },
+			cursorContext: { cursorContextEnabled: true },
+		},
+	};
+	const available = availableCategoriesIn(file);
+	// The file offers it, so it can still be checked by hand...
+	expect(available.preferences).toContain('cursorContext');
+	// ...but it starts unchecked.
+	expect([...defaultImportSelection(available)]).toEqual(['sounds']);
+});
+
 test('applies only checked-and-present categories, leaves the rest untouched', () => {
 	const app = makeApp();
 	const file: SettingsBundleFile = {

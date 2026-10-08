@@ -104,6 +104,9 @@ const APPLICATION_DEFAULTS: Partial<TironianSettingValues> = {
 	// default-on read would come before any consent moment. Windows only
 	// (ADR-0271); the switch lives under Settings, Privacy & Processing.
 	learnFromCorrectionsEnabled: false,
+	// Off for the same reason, and more: this text goes to the transcription
+	// and Polish providers, and Polish is online by default (ADR-0272).
+	cursorContextEnabled: false,
 	shortcutPushToTalkModifiers: null,
 	shortcutPushToTalkKeys: null,
 	shortcutToggleManualRecordingModifiers: null,
