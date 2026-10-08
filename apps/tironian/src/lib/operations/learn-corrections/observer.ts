@@ -33,8 +33,11 @@ export function shouldObserve(delivered: string): boolean {
 
 export type ObserverDeps = {
 	read(): Promise<FieldRead>;
-	/** Drops the host's paste target. */
-	end(): void;
+	/**
+	 * Drops the host's paste target with this generation, the last one a read
+	 * reported; `null` when no read has named it yet.
+	 */
+	end(generation: number | null): void;
 	schedule(ms: number, run: () => void): () => void;
 	enabled(): boolean;
 	hash(fold: string): Promise<string>;
@@ -44,6 +47,8 @@ export type ObserverDeps = {
 
 type Observation = {
 	delivered: string;
+	/** The host target this observation reads, once any read has named it. */
+	generation: number | null;
 	baselined: boolean;
 	lastKey: string | null;
 	busy: boolean;
@@ -63,8 +68,20 @@ export function createCorrectionObserver(deps: ObserverDeps) {
 
 	function close(): void {
 		if (current === null) return;
+		const { generation } = current;
 		drop();
-		deps.end();
+		deps.end(generation);
+	}
+
+	/**
+	 * Remembers which host target this observation reads. A read that names a
+	 * different one spent a newer paste's target, not ours: its span is not ours
+	 * either, and closing must end only our own.
+	 */
+	function ours(o: Observation, read: FieldRead): boolean {
+		if (read.generation === null) return true;
+		o.generation ??= read.generation;
+		return read.generation === o.generation;
 	}
 
 	/** Any failure means no learning (invariant 7). */
@@ -79,6 +96,7 @@ export function createCorrectionObserver(deps: ObserverDeps) {
 		if (!deps.enabled()) return close();
 		const read = await deps.read();
 		if (current !== o) return;
+		if (!ours(o, read)) return close();
 		if (read.kind === 'span') {
 			o.baselined = true;
 			return;
@@ -107,6 +125,7 @@ export function createCorrectionObserver(deps: ObserverDeps) {
 		const read = await deps.read();
 		o.busy = false;
 		if (current !== o) return;
+		if (!ours(o, read)) return close();
 		if (read.kind !== 'span') return close();
 		const extraction = extractCandidates(o.delivered, read.region, {
 			atFieldStart: read.before === '',
@@ -138,11 +157,12 @@ export function createCorrectionObserver(deps: ObserverDeps) {
 		open({ delivered }: { delivered: string }): void {
 			drop();
 			if (!deps.enabled() || !shouldObserve(delivered)) {
-				deps.end();
+				deps.end(null);
 				return;
 			}
 			const o: Observation = {
 				delivered,
+				generation: null,
 				baselined: false,
 				lastKey: null,
 				busy: false,

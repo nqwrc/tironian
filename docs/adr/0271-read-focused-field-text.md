@@ -50,8 +50,11 @@ claimed. This revision moves every rule into the host.
    `PasteTarget`: the element's UIA RuntimeId, its process id from
    `IUIAutomationElement::CurrentProcessId`, the delivered text, a deadline 90 s
    after the paste, and a budget of 6 reads. Every other `write_text`, every
-   synthetic Enter or backspace, and `end_field_observation` clears it. With no
-   live target the read refuses before any COM call.
+   synthetic Enter or backspace clears it, and so does `end_field_observation`
+   when given the target's generation. Every read result carries that
+   generation, and the frontend closes with the last one it saw, so an old
+   observation closing late cannot cancel the target the next dictation has
+   armed. With no live target the read refuses before any COM call.
 3. **The gate runs in the host, on the focused element and the windows that
    host it.** The app id and the UIPI reach check come from the focused
    element's process id, not from the foreground window, so one app's id can
@@ -94,7 +97,10 @@ claimed. This revision moves every rule into the host.
      touched that end of the field and the region runs to it, so the region is
      then capped at `delivered + 32`: a respelling and a word typed after it
      fit, a reply typed on after the paste does not. Anything longer is refused
-     (`tooLong`), never truncated.
+     (`tooLong`), never truncated. An anchor made only of line terminators
+     (`\r`, `\n`, `\r\n`, U+2029) counts as empty on both search paths: Word and
+     RichEdit end a document with a paragraph mark, and a paste at its visible
+     end would otherwise take the looser cap.
    - The webview never sends a search string, so it cannot steer the read
      anywhere but around Tironian's own output.
 5. **Two ways to search, one answer.** `IUIAutomationTextRange::FindText` is

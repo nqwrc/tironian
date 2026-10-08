@@ -62,7 +62,7 @@ function observerFor(app: TironianApp): CorrectionObserver {
 		boundTo = app;
 		observer = createCorrectionObserver({
 			read: () => readPastedField(services.context),
-			end: () => endFieldObservation(services.context),
+			end: (generation) => endFieldObservation(services.context, generation),
 			schedule: (ms, run) => {
 				const timer = setTimeout(run, ms);
 				return () => clearTimeout(timer);

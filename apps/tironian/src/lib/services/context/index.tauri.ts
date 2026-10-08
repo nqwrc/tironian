@@ -11,7 +11,7 @@ export type {
 export const ContextServiceLive = {
 	getForegroundContext: () => commands.getForegroundContext(),
 	readFocusedText: () => commands.readFocusedText(),
-	endFieldObservation: async () => {
-		await commands.endFieldObservation();
+	endFieldObservation: async (generation) => {
+		await commands.endFieldObservation(generation);
 	},
 } satisfies ContextService;

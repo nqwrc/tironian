@@ -20,7 +20,7 @@
 #![cfg_attr(not(target_os = "windows"), allow(dead_code))]
 
 use serde::Serialize;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
@@ -44,6 +44,24 @@ pub(crate) fn region_cap(delivered_units: usize, anchors: &Anchors) -> usize {
         delivered_units + ANCHOR_UNITS
     } else {
         2 * delivered_units + 200
+    }
+}
+
+/// A line terminator: `\r`, `\n` (so `\r\n`) or the paragraph separator U+2029.
+fn is_line_terminator(unit: u16) -> bool {
+    matches!(unit, 0x0D | 0x0A | 0x2029)
+}
+
+/// An anchor made only of line terminators is empty. Word and RichEdit end a
+/// document with a paragraph mark, so a paste at the visible end of one is
+/// followed by `\r`, and counting that as context would loosen the cap there
+/// from [`ANCHOR_UNITS`] to twice the paste plus 200. Applied on both search
+/// paths, so the anchors they keep agree.
+pub(crate) fn visible_anchor(anchor: Vec<u16>) -> Vec<u16> {
+    if anchor.iter().all(|&unit| is_line_terminator(unit)) {
+        Vec::new()
+    } else {
+        anchor
     }
 }
 
@@ -84,18 +102,33 @@ pub enum FieldRefusal {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum FieldReadOutcome {
     Span {
+        /// The paste target this read spent a read of. `end_field_observation`
+        /// takes it back, so an observation closes only its own target.
+        generation: u32,
         before: String,
         region: String,
         after: String,
     },
     Refused {
         reason: FieldRefusal,
+        /// The target the read was for; `None` when there was none.
+        generation: Option<u32>,
     },
 }
 
 impl FieldReadOutcome {
     pub(crate) fn refused(reason: FieldRefusal) -> Self {
-        Self::Refused { reason }
+        Self::Refused {
+            reason,
+            generation: None,
+        }
+    }
+
+    pub(crate) fn refused_at(reason: FieldRefusal, generation: u32) -> Self {
+        Self::Refused {
+            reason,
+            generation: Some(generation),
+        }
     }
 }
 
@@ -116,7 +149,7 @@ pub(crate) struct Anchors {
 /// What one observation may read, and nothing more.
 #[derive(Clone, Debug)]
 pub(crate) struct PasteTarget {
-    pub generation: u64,
+    pub generation: u32,
     pub element: ElementId,
     /// The delivered text in UTF-16, newlines normalized to `\n`.
     pub delivered: Vec<u16>,
@@ -246,7 +279,7 @@ pub(crate) fn normalize_newlines(text: &[u16]) -> Vec<u16> {
 
 /// A target for a delivery, or `None` when it is empty or too long to watch.
 pub(crate) fn new_target(
-    generation: u64,
+    generation: u32,
     element: ElementId,
     delivered: &str,
     now: Instant,
@@ -278,7 +311,7 @@ pub(crate) fn take_read(slot: &mut Option<PasteTarget>, now: Instant) -> Option<
 }
 
 /// Keeps the first read's anchors, only for the same delivery and only once.
-pub(crate) fn keep_anchors(slot: &mut Option<PasteTarget>, generation: u64, anchors: Anchors) {
+pub(crate) fn keep_anchors(slot: &mut Option<PasteTarget>, generation: u32, anchors: Anchors) {
     if let Some(target) = slot
         .as_mut()
         .filter(|target| target.generation == generation && target.anchors.is_none())
@@ -291,7 +324,7 @@ pub(crate) fn keep_anchors(slot: &mut Option<PasteTarget>, generation: u64, anch
 static TARGET: Mutex<Option<PasteTarget>> = Mutex::new(None);
 /// Counts deliveries, so a capture that finishes late cannot arm a target
 /// over a newer delivery.
-static DELIVERIES: AtomicU64 = AtomicU64::new(0);
+static DELIVERIES: AtomicU32 = AtomicU32::new(0);
 
 /// Recovers from poisoning: nothing held under this lock can panic.
 fn target_slot() -> MutexGuard<'static, Option<PasteTarget>> {
@@ -302,19 +335,31 @@ fn target_slot() -> MutexGuard<'static, Option<PasteTarget>> {
 
 /// Called first in every `write_text`. Whatever was observed is no longer the
 /// last thing Tironian put in a field. Returns the generation `arm` needs.
-pub(crate) fn begin_delivery() -> u64 {
+pub(crate) fn begin_delivery() -> u32 {
     let generation = DELIVERIES.fetch_add(1, Ordering::SeqCst) + 1;
     *target_slot() = None;
     generation
 }
 
-/// A synthetic Enter or backspace, or the frontend closing its observation.
+/// A synthetic Enter or backspace: whatever was observed is gone.
 pub(crate) fn clear_target() {
     *target_slot() = None;
 }
 
+/// The frontend closing its observation. Clears the target only if it is still
+/// the one that observation read, so a late close cannot cancel the target the
+/// next dictation has armed since.
+pub(crate) fn clear_target_if(slot: &mut Option<PasteTarget>, generation: u32) {
+    if slot
+        .as_ref()
+        .is_some_and(|target| target.generation == generation)
+    {
+        *slot = None;
+    }
+}
+
 /// Records the target unless a later delivery has begun since `generation`.
-pub(crate) fn arm(generation: u64, element: ElementId, delivered: &str, now: Instant) {
+pub(crate) fn arm(generation: u32, element: ElementId, delivered: &str, now: Instant) {
     let mut slot = target_slot();
     if DELIVERIES.load(Ordering::SeqCst) != generation {
         return;
@@ -326,7 +371,7 @@ pub(crate) fn take_read_now() -> Option<PasteTarget> {
     take_read(&mut target_slot(), Instant::now())
 }
 
-pub(crate) fn keep_anchors_now(generation: u64, anchors: Anchors) {
+pub(crate) fn keep_anchors_now(generation: u32, anchors: Anchors) {
     keep_anchors(&mut target_slot(), generation, anchors);
 }
 
@@ -339,8 +384,9 @@ pub(crate) struct Span {
 }
 
 impl Span {
-    pub(crate) fn into_outcome(self) -> FieldReadOutcome {
+    pub(crate) fn into_outcome(self, generation: u32) -> FieldReadOutcome {
         FieldReadOutcome::Span {
+            generation,
             before: String::from_utf16_lossy(&self.before),
             region: String::from_utf16_lossy(&self.region),
             after: String::from_utf16_lossy(&self.after),
@@ -379,9 +425,9 @@ pub(crate) fn locate_delivered(field: &[u16], delivered: &[u16]) -> Result<Span,
     let at = find_once(&field, delivered).ok_or(FieldRefusal::NotFound)?;
     let end = at + delivered.len();
     Ok(Span {
-        before: field[at.saturating_sub(ANCHOR_UNITS)..at].to_vec(),
+        before: visible_anchor(field[at.saturating_sub(ANCHOR_UNITS)..at].to_vec()),
         region: field[at..end].to_vec(),
-        after: field[end..(end + ANCHOR_UNITS).min(field.len())].to_vec(),
+        after: visible_anchor(field[end..(end + ANCHOR_UNITS).min(field.len())].to_vec()),
     })
 }
 
@@ -424,13 +470,13 @@ pub(crate) struct PendingCapture {
     #[cfg(target_os = "windows")]
     element: tauri::async_runtime::JoinHandle<Option<ElementId>>,
     delivered: String,
-    generation: u64,
+    generation: u32,
 }
 
 /// Starts capturing the focused element when `write_text` was asked to
 /// observe. Captured before the paste because the paste lands wherever focus
 /// is at that instant.
-pub(crate) fn begin_capture(observe: bool, generation: u64, text: &str) -> Option<PendingCapture> {
+pub(crate) fn begin_capture(observe: bool, generation: u32, text: &str) -> Option<PendingCapture> {
     #[cfg(target_os = "windows")]
     {
         if !observe || text.encode_utf16().count() > MAX_DELIVERED_UTF16 {
@@ -486,20 +532,21 @@ pub async fn read_focused_text() -> FieldReadOutcome {
     }
 }
 
-/// Drops the paste target, so no later read can run. The frontend calls it
-/// when its observation closes.
+/// Drops the paste target the observation read, so no later read can run. The
+/// frontend calls it with the generation of its last read when its observation
+/// closes; a newer target is left alone.
 #[tauri::command]
 #[specta::specta]
-pub fn end_field_observation() {
-    clear_target();
+pub fn end_field_observation(generation: u32) {
+    clear_target_if(&mut target_slot(), generation);
 }
 
 #[cfg(target_os = "windows")]
 mod windows_impl {
     use super::{
         gate, keep_anchors_now, locate_delivered, locate_region, region_cap, take_read_now,
-        Anchors, ElementId, FieldReadOutcome, FieldRefusal, FocusFacts, Span, ANCHOR_UNITS,
-        MAX_FIELD_TEXT_UTF16,
+        visible_anchor, Anchors, ElementId, FieldReadOutcome, FieldRefusal, FocusFacts, Span,
+        ANCHOR_UNITS, MAX_FIELD_TEXT_UTF16,
     };
     use windows::core::BSTR;
     use windows::Win32::Foundation::HWND;
@@ -582,10 +629,10 @@ mod windows_impl {
         };
         with_automation(|automation| {
             let Ok(element) = (unsafe { automation.GetFocusedElement() }) else {
-                return FieldReadOutcome::refused(FieldRefusal::NoFocus);
+                return FieldReadOutcome::refused_at(FieldRefusal::NoFocus, target.generation);
             };
             if let Err(reason) = gate(&focus_facts(automation, &element), &target.element) {
-                return FieldReadOutcome::refused(reason);
+                return FieldReadOutcome::refused_at(reason, target.generation);
             }
             let located = match &target.anchors {
                 None => locate_delivered_in(&element, &target.delivered),
@@ -596,12 +643,15 @@ mod windows_impl {
                     if target.anchors.is_none() {
                         keep_anchors_now(target.generation, span.anchors());
                     }
-                    span.into_outcome()
+                    span.into_outcome(target.generation)
                 }
-                Err(reason) => FieldReadOutcome::refused(reason),
+                Err(reason) => FieldReadOutcome::refused_at(reason, target.generation),
             }
         })
-        .unwrap_or(FieldReadOutcome::refused(FieldRefusal::PlatformError))
+        .unwrap_or(FieldReadOutcome::refused_at(
+            FieldRefusal::PlatformError,
+            target.generation,
+        ))
     }
 
     /// Every fact comes from the focused element and the windows that host it,
@@ -836,10 +886,10 @@ mod windows_impl {
             return None;
         }
         let units: &[u16] = &text;
-        Some(match side {
+        Some(visible_anchor(match side {
             Side::Before => units[units.len().saturating_sub(ANCHOR_UNITS)..].to_vec(),
             Side::After => units[..units.len().min(ANCHOR_UNITS)].to_vec(),
-        })
+        }))
     }
 
     /// The `FindText` path for the first read. `None` means "use the
@@ -1158,6 +1208,24 @@ mod tests {
         assert_eq!(slot.as_ref().unwrap().anchors, Some(first));
     }
 
+    #[test]
+    fn closing_an_observation_clears_only_its_own_target() {
+        let mut slot = new_target(
+            4,
+            expected(),
+            "Deploy it on cubernetes tonight",
+            Instant::now(),
+        );
+        clear_target_if(&mut slot, 3);
+        assert!(slot.is_some());
+        clear_target_if(&mut slot, 5);
+        assert!(slot.is_some());
+        clear_target_if(&mut slot, 4);
+        assert!(slot.is_none());
+        clear_target_if(&mut slot, 4);
+        assert!(slot.is_none());
+    }
+
     /// The only test that touches the process-wide slot.
     #[test]
     fn a_later_delivery_voids_an_earlier_arm() {
@@ -1165,6 +1233,13 @@ mod tests {
         let first = begin_delivery();
         let second = begin_delivery();
         arm(first, expected(), text, Instant::now());
+        assert!(take_read_now().is_none());
+        arm(second, expected(), text, Instant::now());
+        // An old observation closing cannot take the newer target with it.
+        end_field_observation(first);
+        let read = take_read_now().expect("the newer target survives");
+        assert_eq!(read.generation, second);
+        end_field_observation(second);
         assert!(take_read_now().is_none());
         arm(second, expected(), text, Instant::now());
         assert!(take_read_now().is_some());
@@ -1175,17 +1250,22 @@ mod tests {
     #[test]
     fn outcomes_serialize_with_a_kind_tag() {
         let span = FieldReadOutcome::Span {
+            generation: 7,
             before: "a".into(),
             region: "b".into(),
             after: String::new(),
         };
         assert_eq!(
             serde_json::to_string(&span).unwrap(),
-            r#"{"kind":"span","before":"a","region":"b","after":""}"#
+            r#"{"kind":"span","generation":7,"before":"a","region":"b","after":""}"#
         );
         assert_eq!(
             serde_json::to_string(&FieldReadOutcome::refused(FieldRefusal::NoTarget)).unwrap(),
-            r#"{"kind":"refused","reason":"noTarget"}"#
+            r#"{"kind":"refused","reason":"noTarget","generation":null}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&FieldReadOutcome::refused_at(FieldRefusal::Moved, 7)).unwrap(),
+            r#"{"kind":"refused","reason":"moved","generation":7}"#
         );
     }
 
@@ -1205,6 +1285,53 @@ mod tests {
         let span = locate_delivered(&u(&format!("Ciao, {DELIVERED}")), &u(DELIVERED)).unwrap();
         assert_eq!(span.before, u("Ciao, "));
         assert!(span.after.is_empty());
+    }
+
+    #[test]
+    fn an_anchor_of_line_terminators_alone_counts_as_empty() {
+        for terminators in ["\r", "\n", "\r\n", "\u{2029}", "\r\n\r\n", "\u{2029}\r"] {
+            let at_end = format!("Ciao, {DELIVERED}{terminators}");
+            let span = locate_delivered(&u(&at_end), &u(DELIVERED)).unwrap();
+            assert!(span.after.is_empty(), "{terminators:?}");
+            let at_start = format!("{terminators}{DELIVERED} ancora");
+            let span = locate_delivered(&u(&at_start), &u(DELIVERED)).unwrap();
+            assert!(span.before.is_empty(), "{terminators:?}");
+        }
+        // Anything else beside a terminator keeps the anchor.
+        let span = locate_delivered(&u(&format!("{DELIVERED}\r ")), &u(DELIVERED)).unwrap();
+        assert_eq!(span.after, u("\n "));
+        let span = locate_delivered(&u(&format!("{DELIVERED}\rFine")), &u(DELIVERED)).unwrap();
+        assert_eq!(span.after, u("\nFine"));
+    }
+
+    #[test]
+    fn the_visible_anchor_of_the_find_text_path_matches() {
+        assert!(visible_anchor(u("\r")).is_empty());
+        assert!(visible_anchor(u("\u{2029}\r\n")).is_empty());
+        assert!(visible_anchor(Vec::new()).is_empty());
+        assert_eq!(visible_anchor(u("a\r")), u("a\r"));
+        assert_eq!(visible_anchor(u(" \r")), u(" \r"));
+    }
+
+    #[test]
+    fn the_end_cap_applies_when_the_document_ends_in_a_paragraph_mark() {
+        // A Word-style document whose last paragraph holds the paste and ends
+        // in the paragraph mark.
+        let delivered = u(DELIVERED).len();
+        let first = locate_delivered(&u(&format!("Ciao, {DELIVERED}\r")), &u(DELIVERED)).unwrap();
+        let anchors = first.anchors();
+        assert!(anchors.after.is_empty());
+        assert_eq!(region_cap(delivered, &anchors), delivered + ANCHOR_UNITS);
+        let typed_on = format!(
+            "Ciao, {DELIVERED} {}\r",
+            "e poi parliamo del progetto ".repeat(4)
+        );
+        assert_eq!(
+            locate_region(&u(&typed_on), &anchors, delivered),
+            Err(FieldRefusal::TooLong)
+        );
+        let respelled = format!("Ciao, {DELIVERED}\r");
+        assert!(locate_region(&u(&respelled), &anchors, delivered).is_ok());
     }
 
     #[test]
@@ -1337,8 +1464,9 @@ mod tests {
             after: u("c"),
         };
         assert_eq!(
-            span.into_outcome(),
+            span.into_outcome(3),
             FieldReadOutcome::Span {
+                generation: 3,
                 before: "a".into(),
                 region: "b".into(),
                 after: "c".into()

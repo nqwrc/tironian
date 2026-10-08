@@ -29,6 +29,10 @@ export type ContextService = {
 	 * the host. Callers must not log, persist, or display the span.
 	 */
 	readFocusedText: () => Promise<FieldReadOutcome>;
-	/** Drops the host's paste target, so no later read can run. */
-	endFieldObservation: () => Promise<void>;
+	/**
+	 * Drops the paste target with this generation (the one every read result
+	 * carries), so no later read can run. A newer target is left alone, so a
+	 * late close cannot cancel the next dictation's observation.
+	 */
+	endFieldObservation: (generation: number) => Promise<void>;
 };

@@ -3,7 +3,7 @@ import type { FieldRead } from '../field-read';
 import { createCorrectionObserver } from './observer';
 
 type Fake =
-	| { region: string; before?: string; after?: string }
+	| { region: string; before?: string; after?: string; generation?: number }
 	| null
 	| 'stall';
 
@@ -28,9 +28,10 @@ function harness(
 				});
 			return Promise.resolve<FieldRead>(
 				field === null
-					? { kind: 'unavailable' }
+					? { kind: 'unavailable', generation: null }
 					: {
 							kind: 'span',
+							generation: field.generation ?? 1,
 							before: field.before ?? 'Note: ',
 							region: field.region,
 							after: field.after ?? ' End.',
@@ -96,6 +97,36 @@ test('baseline, then two agreeing timer reads: learned once as pending, then clo
 	expect(h.learn).toHaveBeenCalledWith({ create: ['Kubernetes'], promote: [] });
 	expect(h.observer.isObserving).toBe(false);
 	expect(h.end).toHaveBeenCalledTimes(1);
+	expect(h.end).toHaveBeenCalledWith(1);
+});
+
+test('closing ends the host target the reads named, not whichever is current', async () => {
+	const h = harness([{ region: delivered, generation: 7 }, null]);
+	h.observer.open({ delivered });
+	await h.advance(1000); // baseline names target 7
+	h.observer.cancel();
+	expect(h.end).toHaveBeenCalledTimes(1);
+	expect(h.end).toHaveBeenCalledWith(7);
+});
+
+test('a read that spent a newer target closes the old observation without ending it', async () => {
+	const h = harness([
+		{ region: delivered, generation: 7 },
+		{ region: fixed, generation: 8 },
+	]);
+	h.observer.open({ delivered });
+	await h.advance(15_000); // baseline names 7, the +15 s read answers for 8
+	expect(h.observer.isObserving).toBe(false);
+	expect(h.end).toHaveBeenCalledTimes(1);
+	expect(h.end).toHaveBeenCalledWith(7);
+	expect(h.learn).not.toHaveBeenCalled();
+});
+
+test('closing before any read named a target has nothing to end', async () => {
+	const h = harness([{ region: delivered }]);
+	h.observer.open({ delivered });
+	h.observer.cancel();
+	expect(h.end).toHaveBeenCalledWith(null);
 });
 
 test('the next dictation learns when it agrees with the previous timer read', async () => {
@@ -141,7 +172,13 @@ test('a next dictation while a timer read is in flight closes without learning',
 	await h.advance(15_000); // the +15 s read stalls
 	h.observer.noteDictationStarting();
 	expect(h.observer.isObserving).toBe(false);
-	h.release({ kind: 'span', before: 'Note: ', region: fixed, after: ' End.' });
+	h.release({
+		kind: 'span',
+		generation: 1,
+		before: 'Note: ',
+		region: fixed,
+		after: ' End.',
+	});
 	await h.advance(0);
 	expect(h.learn).not.toHaveBeenCalled();
 });

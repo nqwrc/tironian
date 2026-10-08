@@ -387,10 +387,12 @@ export const commands = {
 	/**  The span around the observed paste, under the rules in the module doc. */
 	readFocusedText: () => __TAURI_INVOKE<FieldReadOutcome>('read_focused_text'),
 	/**
-	 *  Drops the paste target, so no later read can run. The frontend calls it
-	 *  when its observation closes.
+	 *  Drops the paste target the observation read, so no later read can run. The
+	 *  frontend calls it with the generation of its last read when its observation
+	 *  closes; a newer target is left alone.
 	 */
-	endFieldObservation: () => __TAURI_INVOKE<void>('end_field_observation'),
+	endFieldObservation: (generation: number) =>
+		__TAURI_INVOKE<void>('end_field_observation', { generation }),
 	/**
 	 *  Replace every global shortcut at once: the plugin chords, and the
 	 *  modifier-only holds only the Windows hook can see (ADR-0246). Either set
@@ -617,8 +619,23 @@ export type FallbackReason =
 	| 'preferred-device-unavailable';
 
 export type FieldReadOutcome =
-	| { kind: 'span'; before: string; region: string; after: string }
-	| { kind: 'refused'; reason: FieldRefusal };
+	| {
+			kind: 'span';
+			/**
+			 *  The paste target this read spent a read of. `end_field_observation`
+			 *  takes it back, so an observation closes only its own target.
+			 */
+			generation: number;
+			before: string;
+			region: string;
+			after: string;
+	  }
+	| {
+			kind: 'refused';
+			reason: FieldRefusal;
+			/**  The target the read was for; `None` when there was none. */
+			generation: number | null;
+	  };
 
 export type FieldRefusal =
 	/**  This platform has no field read. */

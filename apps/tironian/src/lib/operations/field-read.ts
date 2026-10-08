@@ -18,11 +18,21 @@ export type FieldContext = Pick<
 	'readFocusedText' | 'endFieldObservation'
 >;
 
+/**
+ * `generation` names the host's paste target the read was for. A refusal
+ * carries it when a target existed; a rejection or a stall never does.
+ */
 export type FieldRead =
-	| { kind: 'span'; before: string; region: string; after: string }
-	| { kind: 'unavailable' };
+	| {
+			kind: 'span';
+			generation: number;
+			before: string;
+			region: string;
+			after: string;
+	  }
+	| { kind: 'unavailable'; generation: number | null };
 
-const UNAVAILABLE: FieldRead = { kind: 'unavailable' };
+const NO_ANSWER: FieldRead = { kind: 'unavailable', generation: null };
 
 export function readPastedField(context: FieldContext): Promise<FieldRead> {
 	const read = context.readFocusedText().then(
@@ -30,20 +40,29 @@ export function readPastedField(context: FieldContext): Promise<FieldRead> {
 			outcome.kind === 'span'
 				? {
 						kind: 'span',
+						generation: outcome.generation,
 						before: outcome.before,
 						region: outcome.region,
 						after: outcome.after,
 					}
-				: UNAVAILABLE,
-		() => UNAVAILABLE,
+				: { kind: 'unavailable', generation: outcome.generation },
+		() => NO_ANSWER,
 	);
 	const timeout = new Promise<FieldRead>((resolve) => {
-		setTimeout(() => resolve(UNAVAILABLE), READ_TIMEOUT_MS);
+		setTimeout(() => resolve(NO_ANSWER), READ_TIMEOUT_MS);
 	});
 	return Promise.race([read, timeout]);
 }
 
-/** Fire-and-forget: a host that cannot hear this lets the target expire. */
-export function endFieldObservation(context: FieldContext): void {
-	void context.endFieldObservation().then(undefined, () => undefined);
+/**
+ * Fire-and-forget: a host that cannot hear this lets the target expire. With
+ * no generation the observation never learned which target was its own, and
+ * clearing blindly could cancel the next dictation's, so it lets it expire too.
+ */
+export function endFieldObservation(
+	context: FieldContext,
+	generation: number | null,
+): void {
+	if (generation === null) return;
+	void context.endFieldObservation(generation).then(undefined, () => undefined);
 }
