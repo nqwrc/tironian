@@ -20,7 +20,7 @@ const DIRECTIVE = 'Fix grammar and punctuation. Keep my wording.';
 const DICTIONARIES: (readonly string[] | null)[] = [
 	null,
 	[],
-	['Kubernetes', 'Jira', 'Pagnoncelli'],
+	['Kubernetes', 'Jira', 'Brandolin'],
 ];
 
 test('Polish system prompts', () => {
