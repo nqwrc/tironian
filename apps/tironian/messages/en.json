@@ -499,7 +499,7 @@
 	"onboarding_try_placeholder": "Your words appear here.",
 	"onboarding_finish": "Done, open {productName}",
 	"learned_term_pending_title": "New term suggested",
-	"learned_term_pending_description": "From a correction you made. It is not used until you accept it on the Dictation page.",
+	"learned_term_pending_description": "From a correction you made. It is not used until you accept it on the Dictation page or correct it the same way in a later dictation.",
 	"learned_term_active_title": "A learned term is now in use",
 	"learned_term_active_description": "You corrected it again, so it now goes with your Dictionary to transcription, Polish and Recipes.",
 	"learned_term_review": "Review",
