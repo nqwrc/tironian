@@ -1313,14 +1313,14 @@ mod tests {
     fn a_reply_typed_after_a_paste_at_the_end_never_crosses_ipc() {
         // A chat box or an email body that held only the paste.
         let alone = Anchors::default();
-        let delivered = u("Ci vediamo domani con Nicolas.").len();
-        let fixed = u("Ci vediamo domani con Nicola e");
+        let delivered = u("Ci vediamo domani con Daniels.").len();
+        let fixed = u("Ci vediamo domani con Daniel e");
         assert_eq!(
             locate_region(&fixed, &alone, delivered).unwrap().region,
             fixed
         );
         let reply = format!(
-            "Ci vediamo domani con Nicola e {}",
+            "Ci vediamo domani con Daniel e {}",
             "poi parliamo del progetto. ".repeat(8)
         );
         assert_eq!(

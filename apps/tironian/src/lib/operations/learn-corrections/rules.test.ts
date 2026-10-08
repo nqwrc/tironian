@@ -17,7 +17,7 @@ test('similarity is 1 - levenshtein / longer, on folds without spaces', () => {
 	expect(similarity('cubernetes', 'Kubernetes')).toBeCloseTo(0.9);
 	expect(similarity('gira', 'Jira')).toBeCloseTo(0.75);
 	expect(similarity('git hub', 'GitHub')).toBe(1);
-	expect(similarity('Nicolas', 'Nicola e')).toBeCloseTo(0.857, 3);
+	expect(similarity('Daniels', 'Daniel e')).toBeCloseTo(0.857, 3);
 	expect(similarity('cat', 'dog')).toBe(0);
 });
 
@@ -98,19 +98,19 @@ test('IT: a misheard tool name', () => {
 test('IT: a first name fixed inside a full name', () => {
 	expect(
 		terms(
-			'Ho parlato con Nicolas Pandolfi ieri',
-			'Ho parlato con Nicola Pandolfi ieri',
+			'Ho parlato con Daniels Rossi ieri',
+			'Ho parlato con Daniel Rossi ieri',
 		),
-	).toEqual(['Nicola']);
+	).toEqual(['Daniel']);
 });
 test('IT: a fix followed by a new word at the field end learns the fix only', () => {
 	expect(
-		terms('Ci vediamo domani con Nicolas.', 'Ci vediamo domani con Nicola e'),
-	).toEqual(['Nicola']);
+		terms('Ci vediamo domani con Daniels.', 'Ci vediamo domani con Daniel e'),
+	).toEqual(['Daniel']);
 });
 test('IT: a fix followed by a new sentence crosses a sentence end and is refused', () => {
 	expect(
-		terms('Ci vediamo domani con Nicolas.', 'Ci vediamo domani con Nicola. Ok'),
+		terms('Ci vediamo domani con Daniels.', 'Ci vediamo domani con Daniel. Ok'),
 	).toEqual([]);
 });
 test('IT: a short secret with digits is never learned', () => {

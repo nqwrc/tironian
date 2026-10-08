@@ -31,8 +31,8 @@ test('one replaced word (IT)', () => {
 
 test('typing on after a paste at the end joins the last hunk (IT)', () => {
 	expect(
-		hunks('Ci vediamo domani con Nicolas.', 'Ci vediamo domani con Nicola. Ok'),
-	).toEqual([{ from: 'Nicolas', to: 'Nicola Ok' }]);
+		hunks('Ci vediamo domani con Daniels.', 'Ci vediamo domani con Daniel. Ok'),
+	).toEqual([{ from: 'Daniels', to: 'Daniel Ok' }]);
 });
 
 test('case, accent and punctuation changes produce no hunk (IT)', () => {

@@ -38,5 +38,5 @@ test('carriage returns split words like any whitespace', () => {
 });
 
 test('foldTerm collapses whitespace', () => {
-	expect(foldTerm('  Nicola   Pandolfi ')).toBe('nicola pandolfi');
+	expect(foldTerm('  Daniel   Rossi ')).toBe('daniel rossi');
 });
