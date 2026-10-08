@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-end-field-observation"
+description = "Enables the end_field_observation command without any pre-configured scope."
+commands.allow = ["end_field_observation"]
+
+[[permission]]
+identifier = "deny-end-field-observation"
+description = "Denies the end_field_observation command without any pre-configured scope."
+commands.deny = ["end_field_observation"]

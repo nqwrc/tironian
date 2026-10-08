@@ -134,6 +134,20 @@ pub(crate) fn foreground_accepts_synthetic_input() -> bool {
     windows_impl::accepts_synthetic_input()
 }
 
+/// Lowercased exe file name of a process, for `field_text`'s denylist
+/// (ADR-0271). `None` when the OS refuses to open it.
+#[cfg(target_os = "windows")]
+pub(crate) fn process_app_id(process_id: u32) -> Option<String> {
+    windows_impl::process_app_id(process_id)
+}
+
+/// Whether injected input could reach this process, judged on the process
+/// rather than the foreground window, for `field_text`'s gate.
+#[cfg(target_os = "windows")]
+pub(crate) fn process_accepts_synthetic_input(process_id: u32) -> bool {
+    windows_impl::process_accepts_synthetic_input(process_id)
+}
+
 /// UIPI permits injected input only into a process at an equal or lower
 /// integrity level. This is the whole rule, expressed without Win32.
 #[cfg(any(target_os = "windows", test))]
@@ -228,7 +242,13 @@ mod windows_impl {
     /// Lowercased exe file name of the process owning the given window, or
     /// `None` when the window is gone or the OS refuses to open the process.
     fn foreground_app_id(window: HWND) -> Option<String> {
-        let process = open_for_limited_query(window_process_id(window)?)?;
+        process_app_id(window_process_id(window)?)
+    }
+
+    /// Lowercased exe file name of a process, or `None` when the OS refuses
+    /// to open it.
+    pub fn process_app_id(process_id: u32) -> Option<String> {
+        let process = open_for_limited_query(process_id)?;
         let mut buffer = [0u16; 1024];
         let mut length = buffer.len() as u32;
         let queried = unsafe {
@@ -347,6 +367,11 @@ mod windows_impl {
         let Some(process_id) = window_process_id(window) else {
             return false;
         };
+        process_accepts_synthetic_input(process_id)
+    }
+
+    /// The UIPI rule for one process.
+    pub fn process_accepts_synthetic_input(process_id: u32) -> bool {
         // Our own window: the user dictated into one of Tironian's own text
         // boxes. UIPI never blocks a process from injecting into itself, and
         // answering early keeps this case out of reach of a probe failure

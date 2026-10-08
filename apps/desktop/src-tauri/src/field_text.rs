@@ -16,9 +16,6 @@
 //! - Nothing here logs text. Between reads the target keeps the delivered
 //!   text, which is Tironian's own output, and two anchors.
 
-// Used from `write_text` (Task 3) and the read command (Task 4). Remove this
-// line in Task 4.
-#![allow(dead_code)]
 // macOS and Linux only clear targets and answer `unsupported`.
 #![cfg_attr(not(target_os = "windows"), allow(dead_code))]
 
@@ -54,6 +51,7 @@ pub(crate) fn region_cap(delivered_units: usize, anchors: &Anchors) -> usize {
 #[serde(rename_all = "camelCase")]
 pub enum FieldRefusal {
     /// This platform has no field read.
+    #[cfg_attr(target_os = "windows", allow(dead_code))]
     Unsupported,
     /// No live paste target: none recorded, expired, or its reads spent.
     NoTarget,
@@ -471,9 +469,40 @@ pub(crate) async fn finish_capture(pending: Option<PendingCapture>) {
     let _ = pending;
 }
 
+/// The span around the observed paste, under the rules in the module doc.
+#[tauri::command]
+#[specta::specta]
+pub async fn read_focused_text() -> FieldReadOutcome {
+    #[cfg(target_os = "windows")]
+    {
+        // Cross-process COM; a hung target blocks for the UIA timeout.
+        tauri::async_runtime::spawn_blocking(windows_impl::read)
+            .await
+            .unwrap_or(FieldReadOutcome::refused(FieldRefusal::PlatformError))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        FieldReadOutcome::refused(FieldRefusal::Unsupported)
+    }
+}
+
+/// Drops the paste target, so no later read can run. The frontend calls it
+/// when its observation closes.
+#[tauri::command]
+#[specta::specta]
+pub fn end_field_observation() {
+    clear_target();
+}
+
 #[cfg(target_os = "windows")]
 mod windows_impl {
-    use super::ElementId;
+    use super::{
+        gate, keep_anchors_now, locate_delivered, locate_region, region_cap, take_read_now,
+        Anchors, ElementId, FieldReadOutcome, FieldRefusal, FocusFacts, Span, ANCHOR_UNITS,
+        MAX_FIELD_TEXT_UTF16,
+    };
+    use windows::core::BSTR;
+    use windows::Win32::Foundation::HWND;
     use windows::Win32::System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_INPROC_SERVER,
         COINIT_MULTITHREADED,
@@ -481,7 +510,15 @@ mod windows_impl {
     use windows::Win32::System::Ole::{
         SafeArrayDestroy, SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound,
     };
-    use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation, IUIAutomationElement};
+    use windows::Win32::System::Threading::GetCurrentProcessId;
+    use windows::Win32::UI::Accessibility::{
+        CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
+        IUIAutomationTextRange, IUIAutomationValuePattern, TextPatternRangeEndpoint_End,
+        TextPatternRangeEndpoint_Start, TextUnit_Character, UIA_TextPatternId, UIA_ValuePatternId,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetAncestor, GetClassNameW, GetWindowThreadProcessId, GA_ROOT,
+    };
 
     /// Runs `body` with COM initialized on this thread and a UIA client. Every
     /// COM object `body` touches is dropped before `CoUninitialize`. `None`
@@ -537,6 +574,339 @@ mod windows_impl {
         })();
         let _ = unsafe { SafeArrayDestroy(array) };
         parts.filter(|parts| !parts.is_empty())
+    }
+
+    pub fn read() -> FieldReadOutcome {
+        let Some(target) = take_read_now() else {
+            return FieldReadOutcome::refused(FieldRefusal::NoTarget);
+        };
+        with_automation(|automation| {
+            let Ok(element) = (unsafe { automation.GetFocusedElement() }) else {
+                return FieldReadOutcome::refused(FieldRefusal::NoFocus);
+            };
+            if let Err(reason) = gate(&focus_facts(automation, &element), &target.element) {
+                return FieldReadOutcome::refused(reason);
+            }
+            let located = match &target.anchors {
+                None => locate_delivered_in(&element, &target.delivered),
+                Some(anchors) => locate_region_in(&element, anchors, target.delivered.len()),
+            };
+            match located {
+                Ok(span) => {
+                    if target.anchors.is_none() {
+                        keep_anchors_now(target.generation, span.anchors());
+                    }
+                    span.into_outcome()
+                }
+                Err(reason) => FieldReadOutcome::refused(reason),
+            }
+        })
+        .unwrap_or(FieldReadOutcome::refused(FieldRefusal::PlatformError))
+    }
+
+    /// Every fact comes from the focused element and the windows that host it,
+    /// never from the foreground window, so one app's id is never attached to
+    /// another's element.
+    fn focus_facts(automation: &IUIAutomation, element: &IUIAutomationElement) -> FocusFacts {
+        let identity = element_id(element);
+        let process_id = identity.as_ref().map(|id| id.process_id);
+        let hosting = hosting(automation, element);
+        let own = unsafe { GetCurrentProcessId() };
+        FocusFacts {
+            // Tironian's own fields render in a WebView2 child process, so the
+            // element's process alone would miss them; the process that owns
+            // the top-level window is Tironian's (U8).
+            own_process: process_id == Some(own)
+                || hosting.as_ref().and_then(|found| found.root_process_id) == Some(own),
+            reachable: process_id.is_some_and(crate::foreground::process_accepts_synthetic_input),
+            app_id: process_id.and_then(crate::foreground::process_app_id),
+            is_password: unsafe { element.CurrentIsPassword() }
+                .ok()
+                .map(|value| value.as_bool()),
+            control_type: unsafe { element.CurrentControlType() }
+                .ok()
+                .map(|kind| kind.0),
+            window_classes: hosting.map(|found| found.classes),
+            element: identity,
+        }
+    }
+
+    /// Raw-view parent steps from the focused element to the first one with a
+    /// window. A field nested deeper is refused (U7).
+    const MAX_WINDOW_WALK: usize = 64;
+
+    /// The windows around the focused element: every class name the gate
+    /// checks for a console or terminal, and the process that owns the
+    /// top-level window.
+    struct Hosting {
+        classes: Vec<String>,
+        root_process_id: Option<u32>,
+    }
+
+    /// Reads class names and window handles only, never text. `None` when any
+    /// of them cannot be read or no window is found, which the gate treats as
+    /// `denied`.
+    fn hosting(automation: &IUIAutomation, element: &IUIAutomationElement) -> Option<Hosting> {
+        let walker = unsafe { automation.RawViewWalker() }.ok()?;
+        let mut classes = Vec::new();
+        let mut current = element.clone();
+        let mut window = HWND::default();
+        for _ in 0..MAX_WINDOW_WALK {
+            classes.push(unsafe { current.CurrentClassName() }.ok()?.to_string());
+            window = unsafe { current.CurrentNativeWindowHandle() }.ok()?;
+            if !window.is_invalid() {
+                break;
+            }
+            current = unsafe { walker.GetParentElement(&current) }.ok()?;
+        }
+        if window.is_invalid() {
+            return None;
+        }
+        classes.push(window_class(window)?);
+        let mut top = unsafe { GetAncestor(window, GA_ROOT) };
+        if top.is_invalid() {
+            top = window;
+        } else if top != window {
+            classes.push(window_class(top)?);
+        }
+        let mut process_id = 0u32;
+        unsafe { GetWindowThreadProcessId(top, Some(&mut process_id)) };
+        Some(Hosting {
+            classes,
+            root_process_id: (process_id != 0).then_some(process_id),
+        })
+    }
+
+    fn window_class(window: HWND) -> Option<String> {
+        let mut buffer = [0u16; 256];
+        let length = usize::try_from(unsafe { GetClassNameW(window, &mut buffer) }).ok()?;
+        (length > 0).then(|| String::from_utf16_lossy(&buffer[..length]))
+    }
+
+    fn text_pattern(element: &IUIAutomationElement) -> Option<IUIAutomationTextPattern> {
+        unsafe { element.GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId) }.ok()
+    }
+
+    fn locate_delivered_in(
+        element: &IUIAutomationElement,
+        delivered: &[u16],
+    ) -> Result<Span, FieldRefusal> {
+        match text_pattern(element) {
+            Some(pattern) => match find_delivered(&pattern, delivered) {
+                Some(found) => found,
+                None => locate_delivered(&document_text(&pattern)?, delivered),
+            },
+            None => locate_delivered(&value_text(element)?, delivered),
+        }
+    }
+
+    fn locate_region_in(
+        element: &IUIAutomationElement,
+        anchors: &Anchors,
+        delivered_units: usize,
+    ) -> Result<Span, FieldRefusal> {
+        match text_pattern(element) {
+            Some(pattern) => match find_region(&pattern, anchors, delivered_units) {
+                Some(found) => found,
+                None => locate_region(&document_text(&pattern)?, anchors, delivered_units),
+            },
+            None => locate_region(&value_text(element)?, anchors, delivered_units),
+        }
+    }
+
+    /// The whole document for the reference search, one unit past the cap so
+    /// "at the cap" and "over it" stay distinct.
+    fn document_text(pattern: &IUIAutomationTextPattern) -> Result<Vec<u16>, FieldRefusal> {
+        let range = unsafe { pattern.DocumentRange() }.map_err(|_| FieldRefusal::PlatformError)?;
+        let text = unsafe { range.GetText((MAX_FIELD_TEXT_UTF16 + 1) as i32) }
+            .map_err(|_| FieldRefusal::PlatformError)?;
+        if text.len() > MAX_FIELD_TEXT_UTF16 {
+            return Err(FieldRefusal::TooLong);
+        }
+        Ok(text.to_vec())
+    }
+
+    /// Plain edits with no TextPattern. Its read cannot be capped, so the
+    /// length check runs after it and the value is dropped on refusal; it
+    /// never crosses IPC either way.
+    fn value_text(element: &IUIAutomationElement) -> Result<Vec<u16>, FieldRefusal> {
+        let pattern =
+            unsafe { element.GetCurrentPatternAs::<IUIAutomationValuePattern>(UIA_ValuePatternId) }
+                .map_err(|_| FieldRefusal::NoTextPattern)?;
+        let value = unsafe { pattern.CurrentValue() }.map_err(|_| FieldRefusal::PlatformError)?;
+        if value.len() > MAX_FIELD_TEXT_UTF16 {
+            return Err(FieldRefusal::TooLong);
+        }
+        Ok(value.to_vec())
+    }
+
+    /// One `FindText`. `Ok(None)` is a clean miss: windows-core turns the null
+    /// range UIA returns for a miss into an error whose code is S_OK
+    /// (`windows-core-0.62.2/src/type.rs:43-50`,
+    /// `windows-result-0.4.1/src/error.rs:123-129`).
+    fn find(
+        range: &IUIAutomationTextRange,
+        needle: &BSTR,
+    ) -> Result<Option<IUIAutomationTextRange>, ()> {
+        match unsafe { range.FindText(needle, false, false) } {
+            Ok(found) => Ok(Some(found)),
+            Err(error) if error.code().is_ok() => Ok(None),
+            Err(_) => Err(()),
+        }
+    }
+
+    /// The document from one character past `at`'s start to its end, to ask
+    /// whether a match is the only one. Overlapping matches count.
+    fn past_start_of(
+        document: &IUIAutomationTextRange,
+        at: &IUIAutomationTextRange,
+    ) -> Option<IUIAutomationTextRange> {
+        let rest = unsafe { document.Clone() }.ok()?;
+        unsafe {
+            rest.MoveEndpointByRange(
+                TextPatternRangeEndpoint_Start,
+                at,
+                TextPatternRangeEndpoint_Start,
+            )
+        }
+        .ok()?;
+        unsafe { rest.MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, 1) }
+            .ok()?;
+        Some(rest)
+    }
+
+    /// Whether `needle` occurs again after `found`'s start. `None` when UIA
+    /// cannot say.
+    fn occurs_again(
+        document: &IUIAutomationTextRange,
+        found: &IUIAutomationTextRange,
+        needle: &BSTR,
+    ) -> Option<bool> {
+        let rest = past_start_of(document, found)?;
+        Some(find(&rest, needle).ok()?.is_some())
+    }
+
+    /// A UIA character can be more than one UTF-16 unit, so 32 characters are
+    /// read with room to spare and trimmed to the 32 units next to the match.
+    const ANCHOR_READ_LIMIT: i32 = (ANCHOR_UNITS * 4) as i32;
+
+    #[derive(Clone, Copy)]
+    enum Side {
+        Before,
+        After,
+    }
+
+    fn anchor(at: &IUIAutomationTextRange, side: Side) -> Option<Vec<u16>> {
+        let range = unsafe { at.Clone() }.ok()?;
+        let step = ANCHOR_UNITS as i32;
+        unsafe {
+            match side {
+                Side::Before => {
+                    range
+                        .MoveEndpointByRange(
+                            TextPatternRangeEndpoint_End,
+                            at,
+                            TextPatternRangeEndpoint_Start,
+                        )
+                        .ok()?;
+                    range
+                        .MoveEndpointByUnit(
+                            TextPatternRangeEndpoint_Start,
+                            TextUnit_Character,
+                            -step,
+                        )
+                        .ok()?;
+                }
+                Side::After => {
+                    range
+                        .MoveEndpointByRange(
+                            TextPatternRangeEndpoint_Start,
+                            at,
+                            TextPatternRangeEndpoint_End,
+                        )
+                        .ok()?;
+                    range
+                        .MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, step)
+                        .ok()?;
+                }
+            }
+        }
+        let text = unsafe { range.GetText(ANCHOR_READ_LIMIT) }.ok()?;
+        if text.len() >= ANCHOR_READ_LIMIT as usize {
+            return None;
+        }
+        let units: &[u16] = &text;
+        Some(match side {
+            Side::Before => units[units.len().saturating_sub(ANCHOR_UNITS)..].to_vec(),
+            Side::After => units[..units.len().min(ANCHOR_UNITS)].to_vec(),
+        })
+    }
+
+    /// The `FindText` path for the first read. `None` means "use the
+    /// reference search", never "absent".
+    fn find_delivered(
+        pattern: &IUIAutomationTextPattern,
+        delivered: &[u16],
+    ) -> Option<Result<Span, FieldRefusal>> {
+        let document = unsafe { pattern.DocumentRange() }.ok()?;
+        let needle = BSTR::from_wide(delivered);
+        let found = find(&document, &needle).ok()??;
+        if occurs_again(&document, &found, &needle)? {
+            return Some(Err(FieldRefusal::NotFound));
+        }
+        Some(Ok(Span {
+            before: anchor(&found, Side::Before)?,
+            region: delivered.to_vec(),
+            after: anchor(&found, Side::After)?,
+        }))
+    }
+
+    /// The `FindText` path for later reads. `None` means "use the reference
+    /// search".
+    fn find_region(
+        pattern: &IUIAutomationTextPattern,
+        anchors: &Anchors,
+        delivered_units: usize,
+    ) -> Option<Result<Span, FieldRefusal>> {
+        let document = unsafe { pattern.DocumentRange() }.ok()?;
+        let region = unsafe { document.Clone() }.ok()?;
+        if !anchors.before.is_empty() {
+            let needle = BSTR::from_wide(&anchors.before);
+            let found = find(&document, &needle).ok()??;
+            if occurs_again(&document, &found, &needle)? {
+                return Some(Err(FieldRefusal::NotFound));
+            }
+            unsafe {
+                region.MoveEndpointByRange(
+                    TextPatternRangeEndpoint_Start,
+                    &found,
+                    TextPatternRangeEndpoint_End,
+                )
+            }
+            .ok()?;
+        }
+        if !anchors.after.is_empty() {
+            let needle = BSTR::from_wide(&anchors.after);
+            let found = find(&region, &needle).ok()??;
+            unsafe {
+                region.MoveEndpointByRange(
+                    TextPatternRangeEndpoint_End,
+                    &found,
+                    TextPatternRangeEndpoint_Start,
+                )
+            }
+            .ok()?;
+        }
+        let cap = region_cap(delivered_units, anchors);
+        let text = unsafe { region.GetText((cap + 1) as i32) }.ok()?;
+        if text.len() > cap {
+            return Some(Err(FieldRefusal::TooLong));
+        }
+        Some(Ok(Span {
+            before: anchors.before.clone(),
+            region: text.to_vec(),
+            after: anchors.after.clone(),
+        }))
     }
 }
 
