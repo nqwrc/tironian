@@ -61,6 +61,7 @@ use delivery::{
     wait_for_modifiers_released, write_text,
 };
 
+mod field_text;
 mod foreground;
 use foreground::get_foreground_context;
 
