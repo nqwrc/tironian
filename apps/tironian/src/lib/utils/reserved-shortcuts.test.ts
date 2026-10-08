@@ -99,6 +99,22 @@ test('Windows ships Ctrl+Win as the push-to-talk hold; other rows keep a key', (
 	expect(defaultGlobalBindings('apple').pushToTalk.keys).toEqual(['space']);
 });
 
+test('Windows ships paste-last and copy-last on Alt+Shift+Z and X; other rows leave them unbound', () => {
+	const windows = defaultGlobalBindings('windows');
+	expect(windows.pasteLastDictation).toEqual({
+		modifiers: ['alt', 'shift'],
+		keys: ['keyZ'],
+	});
+	expect(windows.copyLastDictation).toEqual({
+		modifiers: ['alt', 'shift'],
+		keys: ['keyX'],
+	});
+	for (const platform of ['apple', 'other'] as const) {
+		expect(defaultGlobalBindings(platform).pasteLastDictation).toBeNull();
+		expect(defaultGlobalBindings(platform).copyLastDictation).toBeNull();
+	}
+});
+
 test('a reserved combo is refused with its label', () => {
 	const reason = validateGlobalBinding({ modifiers: ['meta'], keys: ['keyR'] });
 	expect(reason).toContain('Reload');
