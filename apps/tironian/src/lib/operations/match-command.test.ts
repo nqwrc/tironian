@@ -20,6 +20,29 @@ test('a closing "press enter" sentence splits off and the body keeps its punctua
 	split('Fatto\nPremi invio', 'Fatto');
 });
 
+test('a comma before the phrase counts too, and leaves with it', () => {
+	const split = (text: string, body: string) =>
+		expect(splitTrailingEnter(text)).toEqual({ body, pressEnter: true });
+	// What a recognizer printed for a spoken "Run the tests. Press enter." on
+	// the installed app, 2026-10-08: the pause came out as a comma.
+	split('Run the tests, press enter', 'Run the tests');
+	split('Procedi pure, premi invio.', 'Procedi pure');
+	split('Ship it; press enter!', 'Ship it');
+	split('Ok. Fai il deploy, premi invio', 'Ok. Fai il deploy');
+});
+
+test('a comma-joined phrase in a purpose or condition sentence stays text', () => {
+	const unchanged = (text: string) =>
+		expect(splitTrailingEnter(text)).toEqual({ body: text, pressEnter: false });
+	unchanged('To log in, press enter.');
+	unchanged('If it asks for a password, press enter.');
+	unchanged('When the prompt appears, press enter');
+	unchanged('Per entrare, premi invio.');
+	unchanged('Quando appare la finestra, premi invio.');
+	unchanged('Se chiede conferma, premi invio');
+	unchanged('Apri il file. Poi, premi invio.');
+});
+
 test('the phrase inside a sentence, a question, quotes or brackets stays text', () => {
 	const unchanged = (text: string) =>
 		expect(splitTrailingEnter(text)).toEqual({ body: text, pressEnter: false });
@@ -28,7 +51,6 @@ test('the phrase inside a sentence, a question, quotes or brackets stays text', 
 	unchanged('Open a terminal, type npm install, then press enter.');
 	unchanged('Just press enter');
 	unchanged('Scrivi la password e premi invio.');
-	unchanged('Procedi pure, premi invio.');
 	unchanged('What do I do? Press Enter?');
 	unchanged('He said "press enter"');
 	unchanged('Hello (press enter)');
