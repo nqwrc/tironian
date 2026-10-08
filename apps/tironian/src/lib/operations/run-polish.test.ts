@@ -11,8 +11,8 @@
  * supplied here. `build-system-prompt` is handed its real implementation,
  * because a faked composer would make the assertion circular.
  */
-import { expect, mock, test } from 'bun:test';
-import { Ok } from 'wellcrafted/result';
+import { afterEach, expect, mock, test } from 'bun:test';
+import { Err, Ok } from 'wellcrafted/result';
 
 const buildSystemPrompt = await import('./build-system-prompt.js');
 mock.module('$lib/operations/build-system-prompt', () => buildSystemPrompt);
@@ -22,13 +22,19 @@ const effectiveDictionary = await import('./effective-dictionary.js');
 mock.module('$lib/operations/effective-dictionary', () => effectiveDictionary);
 
 let seen: { systemPrompt: string; userPrompt: string } | null = null;
+let reply = 'polished';
+let failWith: string | null = null;
 mock.module('$lib/operations/completion', () => ({
 	completeWithGlobalDefault: (
 		_app: unknown,
 		args: { systemPrompt: string; userPrompt: string },
 	) => {
 		seen = args;
-		return Promise.resolve(Ok('polished'));
+		return Promise.resolve(
+			failWith === null
+				? Ok(reply)
+				: Err({ name: 'CompletionFailed', message: failWith }),
+		);
 	},
 	// Capability, which the status check reads. Present and usable, so a pass runs.
 	resolveCompletionState: () => ({ canRun: true }),
@@ -69,9 +75,23 @@ const app = {
 	},
 } as unknown as TironianApp;
 
-async function run(override?: { instructions: string; trusted: boolean }) {
+afterEach(() => {
+	reply = 'polished';
+	failWith = null;
+});
+
+type Slice = { before: string; selection: string; after: string };
+
+async function run(
+	override?: { instructions: string; trusted: boolean },
+	cursorContext?: Slice | null,
+) {
 	seen = null;
-	const result = await runPolish(app, { input: 'ship it by friday', override });
+	const result = await runPolish(app, {
+		input: 'ship it by friday',
+		override,
+		cursorContext,
+	});
 	if (seen === null) throw new Error('the completion was never called');
 	return { result, sent: seen as { systemPrompt: string; userPrompt: string } };
 }
@@ -109,4 +129,45 @@ test("an untrusted rule's override is sent as content", async () => {
 	expect(sent.systemPrompt).toContain(`<${UNTRUSTED_REQUEST_TAG}>`);
 	expect(sent.systemPrompt).not.toContain('Your directive:');
 	expect(sent.systemPrompt).toContain('No punctuation, all lowercase.');
+});
+
+const FIELD: Slice = {
+	before:
+		'Thanks for the notes. I will send the rollout plan to Siobhan tomorrow. ',
+	selection: '',
+	after: '',
+};
+
+test('the text around the cursor rides in the system prompt, never in the transcript message', async () => {
+	const { sent } = await run(undefined, FIELD);
+	expect(sent.userPrompt).toBe('ship it by friday');
+	expect(sent.systemPrompt).toContain('<cursor_context>');
+});
+
+test('without it the system prompt is the one it always was', async () => {
+	const plain = (await run()).sent.systemPrompt;
+	expect((await run(undefined, null)).sent.systemPrompt).toBe(plain);
+	expect(plain).not.toContain('<cursor_context>');
+});
+
+test('Polish that repeats the field ships the transcript instead', async () => {
+	reply =
+		'I will send the rollout plan to Siobhan tomorrow. Ship it by Friday.';
+	const { result } = await run(undefined, FIELD);
+	expect(result.error?.fallback).toBe('ship it by friday');
+	expect(result.error?.message).not.toContain('Siobhan');
+});
+
+test('a provider error that quotes the field never reaches the notice', async () => {
+	failWith =
+		'Content filtered: "I will send the rollout plan to Siobhan tomorrow"';
+	const { result } = await run(undefined, FIELD);
+	expect(result.error?.fallback).toBe('ship it by friday');
+	expect(result.error?.message).not.toContain('Siobhan');
+});
+
+test('a provider error is shown as it is when no field text rode along', async () => {
+	failWith = 'Rate limited';
+	const { result } = await run();
+	expect(result.error?.message).toBe('Rate limited');
 });

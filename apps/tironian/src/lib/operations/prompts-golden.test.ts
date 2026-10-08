@@ -24,11 +24,20 @@ const DICTIONARIES: (readonly string[] | null)[] = [
 ];
 
 test('Polish system prompts', () => {
-	const prompts = DICTIONARIES.flatMap((dictionary) =>
-		[true, false].map((trusted) =>
-			buildPolishSystemPrompt(DIRECTIVE, dictionary, { trusted }),
-		),
-	);
+	const build = (
+		cursorContext?: { before: string; selection: string; after: string } | null,
+	) =>
+		DICTIONARIES.flatMap((dictionary) =>
+			[true, false].map((trusted) =>
+				buildPolishSystemPrompt(DIRECTIVE, dictionary, {
+					trusted,
+					cursorContext,
+				}),
+			),
+		);
+	const prompts = build();
+	expect(build(null)).toEqual(prompts);
+	expect(build({ before: '  \n', selection: '', after: ' ' })).toEqual(prompts);
 	expect(prompts).toMatchSnapshot();
 });
 
