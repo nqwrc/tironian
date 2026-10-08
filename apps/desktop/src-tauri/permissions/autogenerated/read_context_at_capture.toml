@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-read-context-at-capture"
+description = "Enables the read_context_at_capture command without any pre-configured scope."
+commands.allow = ["read_context_at_capture"]
+
+[[permission]]
+identifier = "deny-read-context-at-capture"
+description = "Denies the read_context_at_capture command without any pre-configured scope."
+commands.deny = ["read_context_at_capture"]

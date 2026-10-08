@@ -103,6 +103,7 @@ test('settings recover application defaults and survive a restart', async () => 
 		// Chosen by the application, applied by a read, never stored.
 		expect(app.settings.get('transcriptionService')).toBe('local');
 		expect(app.settings.get('soundManualStart')).toBe(true);
+		expect(app.settings.get('cursorContextEnabled')).toBe(false);
 
 		let notifications = 0;
 		const stop = app.settings.subscribe(() => {

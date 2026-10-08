@@ -287,6 +287,14 @@ const settingsKv = {
 	 * default: otherwise the first read would come before any consent moment.
 	 */
 	learnFromCorrectionsEnabled: field.boolean(),
+	/**
+	 * When a dictation starts, read up to 400 characters before the cursor,
+	 * 200 after it and 200 of the selection in the focused field, and send
+	 * them with that dictation to the recognizer and to Polish (ADR-0272).
+	 * Windows only. Off by default: the text leaves the device whenever a
+	 * provider is online.
+	 */
+	cursorContextEnabled: field.boolean(),
 	analyticsEnabled: field.boolean(),
 
 	shortcutPushToTalkModifiers: shortcut.modifiers,

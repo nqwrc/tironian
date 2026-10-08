@@ -394,6 +394,13 @@ export const commands = {
 	endFieldObservation: (generation: number) =>
 		__TAURI_INVOKE<void>('end_field_observation', { generation }),
 	/**
+	 *  The text around the caret of the focused field, under the rules in the
+	 *  module doc. The webview calls this once, at capture start, and only while
+	 *  the person's switch is on.
+	 */
+	readContextAtCapture: () =>
+		__TAURI_INVOKE<CursorContextOutcome>('read_context_at_capture'),
+	/**
 	 *  Replace every global shortcut at once: the plugin chords, and the
 	 *  modifier-only holds only the Windows hook can see (ADR-0246). Either set
 	 *  failing leaves the previous chords registered.
@@ -486,6 +493,10 @@ export type CatalogError =
 	| { name: 'UnknownModel'; message: string }
 	| { name: 'DownloadFailed'; message: string }
 	| { name: 'DeleteFailed'; message: string };
+
+export type CursorContextOutcome =
+	| { kind: 'context'; before: string; selection: string; after: string }
+	| { kind: 'refused'; reason: FieldRefusal };
 
 /**
  *  Which microphone a recording actually opened, and whether that was the one
@@ -661,6 +672,17 @@ export type FieldRefusal =
 	| 'moved'
 	/**  The element exposes neither a text pattern nor a value pattern. */
 	| 'noTextPattern'
+	/**
+	 *  The text pattern reports no caret or selection to read around
+	 *  (ADR-0272).
+	 */
+	| 'noCaret'
+	/**
+	 *  The field takes no typing, or does not say whether it does: a page
+	 *  body, a PDF, a reading pane (ADR-0272). Only the capture-start read
+	 *  asks; correction learning reads fields it just pasted into.
+	 */
+	| 'readOnly'
 	/**  The pasted text, or an anchor, is not in the field exactly once. */
 	| 'notFound'
 	/**  The field or the region is over its cap. */

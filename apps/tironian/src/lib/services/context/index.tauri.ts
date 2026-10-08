@@ -3,6 +3,7 @@ import type { ContextService } from './types';
 
 export type {
 	ContextService,
+	CursorContextOutcome,
 	FieldReadOutcome,
 	FocusedFieldKind,
 	ForegroundContext,
@@ -14,4 +15,5 @@ export const ContextServiceLive = {
 	endFieldObservation: async (generation) => {
 		await commands.endFieldObservation(generation);
 	},
+	readContextAtCapture: () => commands.readContextAtCapture(),
 } satisfies ContextService;

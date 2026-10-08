@@ -27,6 +27,7 @@ import { lastDelivery } from '$lib/state/last-delivery.svelte';
 import { lastDictation } from '$lib/state/last-dictation.svelte';
 import { polishHud } from '$lib/state/polish-hud.svelte';
 import { m } from '../paraglide/messages';
+import type { CursorContextHolder } from './cursor-context-core';
 import type { ForegroundSnapshot } from './foreground-context';
 import { matchAppRule } from './match-app-rule';
 import { deadlineForCapture } from './transcription-deadline';
@@ -55,6 +56,15 @@ type PipelineInput = {
 	 * moment; routing then simply does not apply.
 	 */
 	foregroundApp?: ForegroundSnapshot | null;
+	/**
+	 * The text around the cursor at capture start (ADR-0272), in a one-shot
+	 * holder; null when the switch is off, nothing was readable, or there was no
+	 * capture moment. In memory for this run only: it reaches the recognizer
+	 * prompt and the Polish system prompt and nothing else, never the recording
+	 * row, a log line or a notice. The run empties the holder right after
+	 * Polish. A file import never uses it.
+	 */
+	cursorContext?: CursorContextHolder | null;
 };
 
 /**
@@ -120,17 +130,23 @@ function runRecordingPipeline(
 	app: TironianApp,
 	input: PipelineInput,
 ): Promise<void> {
-	return pipelineBody(app, input).catch((cause: unknown) => {
-		const { kind } = dictationLifecycle.current.outcome;
-		const inFlight = kind === 'transcribing' || kind === 'polishing';
-		if ((input.deliverySource ?? 'recording') === 'recording' && inFlight) {
-			dictationLifecycle.markFailed({
-				tier: 'transcription',
-				error: PipelineError.RunFailed({ cause }).error,
-			});
-		}
-		throw cause;
-	});
+	return (
+		pipelineBody(app, input)
+			.catch((cause: unknown) => {
+				const { kind } = dictationLifecycle.current.outcome;
+				const inFlight = kind === 'transcribing' || kind === 'polishing';
+				if ((input.deliverySource ?? 'recording') === 'recording' && inFlight) {
+					dictationLifecycle.markFailed({
+						tier: 'transcription',
+						error: PipelineError.RunFailed({ cause }).error,
+					});
+				}
+				throw cause;
+			})
+			// Every path ends here, including the ones that never reach Polish
+			// (silence, a voice command, a failed transcription, an import).
+			.finally(() => input.cursorContext?.clear())
+	);
 }
 
 /**
@@ -144,6 +160,7 @@ async function pipelineBody(
 		durationMs,
 		deliverySource = 'recording',
 		foregroundApp,
+		cursorContext,
 	}: PipelineInput,
 ) {
 	const now = InstantString.now();
@@ -188,6 +205,8 @@ async function pipelineBody(
 				isDictation,
 				audioDurationMs: durationMs,
 			}),
+			// Live dictation only: an import has no capture moment.
+			cursorContext: isDictation ? (cursorContext?.read() ?? null) : null,
 		});
 
 	if (transcribeError) {
@@ -321,7 +340,11 @@ async function pipelineBody(
 						trusted: appRule.trusted,
 					}
 				: undefined,
+		cursorContext: isDictation ? (cursorContext?.read() ?? null) : null,
 	});
+	// Nothing after Polish reads the slice: empty the holder now, so delivery
+	// and the paste run with no reference to it.
+	cursorContext?.clear();
 	if (showPolishHud) polishHud.end();
 	// Polish is best-effort: a failed AI pass carries the raw transcript in
 	// `fallback`, so a transcript is never lost to a polish error. Surface the

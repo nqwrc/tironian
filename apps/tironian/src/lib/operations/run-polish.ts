@@ -14,6 +14,11 @@ import { describePolishDestination } from '$lib/operations/completion-target';
 import { effectiveDictionary } from '$lib/operations/effective-dictionary';
 import { resolveTranscriptionLocalityFromConfig } from '$lib/operations/transcription-target';
 import { deviceConfig } from '$lib/state/device-config.svelte';
+import {
+	type CursorContext,
+	echoesCursorContext,
+	quotesCursorContext,
+} from './cursor-context-core';
 
 export const RunPolishError = defineErrors({
 	/**
@@ -79,6 +84,12 @@ export function polishWillRun(app: TironianApp, input: string): boolean {
 	return polishStatus(app) === 'on' && input.trim().length > 0;
 }
 
+/** Fixed copy: the notice and the log must never carry field text (ADR-0272). */
+const POLISH_ECHOED_FIELD =
+	'Polish copied text that was already in the field, so your dictation was sent as transcribed.';
+const POLISH_ERROR_QUOTED_FIELD =
+	'The Polish provider returned an error that quoted the text around your cursor, so it is not shown.';
+
 /**
  * Polish: the always-on, meaning-preserving AI base, run once after every
  * transcription. One optional completion whose system prompt is
@@ -102,6 +113,13 @@ export function polishWillRun(app: TironianApp, input: string): boolean {
  * keeps the raw transcript on `recordings.transcript` underneath the polished
  * text. On a genuine AI failure the raw input rides along in the error so
  * delivery can still proceed.
+ *
+ * `cursorContext` is the text around the cursor at capture start
+ * (ADR-0272). It reaches the system prompt and nothing else, and it decides
+ * nothing: the provider, the model and the directive are chosen without it.
+ * An answer that repeats eight words of it the speaker did not say counts as
+ * a failed pass, and an error message that quotes it is replaced, because
+ * the pipeline puts that message in a notice and `report` logs every notice.
  */
 export async function runPolish(
 	app: TironianApp,
@@ -109,10 +127,12 @@ export async function runPolish(
 		input,
 		signal,
 		override,
+		cursorContext = null,
 	}: {
 		input: string;
 		signal?: AbortSignal;
 		override?: { instructions: string; trusted: boolean };
+		cursorContext?: CursorContext | null;
 	},
 ): Promise<Result<string, RunPolishError>> {
 	if (!polishWillRun(app, input)) return Ok(input);
@@ -127,7 +147,7 @@ export async function runPolish(
 		systemPrompt: buildPolishSystemPrompt(
 			directive.instructions,
 			effectiveDictionary(app),
-			{ trusted: directive.trusted },
+			{ trusted: directive.trusted, cursorContext },
 		),
 		userPrompt: input,
 		signal,
@@ -135,8 +155,20 @@ export async function runPolish(
 	if (isErr(result)) {
 		// A user-requested abort is not a failure: ship the raw transcript cleanly.
 		if (signal?.aborted) return Ok(input);
+		const message = extractErrorMessage(result.error);
 		return RunPolishError.PolishFailed({
-			message: extractErrorMessage(result.error),
+			message: quotesCursorContext(message, cursorContext)
+				? POLISH_ERROR_QUOTED_FIELD
+				: message,
+			fallback: input,
+		});
+	}
+	if (
+		cursorContext !== null &&
+		echoesCursorContext(result.data, input, cursorContext)
+	) {
+		return RunPolishError.PolishFailed({
+			message: POLISH_ECHOED_FIELD,
 			fallback: input,
 		});
 	}
