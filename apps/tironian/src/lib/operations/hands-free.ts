@@ -71,6 +71,8 @@ const HandsFreeError = defineErrors({
 export type PushToTalkController = {
 	start: (app: TironianApp) => Promise<void>;
 	stop: (app: TironianApp) => Promise<void>;
+	/** The session is now long-form: swap the hold fuse for the hands-free one. */
+	lockOpen: (app: TironianApp) => void;
 	dispose: (app: TironianApp) => Promise<void>;
 };
 
@@ -151,8 +153,9 @@ export function createHandsFree(controller: PushToTalkController) {
 			// hands-free simply keeps that same recording going with no gap. It
 			// really starts only when tap 1 left nothing to adopt -- its startup
 			// failed, or its recording was ended by other means -- which is what
-			// `push-to-talk.ts`'s stale-session check exists to notice.
-			return controller.start(app);
+			// `push-to-talk.ts`'s stale-session check exists to notice. Either way
+			// the session that results is locked, so it gets the long fuse.
+			return controller.start(app).then(() => controller.lockOpen(app));
 		}
 
 		// A press this far from the last one is a separate gesture with no claim
@@ -209,8 +212,8 @@ export function createHandsFree(controller: PushToTalkController) {
 	// Two known ways `locked` can end up stale (true with nothing recording),
 	// both accepted rather than chased, because fixing them needs state that
 	// `push-to-talk.ts` deliberately keeps private:
-	// - The 5-minute cap fires while locked: it stops the recording (the same
-	//   stuck-on safety fuse as an ordinary hold), but nothing here hears it,
+	// - The 20-minute hands-free cap fires while locked: it stops the recording
+	//   (the stuck-on safety fuse), but nothing here hears it,
 	//   so `locked` stays true. The next press only unlocks; a second press
 	//   starts again. Acceptable: the cap is a rare backstop, not a path a
 	//   hands-free user takes often.

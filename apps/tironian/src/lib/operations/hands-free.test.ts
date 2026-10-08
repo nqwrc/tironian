@@ -26,13 +26,15 @@ import { createHandsFree, DOUBLE_TAP_WINDOW_MS } from './hands-free';
 const start = mock(async () => {});
 const stop = mock(async () => {});
 const dispose = mock(async () => {});
-const handsFree = createHandsFree({ start, stop, dispose });
+const lockOpen = mock((_app: TironianApp) => {});
+const handsFree = createHandsFree({ start, stop, lockOpen, dispose });
 const app = {} as TironianApp;
 
 beforeEach(() => {
 	start.mockClear();
 	stop.mockClear();
 	dispose.mockClear();
+	lockOpen.mockClear();
 	// Every test starts from a clean lock/streak, the same as a fresh UI
 	// session would. It does double duty now that `dispose` cancels a held
 	// stop: without it, a timer armed by one test would fire during the next
@@ -106,6 +108,19 @@ test('a double-tap locks without ever stopping, leaving no orphan capture', asyn
 	// The window tap 1's release would have fired in has now passed.
 	await Bun.sleep(DOUBLE_TAP_WINDOW_MS + 50);
 	expect(stop).toHaveBeenCalledTimes(0);
+});
+
+test('the lock asks for the long hands-free fuse, and a plain tap never does', async () => {
+	handsFree.onPressed(app); // a plain tap
+	handsFree.onReleased(app);
+	await Bun.sleep(DOUBLE_TAP_WINDOW_MS + 50);
+	expect(lockOpen).not.toHaveBeenCalled();
+
+	handsFree.onPressed(app); // tap 1
+	handsFree.onReleased(app);
+	await handsFree.onPressed(app); // tap 2: locks
+	expect(lockOpen).toHaveBeenCalledTimes(1);
+	expect(lockOpen).toHaveBeenLastCalledWith(app);
 });
 
 test('a press while locked unlocks and stops, without starting or leaving a stale streak', async () => {

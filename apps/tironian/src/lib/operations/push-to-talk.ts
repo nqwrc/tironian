@@ -9,8 +9,8 @@ import { startManualRecording, stopManualRecordingById } from './recording';
 
 /**
  * Push-to-talk owns the recording it starts. A press starts a session; a release
- * (the plugin's `Released` edge) or the 5-minute cap stops only THAT recording,
- * by its id.
+ * (the plugin's `Released` edge) or the cap (5 minutes held, 20 once hands-free
+ * locks it open) stops only THAT recording, by its id.
  *
  * Two correctness properties, both of which the bare "Released calls stop" model
  * lacked, and whose absence let a lost release edge leave recording stuck on:
@@ -33,6 +33,12 @@ import { startManualRecording, stopManualRecordingById } from './recording';
 // enough. Not configurable until real usage asks for it.
 const MAX_HOLD_MS = 5 * 60 * 1000;
 
+// A session the hands-free double-tap locked open is long-form on purpose: the
+// person let go of the keys and is talking, so five minutes cut real dictation.
+// It still gets a fuse, for the mic left open by someone who walked away.
+// Counted from the lock, not from the press.
+const MAX_LOCKED_MS = 20 * 60 * 1000;
+
 const log = createLogger('tironian/push-to-talk');
 
 const PushToTalkError = defineErrors({
@@ -51,9 +57,17 @@ type Session = {
 	recordingId: BlobId | null;
 	/** A release that arrived before startup finished, honored once it exists. */
 	stopRequested: boolean;
+	/** Locked open by hands-free: the cap is the long one. */
+	lockedOpen: boolean;
 };
 
-function createPushToTalk() {
+export function createPushToTalk({
+	holdCapMs = MAX_HOLD_MS,
+	lockedCapMs = MAX_LOCKED_MS,
+}: {
+	holdCapMs?: number;
+	lockedCapMs?: number;
+} = {}) {
 	let generation = 0;
 	let session: Session | null = null;
 	let capTimer: ReturnType<typeof setTimeout> | undefined;
@@ -85,15 +99,28 @@ function createPushToTalk() {
 		options?: { capped?: boolean },
 	) {
 		if (session?.id !== id) return; // superseded by a newer press
-		const { recordingId } = session;
+		const { recordingId, lockedOpen } = session;
 		clearSession();
 		if (recordingId) await stopManualRecordingById(app, recordingId);
 		if (options?.capped) {
 			report.info({
 				title: m.push_to_talk_recording_stopped(),
-				description: m.push_to_talk_push_to_talk_hit_the_5_minute_limit(),
+				description: lockedOpen
+					? m.push_to_talk_hands_free_hit_the_20_minute_limit()
+					: m.push_to_talk_push_to_talk_hit_the_5_minute_limit(),
 			});
 		}
+	}
+
+	/** (Re)arm the fuse for the live session, sized by whether it is locked. */
+	function armCap(app: TironianApp, id: number) {
+		clearTimeout(capTimer);
+		const ms = session?.lockedOpen ? lockedCapMs : holdCapMs;
+		capTimer = setTimeout(() => {
+			void end(app, id, { capped: true }).catch((cause) =>
+				log.warn(PushToTalkError.CapStopFailed({ cause })),
+			);
+		}, ms);
 	}
 
 	async function start(app: TironianApp) {
@@ -103,7 +130,13 @@ function createPushToTalk() {
 		if (session) return; // genuinely still holding (recording or starting)
 
 		const id = ++generation;
-		session = { id, app, recordingId: null, stopRequested: false };
+		session = {
+			id,
+			app,
+			recordingId: null,
+			stopRequested: false,
+			lockedOpen: false,
+		};
 		const completion = Promise.withResolvers<void>();
 		pendingStart = completion.promise;
 
@@ -134,11 +167,7 @@ function createPushToTalk() {
 				await end(app, id);
 				return;
 			}
-			capTimer = setTimeout(() => {
-				void end(app, id, { capped: true }).catch((cause) =>
-					log.warn(PushToTalkError.CapStopFailed({ cause })),
-				);
-			}, MAX_HOLD_MS);
+			armCap(app, id);
 		} finally {
 			completion.resolve();
 			if (pendingStart === completion.promise) pendingStart = undefined;
@@ -161,6 +190,18 @@ function createPushToTalk() {
 		clearSession(); // not recording and not starting: ended by other means
 	}
 
+	/**
+	 * Hands-free locked this app's session open: give it the long fuse, counted
+	 * from now. A lock that lands while startup is still in flight is remembered
+	 * and the long fuse is armed when the recording exists. No session of this
+	 * app, nothing to do.
+	 */
+	function lockOpen(app: TironianApp) {
+		if (!session || session.app !== app) return;
+		session.lockedOpen = true;
+		if (session.recordingId !== null) armCap(app, session.id);
+	}
+
 	async function dispose(app: TironianApp): Promise<void> {
 		if (!session || session.app !== app) return;
 		if (pendingStart) {
@@ -171,7 +212,7 @@ function createPushToTalk() {
 		await end(app, session.id);
 	}
 
-	return { start, stop, dispose };
+	return { start, stop, lockOpen, dispose };
 }
 
 export const pushToTalk = createPushToTalk();

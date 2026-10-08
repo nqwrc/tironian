@@ -115,6 +115,7 @@
 	"pipeline_the_recording_had_nothing_to_transcribe": "The recording had nothing to transcribe.",
 	"push_to_talk_recording_stopped": "Recording stopped",
 	"push_to_talk_push_to_talk_hit_the_5_minute_limit": "Push-to-talk hit the 5-minute limit.",
+	"push_to_talk_hands_free_hit_the_20_minute_limit": "Hands-free hit the 20-minute limit. The recording was kept and transcribed.",
 	"push_to_talk_push_to_talk_cap_failed_to_stop": "Push-to-talk cap failed to stop recording",
 	"recipe_clipboard_your_clipboard_is_empty": "Your clipboard is empty",
 	"recipe_clipboard_copy_some_text_then_run_a_recipe_on": "Copy some text, then run a recipe on it.",
