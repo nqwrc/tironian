@@ -68,11 +68,13 @@ is online, and it is untrusted input to a language model.
 2. **One read, at capture start, of the element focused then.** A new host
    command, `read_context_at_capture`, takes no argument, reads the element
    that has focus when it runs, and never returns `Err`. The webview calls it
-   once per dictation: in `startManualRecording` after the secure-field
-   capture gate (this covers the record button, the toggle shortcut,
-   push-to-talk and the hands-free lock), and on each VAD speech start. It is
-   never called while the switch is off, for a file import, a retry from the
-   recordings list, a Recipe, or a repeat of the last dictation.
+   once per dictation (once per utterance in hands-free): in
+   `startManualRecording` after the secure-field capture gate (this covers the
+   record button, the toggle shortcut and push-to-talk), and on each VAD speech
+   start. A manual start that finds a manual recording already live or
+   starting makes no read. It is never called while the switch is off, for a
+   file import, a retry from the recordings list, a Recipe, or a repeat of the
+   last dictation.
 3. **The same gate, without a target.** The host splits the existing gate into
    `gate_focus` (every check up to the control type, in the same order) and
    `gate` (`gate_focus`, then `Moved`). The capture read runs `gate_focus`, so
@@ -82,7 +84,15 @@ is online, and it is untrusted input to a language model.
    Document control. It then needs a UIA text pattern with a selection range:
    a field with only a value pattern has no caret and an uncapped read, so it
    is refused (`noTextPattern`), and a text pattern with no selection is
-   refused (`noCaret`).
+   refused (`noCaret`). Last, the target must take typing (`editable` in
+   `cursor_context.rs`): the `IsReadOnly` attribute of the selection range
+   must be false, or a value pattern must report `IsReadOnly` false, and a
+   field that reports read-only anywhere, or reports nothing, is refused
+   (`readOnly`). Page bodies, PDFs and reading panes are Document controls
+   that pass every earlier check and hold text that is not the field being
+   written to; this is the check that keeps them out. The check lives in the
+   capture-start read only: correction learning reads fields Tironian has
+   just pasted into and is unchanged.
 4. **Only three capped slices cross IPC.** Up to 400 UTF-16 code units before
    the caret (or before the selection), up to 200 after it, and up to 200 of
    the selected text, which the dictation will replace. A slice cut at its cap
@@ -96,11 +106,13 @@ is online, and it is untrusted input to a language model.
    else: never the recording row, settings, a log line (console or
    `Tironian.log`), a notice, an OS notification, analytics or the last-
    dictation buffer. The FIFO and the pipeline input carry it in a one-shot
-   holder, not as bare text, and the pipeline empties the holder right after
-   `runPolish` settles (and on every path that never reaches it), so nothing
-   the run keeps references the slice during the paste. No module-level state
-   holds it. JavaScript offers no stronger guarantee than that, such as
-   zeroing.
+   holder, not as bare text. The pipeline empties the holder right after
+   `runPolish` settles, so nothing the run keeps references the slice during
+   the paste. A path that never reaches `runPolish` (silence, a voice
+   command, a failed transcription, an import) empties it when the run ends,
+   in a `finally` around the whole pipeline, so it is held until then and not
+   dropped sooner. No module-level state holds it. JavaScript offers no
+   stronger guarantee than that, such as zeroing.
 6. **The recognizer gets the text before the cursor only, and only where a
    prompt reads as the transcript so far.** Whisper routes (local, Groq,
    Speaches) and OpenAI (both `whisper-1` and the `gpt-4o-transcribe` models)
@@ -130,23 +142,40 @@ is online, and it is untrusted input to a language model.
 8. **The slice decides nothing.** Which recognizer, which Polish provider and
    model, which app rule, which recipe and whether a voice command matches are
    all decided by code that never reads the slice.
-9. **Polish may not echo it.** If the Polish output contains a run of eight
-   words from the slice that the raw transcript does not contain, the pass
-   counts as failed: the raw transcript ships, nothing polished is written to
-   the row, and the "Polishing skipped" notice carries fixed copy. A Polish
-   error message that contains such a run is replaced by fixed copy before it
-   reaches the notice, because `report` logs every notice. A recognizer error
-   message that contains such a run is replaced the same way in
-   `transcribeAudio`, before it reaches the failure notice, the log or the
-   `transcription_failed` analytics event.
+9. **Polish may not echo it.** An echo is Polish adding words from the
+   field, not Polish editing the speaker's words. If the Polish output holds
+   a run of eight words that the slice also holds, and fewer than five of
+   those eight words appear anywhere in the raw transcript (compared with
+   case, accents and punctuation folded), the pass counts as failed: the raw
+   transcript ships, nothing polished is written to the row, and the
+   "Polishing skipped" notice carries fixed copy. A spelling fix to a name,
+   a dropped filler, a re-dictated selection with a self-correction and a
+   number written as digits keep at least five and pass. A slice in a script
+   without spaces (Chinese, Japanese, Thai and similar) compares runs of 16
+   characters instead, and such a run is an echo when fewer than 10 of its 15
+   adjacent character pairs occur in the transcript.
+
+   An error message is held to a stricter test, because an error should quote
+   nothing and the speaker's words do not excuse it. After JSON escapes in
+   the message (`\n`, `\"`, `\\`, `\uXXXX`) are decoded and case, accents and
+   punctuation are folded, any run of four words of the slice, or of 20
+   characters of it (16 in a script without spaces), replaces the whole
+   message with fixed copy. That applies to a Polish error before it reaches
+   the notice, because `report` logs every notice, and to a recognizer error
+   in `transcribeAudio`, before it reaches the recording row, the failure
+   notice, the log or the `transcription_failed` analytics event.
 10. **Off means the same bytes.** With the switch off, with nothing readable,
     or with an all-blank slice, every recognizer prompt and every Polish and
     Recipe system prompt is byte-identical to the prompt before this change. A
     snapshot written from the code before the feature pins it.
 11. **The copy says what the host enforces.** The switch description and the
-    brand document state the caps, the moment of the read, the refusals by
-    name, where the text goes, and that it is not stored or logged. A change
-    to any of these rules changes that copy in the same commit.
+    brand document state the caps, the moment of the read (once per dictation,
+    once per utterance in hands-free), the refusals by name (password or
+    unknown fields, elevated windows, consoles and terminals, read-only pages,
+    PDFs and reading panes, and controls that are not text fields), where the
+    text goes, that Tironian never saves or logs it, and that a recognizer may
+    repeat it into the transcript. A change to any of these rules changes that
+    copy in the same commit.
 
 ## Irreversibility review
 
@@ -154,7 +183,8 @@ is online, and it is untrusted input to a language model.
 - Settings: one kv key, `cursorContextEnabled`. Like every kv key it persists
   in device documents once written; removing the feature later leaves an
   unread key, which is harmless.
-- Host API: one command and one refusal value (`noCaret`) on `FieldRefusal`.
+- Host API: one command and two refusal values (`noCaret`, `readOnly`) on
+  `FieldRefusal`.
   Internal to this app; the generated bindings change with them.
 - Public claim: the brand document stops saying Tironian does not read the
   field you are in, and says instead exactly what each switch reads and where
@@ -173,6 +203,17 @@ is online, and it is untrusted input to a language model.
   removes the silent case; an echo on speech lands in the transcript, the
   recording row and the paste. There is no reference to check it against, so
   there is no guard for the recognizer.
+- A Whisper echo is matched against voice commands like any transcript, so
+  prompt text that happens to equal a command phrase could run that command.
+  Nothing compares the recognizer's output with the slice before the command
+  match.
+- The slice is in the field's language and the audio is in the speaker's. When
+  the recognizer language setting and the field differ (an English field, an
+  Italian dictation), the text before the cursor can bias the recognizer
+  toward the field's language or spelling. Nothing compares the two.
+- Turning the switch off does not recall a slice already read for a dictation
+  in flight: that run finishes with it, and a hands-free utterance already
+  begun keeps its own. The next capture reads nothing.
 - Tags are framing, not a sandbox. Text in the field can still sway Polish's
   wording; the structural limits are decisions 7 to 9.
 - Focus can move between capture start and the paste: the context then comes
@@ -183,10 +224,12 @@ is online, and it is untrusted input to a language model.
 - Terminals that are neither on the denylist nor hosted in a console or Windows
   Terminal window, and browser address bars (an Edit control), are read when
   they have focus.
-- A provider error that quotes fewer than eight words of the slice reaches the
-  notice and the log.
-- A recognizer error that quotes fewer than eight words of the slice is not
-  scrubbed either, for the same reason.
+- A provider error that quotes fewer than four words and 20 characters of the
+  slice (or 16 characters in a script without spaces), or that has altered
+  the text beyond what folding undoes, reaches the notice and the log. The
+  recognizer error is scrubbed by the same test.
+- A slice shorter than four words and 20 characters is not scrubbed from an
+  error at all.
 - "Dropped after Polish" is a reference drop, not zeroing: the holder is empty
   after Polish, but the strings it held stay in memory until the collector
   runs, and the recognizer prompt string built from the slice is not tracked.
@@ -220,8 +263,8 @@ is online, and it is untrusted input to a language model.
 
 ## Consequences
 
-- `FieldRefusal` gains `noCaret`; `bindings.gen.ts`, the context service and
-  the command registration change with the new command.
+- `FieldRefusal` gains `noCaret` and `readOnly`; `bindings.gen.ts`, the
+  context service and the command registration change with the new command.
 - The settings bundle gains a category, so an exported bundle can carry the
   switch; importing it is a deliberate check.
 - The brand document's comparison, its "Reads your screen" row and the
