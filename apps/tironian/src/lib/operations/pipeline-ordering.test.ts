@@ -48,8 +48,12 @@ const recordDictation = mock();
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // Command mode is off in this fixture: these exist so the pipeline's own
 // imports resolve under bun, which cannot follow the `$lib` alias here.
+// Every export the pipeline imports, not just the one this file cares about:
+// bun keeps one module registry per run, so a partial stub breaks whichever
+// file imports the pipeline next.
 mock.module('$lib/operations/match-command', () => ({
 	matchCommand: () => null,
+	splitTrailingEnter: (text: string) => ({ body: text, pressEnter: false }),
 }));
 mock.module('$lib/operations/run-voice-command', () => ({
 	commandApplies: () => false,

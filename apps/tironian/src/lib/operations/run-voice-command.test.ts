@@ -12,7 +12,7 @@
  * - A backspace failure reports rather than throwing.
  * - `stopListening` reaches the VAD recorder exactly once.
  */
-import { expect, mock, test } from 'bun:test';
+import { beforeEach, expect, mock, test } from 'bun:test';
 import { Err, Ok, type Result } from 'wellcrafted/result';
 import type { TironianApp } from '$lib/app/app';
 import type { TextError } from '$lib/services/text/types';
@@ -88,6 +88,28 @@ const app = {
 			key === 'outputTranscriptionCursor' ? cursorOutput : undefined,
 	},
 } as unknown as TironianApp;
+
+// Every test starts from the same state, so the suite passes in any order
+// (`bun test --randomize`), not only top to bottom.
+beforeEach(() => {
+	vadActive = false;
+	canUndo = false;
+	held = null;
+	focusedNow = 'Code.exe';
+	cursorOutput = true;
+	for (const fn of [
+		simulateBackspaces,
+		simulateEnterKeystroke,
+		take,
+		peek,
+		clearHeld,
+		reportInfo,
+		reportError,
+		stopVadRecording,
+	]) {
+		fn.mockClear();
+	}
+});
 
 test("commandApplies('pressEnter') follows whether transcriptions write at the cursor", () => {
 	cursorOutput = false;
