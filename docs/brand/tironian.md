@@ -95,28 +95,40 @@ same moment.
 Tironian is a dictation app that runs the model on your machine, holds your
 transcripts in a store you own, and never needs an account to work.
 
-### Against Wispr Flow
+### Against cloud dictation
 
-Flow is very good and the reading of its architecture is not in dispute: an
-Electron shell with native helper processes on both platforms, an accessibility
-layer that reads the focused field, a learning loop fed by your corrections, and
-a tuned post-processing pass. That is a real product with real engineering in it.
-
-The competitive claim is not "we transcribe better". It is that Flow's best
-features are all mechanisms that require sending your working life to a server:
-the screen context it reads, the vocabulary it learns from you, the corrections
-it feeds back. A person who is fine with that should use Flow.
+The competitive claim is not "we transcribe better". It is that the strongest
+features in this category usually work by sending your working life to a
+server: the screen context a product reads, the vocabulary it learns from you,
+the corrections it feeds back. A person who is fine with that has good options.
 
 Tironian is for the person who is not.
 
-| | Wispr Flow | Tironian |
+| | Cloud dictation | Tironian |
 | --- | --- | --- |
-| Where the model runs | their servers | your machine by default, or a provider you chose and pay directly |
-| Where transcripts live | their account | a CRDT store on your disk, syncing between your own devices |
-| Account required | yes | no |
+| Where the model runs | the vendor's servers | your machine by default, or a provider you chose and pay directly |
+| Where transcripts live | the vendor's account | a CRDT store on your disk, syncing between your own devices |
+| Account required | usually | no |
 | Source | closed | AGPL-3.0, auditable, forkable |
 | Price shape | subscription per seat | the app is free; you pay the inference provider, or nothing when local |
-| Reads your screen | yes, that is the feature | no, and that is the feature |
+| Reads your screen | yes, that is the feature | no. With "Learn from my corrections" on (off by default, Windows only), it takes only the text it just pasted and up to 32 characters either side, on this computer, for 90 seconds, under the caps below |
+
+What "Learn from my corrections" reads. The switch is off by default and
+exists on Windows only. When it is on, Tironian looks again at the field it
+just pasted a dictation into: at most six times, within 90 seconds of the
+paste, and only while that same field has focus. From that field it takes
+only its own pasted text as it now stands, plus up to 32 characters on each
+side. It takes nothing once that text has grown past twice its pasted length
+plus 200 characters, or, where the paste touched the start or the end of the
+field, past its pasted length plus 32. To find the span it may search up to
+100,000 characters of the field in memory on this computer, and it keeps none
+of the rest. Lengths count UTF-16 code units: one per letter, two for most
+emoji. It never looks at a password field, a console window, Windows
+Terminal, WezTerm, Alacritty, Remote Desktop, KeePass, KeePassXC, 1Password
+or Bitwarden. Nothing it takes is logged or sent. Only a term it suggests is
+stored: it waits on the Dictation page until you accept it or make the same
+correction in a later dictation, and only then goes with your Dictionary to
+your transcription, Polish and Recipe providers.
 
 ### What the brand is allowed to claim today
 
@@ -140,14 +152,16 @@ on this branch:
 
 **Roadmap. Do not put on the site.**
 
-- Reading the focused field or the active app for context. Not built. The
-  architecture is understood: a privileged native helper per platform speaking
-  JSON over IPC to the app, which is how Flow does it with a Swift helper on
-  macOS and a C# one on Windows. Building it here means deciding first what a
-  local-first product is willing to look at, which is a product decision and not
-  a schedule item.
-- A dictionary that grows from your own corrections. The Dictionary exists but
-  is hand-maintained, and on a Whisper route it is clipped to 672 characters by
+- Reading the focused field or the active app as context for Polish. Not built.
+  Deciding what a local-first product is willing to look at comes first, and
+  that is a product decision, not a schedule item. ADR-0271 makes it for one
+  narrow case only: the span around the text Tironian itself just pasted,
+  under the caps stated above, read on the device, behind a switch that ships
+  off.
+- A dictionary that grows from your own corrections. Planned behind that same
+  switch (ADR-0270, ADR-0271). A learned term waits on the Dictation page until
+  you accept it or correct it again, and only then is it sent with the
+  Dictionary. On a Whisper route the Dictionary is clipped to 672 characters by
   the decoder's 224-token prompt ceiling.
 - Streaming transcription while you speak. The pipeline is one shot today, and
   most of what people mean when they say a competitor "feels better" is this.
