@@ -133,7 +133,7 @@ test("an untrusted rule's override is sent as content", async () => {
 
 const FIELD: Slice = {
 	before:
-		'Thanks for the notes. I will send the rollout plan to Siobhan tomorrow. ',
+		'Zorv blenta. We will send the wexlow glim plan to Quandrel tomorrow. ',
 	selection: '',
 	after: '',
 };
@@ -152,18 +152,25 @@ test('without it the system prompt is the one it always was', async () => {
 
 test('Polish that repeats the field ships the transcript instead', async () => {
 	reply =
-		'I will send the rollout plan to Siobhan tomorrow. Ship it by Friday.';
+		'We will send the wexlow glim plan to Quandrel tomorrow. Ship it by Friday.';
 	const { result } = await run(undefined, FIELD);
 	expect(result.error?.fallback).toBe('ship it by friday');
-	expect(result.error?.message).not.toContain('Siobhan');
+	expect(result.error?.message).not.toContain('Quandrel');
 });
 
 test('a provider error that quotes the field never reaches the notice', async () => {
 	failWith =
-		'Content filtered: "I will send the rollout plan to Siobhan tomorrow"';
+		'Content filtered: "We will send the wexlow glim plan to Quandrel tomorrow"';
 	const { result } = await run(undefined, FIELD);
 	expect(result.error?.fallback).toBe('ship it by friday');
-	expect(result.error?.message).not.toContain('Siobhan');
+	expect(result.error?.message).not.toContain('Quandrel');
+});
+
+test('a JSON-escaped provider error body that quotes the field is replaced too', async () => {
+	failWith =
+		'{"error":{"message":"bad input: We will send the\nwexlow glim plan to Quandrel"}}';
+	const { result } = await run(undefined, FIELD);
+	expect(result.error?.message).not.toContain('Quandrel');
 });
 
 test('a provider error is shown as it is when no field text rode along', async () => {

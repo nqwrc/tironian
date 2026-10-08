@@ -15,12 +15,11 @@ import {
 	quotesCursorContext,
 } from './cursor-context-core';
 
-const ITALIAN: CursorContextOutcome = {
+const ACCENTED: CursorContextOutcome = {
 	kind: 'context',
-	before:
-		"Ciao Giulia, ti confermo che la riunione con l'avvocato Pagnoncelli è ",
+	before: 'Zorv blenta, wuxo perché la quenta è già prulla da jarmex ',
 	selection: '',
-	after: ' A presto, Marco',
+	after: ' Grin, Blorp',
 };
 
 function hostAnswering(
@@ -39,14 +38,14 @@ function hasLoneSurrogate(text: string): boolean {
 }
 
 test('with the switch off the host is never asked', async () => {
-	const { host, readContextAtCapture } = hostAnswering(async () => ITALIAN);
+	const { host, readContextAtCapture } = hostAnswering(async () => ACCENTED);
 	expect(await captureCursorContext(host, false)).toBeNull();
 	expect(readContextAtCapture).not.toHaveBeenCalled();
 });
 
 test('off Windows the host is never asked, even with the switch on', async () => {
 	const { host, readContextAtCapture } = hostAnswering(
-		async () => ITALIAN,
+		async () => ACCENTED,
 		false,
 	);
 	expect(await captureCursorContext(host, true)).toBeNull();
@@ -54,12 +53,11 @@ test('off Windows the host is never asked, even with the switch on', async () =>
 });
 
 test('with the switch on the host is asked once and the three slices are kept', async () => {
-	const { host, readContextAtCapture } = hostAnswering(async () => ITALIAN);
+	const { host, readContextAtCapture } = hostAnswering(async () => ACCENTED);
 	expect(await captureCursorContext(host, true)).toEqual({
-		before:
-			"Ciao Giulia, ti confermo che la riunione con l'avvocato Pagnoncelli è ",
+		before: 'Zorv blenta, wuxo perché la quenta è già prulla da jarmex ',
 		selection: '',
-		after: ' A presto, Marco',
+		after: ' Grin, Blorp',
 	});
 	expect(readContextAtCapture).toHaveBeenCalledTimes(1);
 });
@@ -118,17 +116,22 @@ test('a clamp never splits an emoji', () => {
 	expect(hasLoneSurrogate(clamped?.after ?? '')).toBe(false);
 });
 
+// Invented words throughout: no fixture reads like anyone's real message.
 const ENGLISH_FIELD = {
 	before:
-		'Thanks for the notes on the Kubernetes migration, I will send the rollout plan to Siobhan tomorrow. ',
+		'Notes on the quandrel plan: we will send the wexlow glim plan to Quandrel tomorrow morning. ',
 	selection: '',
 	after: '',
 };
 
-test('Polish that repeats eight words of the field echoes it', () => {
+function fieldOf(before: string, selection = '', after = '') {
+	return { before, selection, after };
+}
+
+test('Polish that adds eight words of the field the speaker never said is an echo', () => {
 	expect(
 		echoesCursorContext(
-			'I will send the rollout plan to Siobhan tomorrow. And the budget is approved.',
+			'We will send the wexlow glim plan to Quandrel tomorrow morning. And the budget is approved.',
 			'and the budget is approved',
 			ENGLISH_FIELD,
 		),
@@ -142,46 +145,163 @@ test('Polish that repeats eight words of the field echoes it', () => {
 	).toBe(false);
 });
 
+test('an echo that reuses a few of the speaker words is still an echo', () => {
+	// Four of the eight words are the speaker's: under the five that clear it.
+	expect(
+		echoesCursorContext(
+			'We will send the wexlow glim plan to Quandrel tomorrow morning.',
+			'we will send the budget',
+			ENGLISH_FIELD,
+		),
+	).toBe(true);
+});
+
 test('words the speaker said are not an echo', () => {
 	expect(
 		echoesCursorContext(
-			'I will send the rollout plan to Siobhan tomorrow, as promised.',
-			'i will send the rollout plan to siobhan tomorrow as promised',
+			'We will send the wexlow glim plan to Quandrel tomorrow morning, as promised.',
+			'we will send the wexlow glim plan to quandrel tomorrow morning as promised',
 			ENGLISH_FIELD,
 		),
 	).toBe(false);
 });
 
-test('case and punctuation do not hide an Italian echo', () => {
-	const field = {
-		before:
-			"Ciao Giulia, ti confermo che la riunione con l'avvocato Pagnoncelli è spostata a giovedì. ",
-		selection: '',
-		after: '',
-	};
+test('fixing the spelling of a name the field holds is not an echo', () => {
+	// The recognizer heard "Kwandrel"; Polish spelled it as the field does.
 	expect(
 		echoesCursorContext(
-			"Ti confermo che la riunione con l'avvocato Pagnoncelli è spostata. Porto io i documenti.",
-			'porto io i documenti',
+			'We will send the wexlow glim plan to Quandrel tomorrow morning.',
+			'we will send the wexlow glim plan to kwandrel tomorrow morning',
+			ENGLISH_FIELD,
+		),
+	).toBe(false);
+	expect(
+		echoesCursorContext(
+			'Please forward the mivvel report to Ziovane before the call today.',
+			'please forward the mivvel report to zhivon before the call today',
+			fieldOf(
+				'Please forward the mivvel report to Ziovane before the call today. ',
+			),
+		),
+	).toBe(false);
+});
+
+test('removing fillers from what the speaker said is not an echo', () => {
+	expect(
+		echoesCursorContext(
+			'We will send the wexlow glim plan to Quandrel tomorrow morning.',
+			'um we will uh send the wexlow glim plan like to quandrel tomorrow morning you know',
+			ENGLISH_FIELD,
+		),
+	).toBe(false);
+});
+
+test('re-dictating a selection with a self-correction is not an echo', () => {
+	const field = fieldOf(
+		'Prima: ',
+		'la quenta di prulla è pronta per mercoledì',
+		' Fine.',
+	);
+	expect(
+		echoesCursorContext(
+			'La quenta di prulla è pronta per mercoledì.',
+			'la quenta di prulla è pronta per giovedì anzi no per mercoledì',
+			field,
+		),
+	).toBe(false);
+});
+
+test('turning a spoken number into digits is not an echo', () => {
+	expect(
+		echoesCursorContext(
+			'We need 3 wexlow glim units for the Vorplex build.',
+			'we need three wexlow glim units for the vorplex build',
+			fieldOf('We need 3 wexlow glim units for the Vorplex build. '),
+		),
+	).toBe(false);
+});
+
+test('case, accents and punctuation do not hide an echo', () => {
+	const field = fieldOf(
+		'Zorv blenta, wuxo perché la quenta è già prulla da jarmex. ',
+	);
+	expect(
+		echoesCursorContext(
+			'ZORV BLENTA wuxo perche la quenta e gia prulla da jarmex. Porto io i prulli.',
+			'porto io i prulli',
 			field,
 		),
 	).toBe(true);
 });
 
-test('a provider error that quotes eight words of the field is caught', () => {
+test('a script without spaces compares runs of 16 characters', () => {
+	const field = fieldOf('天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收冬藏');
 	expect(
-		quotesCursorContext(
-			'Bad request: "send the rollout plan to Siobhan tomorrow, as promised."',
-			{
-				before:
-					'I will send the rollout plan to Siobhan tomorrow, as promised. ',
-				selection: '',
-				after: '',
-			},
+		echoesCursorContext(
+			'天地玄黄宇宙洪荒日月盈昃辰宿列张。好的。',
+			'好的',
+			field,
 		),
 	).toBe(true);
+	// The speaker said it with one character different: Polish fixed it.
+	expect(
+		echoesCursorContext(
+			'天地玄黄宇宙洪荒日月盈昃辰宿列张。',
+			'天地玄黄宇宙洪流日月盈昃辰宿列张',
+			field,
+		),
+	).toBe(false);
+	expect(echoesCursorContext('好的。', '好的', field)).toBe(false);
+});
+
+test('an error that quotes four words of the field is caught', () => {
+	expect(
+		quotesCursorContext(
+			'Bad request: "the wexlow glim plan" is not valid',
+			ENGLISH_FIELD,
+		),
+	).toBe(true);
+	expect(
+		quotesCursorContext(
+			'Bad request: "the wexlow glim" is not valid',
+			ENGLISH_FIELD,
+		),
+	).toBe(false);
 	expect(quotesCursorContext('Rate limited', ENGLISH_FIELD)).toBe(false);
 	expect(quotesCursorContext('Rate limited', null)).toBe(false);
+});
+
+test('an error that quotes twenty characters of the field is caught', () => {
+	const field = fieldOf('Token: xylophonorvelquandrelblorp ');
+	expect(quotesCursorContext('invalid value xylophonorvelquandr', field)).toBe(
+		true,
+	);
+	expect(quotesCursorContext('invalid value xylophonorv', field)).toBe(false);
+});
+
+test('a JSON-escaped multi-line body is caught', () => {
+	const field = fieldOf('Zorv blenta,\nwuxo perché la quenta\nè già prulla. ');
+	const body =
+		'{"error":{"message":"Invalid prompt: \\"Zorv blenta,\\\\nwuxo perch\\u00e9 la quenta\\\\n\\u00e8 gi\\u00e0 prulla.\\"","type":"invalid_request"}}';
+	expect(quotesCursorContext(body, field)).toBe(true);
+});
+
+test('escaped accents are decoded before matching', () => {
+	const field = fieldOf('perché è già così ');
+	expect(
+		quotesCursorContext(
+			'{"detail":"perch\\u00e9 \\u00e8 gi\\u00e0 cos\\u00ec"}',
+			field,
+		),
+	).toBe(true);
+});
+
+test('an error that quotes a script without spaces is caught', () => {
+	const field = fieldOf('天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收冬藏');
+	expect(
+		quotesCursorContext('error near 天地玄黄宇宙洪荒日月盈昃辰宿列张寒来 here', field),
+	).toBe(true);
+	expect(quotesCursorContext('error near 天地玄黄宇宙洪荒', field)).toBe(false);
 });
 
 test('the holder gives the slice back until it is cleared, then nothing', () => {
