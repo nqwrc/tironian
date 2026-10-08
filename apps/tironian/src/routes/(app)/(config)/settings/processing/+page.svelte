@@ -9,9 +9,10 @@
 		TranscriptionRuntimeConfig,
 	} from '$lib/components/settings';
 
-	// Four stages, one short section each (Vivavoce 4d): where audio becomes
+	// Five stages, one short section each (Vivavoce 4d): where audio becomes
 	// text, where text goes for cleanup, what happens near a password field,
-	// and whether to learn from corrections.
+	// whether to learn from corrections, and whether to use the text around
+	// the cursor.
 	// Each section shows only the route in use; the rest waits behind its picker.
 </script>
 
@@ -72,6 +73,22 @@
 					key="learnFromCorrectionsEnabled"
 					label={m.processing_learn_from_my_corrections()}
 					description={m.processing_learned_terms_reach_providers_once_accepted()}
+				/>
+			</Field.Group>
+		</Field.Set>
+	</section>
+
+	<section class="flex flex-col gap-4 border-t border-border/60 py-6">
+		<Field.Set>
+			{@render legend(m.processing_text_around_the_cursor())}
+			<Field.Description>
+				{m.processing_text_around_the_cursor_description({ productName: PRODUCT_NAME })}
+			</Field.Description>
+			<Field.Group class="gap-4">
+				<SettingSwitch
+					key="cursorContextEnabled"
+					label={m.processing_use_the_text_around_my_cursor()}
+					description={m.processing_text_around_the_cursor_goes_to_providers()}
 				/>
 			</Field.Group>
 		</Field.Set>
