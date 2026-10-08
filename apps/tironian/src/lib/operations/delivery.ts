@@ -96,16 +96,22 @@ export async function deliverTranscriptionResult(
 		text,
 		source = 'recording',
 		pressEnter = false,
+		observeField = false,
 	}: {
 		text: string;
 		source?: TranscriptionSource;
 		pressEnter?: boolean;
+		/** Ask the host to record this paste for correction learning (ADR-0271). */
+		observeField?: boolean;
 	},
 ): Promise<DeliveryResult> {
 	return deliverToSink(app, {
 		text,
 		successCopy: TRANSCRIPTION_SUCCESS_COPY[source],
-		sink: resolveSettingsSink(app, 'transcription', { pressEnter }),
+		sink: resolveSettingsSink(app, 'transcription', {
+			pressEnter,
+			observeField,
+		}),
 		// A transcription always belongs to a recording, so its history is reachable.
 		linkedRecording: true,
 	});
@@ -139,7 +145,10 @@ export async function deliverRecipeResult(
 function resolveSettingsSink(
 	app: TironianApp,
 	settingsScope: OutputScope,
-	{ pressEnter = false }: { pressEnter?: boolean } = {},
+	{
+		pressEnter = false,
+		observeField = false,
+	}: { pressEnter?: boolean; observeField?: boolean } = {},
 ): Sink {
 	const keys = OUTPUT_KEYS[settingsScope];
 	const cursorRequested = app.settings.get(keys.cursor);
@@ -149,6 +158,7 @@ function resolveSettingsSink(
 		? createCursorSink({
 				keepOnClipboard: clipboardRequested,
 				pressEnter: pressEnter || app.settings.get(keys.enter),
+				observeField,
 			})
 		: clipboardRequested
 			? clipboardSink

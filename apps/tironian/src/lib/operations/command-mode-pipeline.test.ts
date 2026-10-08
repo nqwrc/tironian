@@ -9,6 +9,7 @@ import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
+import { correctionLearningModule } from './correction-learning.fake';
 import { expandSnippets } from './expand-snippets';
 import { matchCommand, splitTrailingEnter } from './match-command';
 
@@ -41,6 +42,10 @@ const playSoundIfEnabled = mock(async () => Ok(undefined));
 const recordDelivery = mock();
 const dictationReset = mock();
 
+mock.module(
+	'$lib/operations/correction-learning',
+	() => correctionLearningModule,
+);
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // The matcher is pure, so the real one runs here: a stub would hide the very
 // coupling this file exists to check.
@@ -169,6 +174,7 @@ test('the setting gates the whole branch', async () => {
 		text: 'scratch that',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 });
 
@@ -181,6 +187,7 @@ test('an inapplicable command delivers as text instead of vanishing', async () =
 		text: 'stop listening',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 });
 
@@ -232,6 +239,7 @@ test('a closing "press enter" ships the words without it and asks for Enter', as
 		text: 'Run the tests.',
 		source: 'recording',
 		pressEnter: true,
+		observeField: false,
 	});
 	// Speed mode writes no polished text, but history must still show what
 	// shipped rather than a phrase that was never typed.
@@ -250,6 +258,7 @@ test('Polish never sees a closing "press enter"', async () => {
 		text: 'Scratch that, please.',
 		source: 'recording',
 		pressEnter: true,
+		observeField: false,
 	});
 });
 
@@ -261,6 +270,7 @@ test('a closing "press enter" stays text where Enter cannot act', async () => {
 		text: 'Run the tests. Press enter.',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 
 	enterApplies = true;
@@ -270,5 +280,6 @@ test('a closing "press enter" stays text where Enter cannot act', async () => {
 		text: 'Run the tests. Press enter.',
 		source: 'recording',
 		pressEnter: false,
+		observeField: false,
 	});
 });

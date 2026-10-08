@@ -17,6 +17,7 @@ import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
 import { Err, Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
+import { correctionLearningModule } from './correction-learning.fake';
 import { expandSnippets } from './expand-snippets';
 
 /** Milliseconds each successive `transcribeAndPersist` call waits before returning. */
@@ -45,6 +46,10 @@ const deliverTranscriptionResult = mock(async ({ text }: { text: string }) => {
 const record = mock();
 const recordDictation = mock();
 
+mock.module(
+	'$lib/operations/correction-learning',
+	() => correctionLearningModule,
+);
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // Command mode is off in this fixture: these exist so the pipeline's own
 // imports resolve under bun, which cannot follow the `$lib` alias here.
