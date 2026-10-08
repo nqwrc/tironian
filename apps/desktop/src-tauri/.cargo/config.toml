@@ -1,0 +1,7 @@
+# CMake 4 refuses projects whose `cmake_minimum_required` predates 3.5, and
+# `audiopus_sys` 0.2.2 ships opus with one. This lets every build script that
+# drives CMake configure under CMake 4 (seen on a Windows workstation with CMake
+# 4.3.3, 2026-10-07). Older CMake ignores the variable, so it is safe everywhere.
+# `force = false`: a value already set in the environment wins.
+[env]
+CMAKE_POLICY_VERSION_MINIMUM = { value = "3.5", force = false }
