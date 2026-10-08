@@ -108,9 +108,19 @@ test('IT: a fix followed by a new word at the field end learns the fix only', ()
 		terms('Ci vediamo domani con Daniels.', 'Ci vediamo domani con Daniel e'),
 	).toEqual(['Daniel']);
 });
-test('IT: a fix followed by a new sentence crosses a sentence end and is refused', () => {
+test('IT: a fix followed by a new sentence at the end of the paste learns the fix only', () => {
+	// Seen live in Notepad, 2026-10-08: a fix and then more typing is the
+	// common case, and the typed sentence is what the edge trim removes.
 	expect(
 		terms('Ci vediamo domani con Daniels.', 'Ci vediamo domani con Daniel. Ok'),
+	).toEqual(['Daniel']);
+	expect(
+		terms('Ci vediamo con Ottavio.', 'Ci vediamo con Ottavyo. ok'),
+	).toEqual(['Ottavyo']);
+});
+test('IT: a fix joined to a new sentence inside the paste is still refused', () => {
+	expect(
+		terms('Parlo con Daniels e con Marco', 'Parlo con Daniel. Poi e con Marco'),
 	).toEqual([]);
 });
 test('IT: a short secret with digits is never learned', () => {
