@@ -128,8 +128,14 @@ export function extractCandidates(
 	const candidates: Candidate[] = [];
 	for (const h of touching) {
 		if (h.to.length === 0) continue;
-		if (crossesSentenceEnd(h.from) || crossesSentenceEnd(h.to)) continue;
+		if (crossesSentenceEnd(h.from)) continue;
+		// Trim first: at the edge of the region, a fix followed by a new sentence
+		// ("Daniel. Ok") is the commonest correction there is, and the typed
+		// sentence is exactly what trimming removes. Only what is left after the
+		// trim may not cross a sentence end, which still refuses a fix and new
+		// text joined inside the paste.
 		const to = trimAtEdge(h, b.length, edges);
+		if (crossesSentenceEnd(to)) continue;
 		if (h.from.length > LIMITS.maxSideWords || to.length > LIMITS.maxSideWords)
 			continue;
 		const term = surfaces(to);
