@@ -10,6 +10,7 @@
 
 import { createLogger } from 'wellcrafted/logger';
 import type { TironianApp } from '$lib/app/app';
+import { correctionLearning } from '$lib/operations/correction-learning';
 import { probeForegroundContext } from '$lib/operations/foreground-probe';
 import type { VoiceCommandId } from '$lib/operations/match-command';
 import {
@@ -83,6 +84,7 @@ async function pressEnter(): Promise<void> {
 	// Whatever was held for "scratch that" may now be submitted out of the
 	// input, so an undo could no longer find it at the cursor.
 	lastDelivery.clear();
+	correctionLearning.cancel();
 	const { error } = await services.text.simulateEnterKeystroke();
 	if (error !== null) {
 		report.error({
@@ -154,6 +156,7 @@ async function scratchThat(): Promise<void> {
 	// Consumed here, on the one path that fires. A second "scratch that" must
 	// find nothing held rather than deleting another paste's worth of characters.
 	lastDelivery.take();
+	correctionLearning.cancel();
 	const { error } = await services.text.simulateBackspaces(undo.graphemes);
 	if (error !== null) {
 		// The held record is already gone, which is what we want: after a partial

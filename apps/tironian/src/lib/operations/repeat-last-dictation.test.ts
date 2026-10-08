@@ -16,6 +16,11 @@ import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { Ok, type Result } from 'wellcrafted/result';
 import type { TironianApp } from '$lib/app/app';
 import { TextError, type WriteTextOutcome } from '../services/text/types';
+import {
+	correctionLearningFake,
+	correctionLearningModule,
+	resetCorrectionLearningFake,
+} from './correction-learning.fake';
 
 type Held = {
 	text: string;
@@ -110,6 +115,10 @@ mock.module('$lib/report', () => ({
 }));
 mock.module('#platform/os-notify', () => ({ osNotify }));
 // The real decision: faking it would make the guard tests assert their own stub.
+mock.module(
+	'$lib/operations/correction-learning',
+	() => correctionLearningModule,
+);
 const guard = await import('./secure-field-guard.js');
 mock.module('$lib/operations/secure-field-guard', () => guard);
 // The sink is stubbed down to its write: bun keeps one module registry per run,
@@ -197,6 +206,7 @@ beforeEach(() => {
 	order.length = 0;
 	windowHasFocus(true);
 	for (const fn of mocks) fn.mockClear();
+	resetCorrectionLearningFake();
 });
 
 afterEach(() => {
@@ -467,4 +477,19 @@ test('copy: nothing held announces and copies nothing', async () => {
 	await copyLastDictation(app);
 	expect(copyToClipboard).not.toHaveBeenCalled();
 	expect(reportInfo).toHaveBeenCalledTimes(1);
+});
+
+test('paste: ends correction learning just before it writes', async () => {
+	correctionLearningFake.cancel.mockImplementationOnce(() => {
+		order.push('cancelLearning');
+	});
+	await pasteLastDictation(app);
+	expect(order).toEqual(['wait', 'probe', 'cancelLearning', 'write']);
+});
+
+test('paste: a withheld paste and a copy leave correction learning alone', async () => {
+	focused = { focusedField: 'secure', appId: 'code.exe' };
+	await pasteLastDictation(app);
+	await copyLastDictation(app);
+	expect(correctionLearningFake.cancel).not.toHaveBeenCalled();
 });
