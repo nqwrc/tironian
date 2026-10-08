@@ -158,11 +158,11 @@ on this branch:
   narrow case only: the span around the text Tironian itself just pasted,
   under the caps stated above, read on the device, behind a switch that ships
   off.
-- A dictionary that grows from your own corrections. Planned behind that same
-  switch (ADR-0270, ADR-0271). A learned term waits on the Dictation page until
-  you accept it or correct it again, and only then is it sent with the
-  Dictionary. On a Whisper route the Dictionary is clipped to 672 characters by
-  the decoder's 224-token prompt ceiling.
+- A dictionary that grows from your own corrections. Available, opt-in and
+  Windows only, behind that same switch (ADR-0270, ADR-0271). A learned term
+  waits on the Dictation page until you accept it or correct it again, and only
+  then is it sent with the Dictionary. On a Whisper route the Dictionary is
+  clipped to 672 characters by the decoder's 224-token prompt ceiling.
 - Streaming transcription while you speak. The pipeline is one shot today, and
   most of what people mean when they say a competitor "feels better" is this.
 - Learning your style over time.
