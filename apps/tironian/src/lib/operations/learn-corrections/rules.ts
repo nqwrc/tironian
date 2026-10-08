@@ -153,6 +153,9 @@ export function decideLearning(
 	candidates: readonly HashedCandidate[],
 	known: KnownTerms,
 ): Decision {
+	// At the cap learning is paused: nothing new, and nothing pending, goes live.
+	if (known.rowCount >= LIMITS.maxLearnedRows)
+		return { create: [], promote: [] };
 	const create: string[] = [];
 	const promote: string[] = [];
 	const seen = new Set<string>();

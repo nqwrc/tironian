@@ -207,13 +207,18 @@ test('more than two qualifying terms in one observation learns none', () => {
 		decideLearning([cand('Alfa'), cand('Bravo'), cand('Charlie')], known()),
 	).toEqual({ create: [], promote: [] });
 });
-test('the row cap stops creating but still promotes', () => {
+test('at the row cap learning is paused: nothing is created or promoted', () => {
 	const k = known({
 		rowCount: 100,
 		pendingId: (f) => (f === 'jira' ? 'row-3' : null),
 	});
 	expect(decideLearning([cand('Kubernetes'), cand('Jira')], k)).toEqual({
 		create: [],
-		promote: ['row-3'],
+		promote: [],
 	});
+});
+test('just under the row cap a term is still created', () => {
+	expect(decideLearning([cand('Kubernetes')], known({ rowCount: 99 }))).toEqual(
+		{ create: ['Kubernetes'], promote: [] },
+	);
 });
