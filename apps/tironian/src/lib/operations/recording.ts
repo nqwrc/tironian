@@ -9,6 +9,10 @@ import type { TironianApp } from '$lib/app/app';
 import type { CaptureSurface } from '$lib/constants/audio';
 import { dictationPath } from '$lib/constants/urls';
 import { logAnalyticsEvent } from '$lib/operations/analytics';
+import {
+	beginManualCapture,
+	createCaptureQueue,
+} from '$lib/operations/capture-queue';
 import { correctionLearning } from '$lib/operations/correction-learning';
 import {
 	type CursorContextHolder,
@@ -181,7 +185,9 @@ export function watchManualRecordingEnded(app: TironianApp): void {
  * Every path that begins must also take or discard, so a capture that never
  * reaches a pipeline (a failed start, a cancel, a VAD misfire) cannot leave
  * an entry behind for the next capture to inherit; consumers shift
- * synchronously, before their first await, to keep the pairing.
+ * synchronously, before their first await, to keep the pairing. A failed
+ * manual start removes its own entry, never the oldest, and a start that finds
+ * a manual recording live or starting queues none (`capture-queue.ts`).
  */
 type CaptureSnapshot = {
 	foregroundApp: Promise<ForegroundSnapshot | null>;
@@ -193,10 +199,10 @@ const NO_SNAPSHOT: CaptureSnapshot = {
 	cursorContext: Promise.resolve(null),
 };
 
-const pendingCaptures: CaptureSnapshot[] = [];
+const captures = createCaptureQueue(NO_SNAPSHOT);
 
-function beginCaptureSnapshot(app: TironianApp): void {
-	pendingCaptures.push({
+function readCaptureSnapshot(app: TironianApp): CaptureSnapshot {
+	return {
 		foregroundApp:
 			app.appRules.count > 0
 				? captureForegroundSnapshot().catch(() => null)
@@ -205,17 +211,7 @@ function beginCaptureSnapshot(app: TironianApp): void {
 			{ windows: os.isWindows, reader: services.context },
 			app.settings.get('cursorContextEnabled'),
 		).then(holdCursorContext),
-	});
-}
-
-function takeCaptureSnapshot(): CaptureSnapshot {
-	return pendingCaptures.shift() ?? NO_SNAPSHOT;
-}
-
-/** Drop a capture's entry when it will never reach a pipeline (a failed
- * start, a cancel, a VAD misfire), so the next capture cannot inherit it. */
-function discardCaptureSnapshot(): void {
-	pendingCaptures.shift();
+	};
 }
 
 /** True while a VAD session is armed, whether or not speech is being heard. */
@@ -259,8 +255,13 @@ export async function startManualRecording(
 	app.settings.set('recordingTrigger', 'manual');
 	// The app in front and the text around the cursor right now are what this
 	// dictation is aimed at; both reads run alongside the recorder bring-up and
-	// are consumed at stop.
-	beginCaptureSnapshot(app);
+	// are consumed at stop. None while a manual recording is already live or
+	// starting: this start fails, so there is no dictation to read for.
+	const capture = beginManualCapture(
+		captures,
+		manualRecorder.state === 'RECORDING' || manualRecorder.isStarting,
+		() => readCaptureSnapshot(app),
+	);
 	correctionLearning.dictationStarting(app);
 	// A new dictation is starting: clear any lingering failed/delivered state so
 	// the pill follows this attempt, not the last one.
@@ -283,7 +284,8 @@ export async function startManualRecording(
 
 	if (error) {
 		void recordingMedia.resume();
-		discardCaptureSnapshot();
+		// This start's own entry: a live recording's stays queued.
+		captures.discard(capture);
 		// The recording never started, so there is no blob to recover: the
 		// loudest tier. The pill glances it and the OS notification always fires, so
 		// there is no toast.
@@ -310,7 +312,7 @@ export async function stopManualRecording(app: TironianApp) {
 
 	if (error) {
 		void recordingMedia.resume();
-		discardCaptureSnapshot();
+		captures.discardOldest();
 		// Finalizing failed, so the captured audio never reached a row: treat it
 		// as a silent loss rather than a retryable transcription.
 		dictationLifecycle.markFailed({ tier: 'silent-loss', error });
@@ -331,7 +333,7 @@ export async function stopManualRecording(app: TironianApp) {
 		duration: durationMs,
 	});
 
-	const capture = takeCaptureSnapshot();
+	const capture = captures.take();
 	await processRecordingPipeline(app, {
 		audioBlobId,
 		durationMs,
@@ -391,7 +393,7 @@ export async function cancelRecording(app: TironianApp) {
 	}
 	if (data.status === 'cancelled') {
 		void recordingMedia.resume();
-		discardCaptureSnapshot();
+		captures.discardOldest();
 		// The pill vanishing plus the cancel sound is the confirmation; no toast.
 		void playSoundIfEnabled(app, 'manual-cancel');
 		log.info('Recording cancelled');
@@ -473,7 +475,7 @@ export async function startVadRecording(app: TironianApp) {
 			// Speaking window opened: pause whatever is playing. The pill's meter
 			// tint shows speech was detected, so there is no toast. Each utterance
 			// is its own pipeline run, so each gets its own capture snapshot.
-			beginCaptureSnapshot(app);
+			captures.begin(readCaptureSnapshot(app));
 			correctionLearning.dictationStarting(app);
 			pausePlaybackForSpeech(app);
 		},
@@ -481,7 +483,7 @@ export async function startVadRecording(app: TironianApp) {
 			// Claim this utterance's snapshot before the first await: speech
 			// events are ordered, so a synchronous shift here pairs each end
 			// with its own start even while audio storage is still in flight.
-			const capture = takeCaptureSnapshot();
+			const capture = captures.take();
 			// Speaking window closed: resume after a short debounce so a quick
 			// next utterance does not flutter the music.
 			scheduleResumeAfterSpeech();
@@ -512,7 +514,7 @@ export async function startVadRecording(app: TironianApp) {
 			// False start: schedule the same debounced resume as a real speech
 			// end, so an immediate retry does not flutter the music. The
 			// utterance never reaches a pipeline, so its snapshot goes too.
-			discardCaptureSnapshot();
+			captures.discardOldest();
 			scheduleResumeAfterSpeech();
 		},
 	});
