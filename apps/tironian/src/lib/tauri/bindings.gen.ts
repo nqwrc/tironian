@@ -677,6 +677,12 @@ export type FieldRefusal =
 	 *  (ADR-0272).
 	 */
 	| 'noCaret'
+	/**
+	 *  The field takes no typing, or does not say whether it does: a page
+	 *  body, a PDF, a reading pane (ADR-0272). Only the capture-start read
+	 *  asks; correction learning reads fields it just pasted into.
+	 */
+	| 'readOnly'
 	/**  The pasted text, or an anchor, is not in the field exactly once. */
 	| 'notFound'
 	/**  The field or the region is over its cap. */
