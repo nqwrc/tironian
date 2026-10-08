@@ -67,7 +67,9 @@ next fold.
 9. Neither table is part of settings bundles in this release. Bundles carry
    what the person authored (`app/settings-categories.ts:123-128`). The
    learning switch lives in its own preference category, `correctionLearning`,
-   so importing the Dictionary category never turns field reading on.
+   so importing the Dictionary category never turns field reading on. The
+   import screen also leaves that category unchecked when a file carries it, so
+   a shared file cannot switch reading on without a deliberate check.
 
 ## Alternatives rejected
 

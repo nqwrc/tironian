@@ -4,6 +4,7 @@ import type { TironianApp } from './app';
 import {
 	applySettingsBundle,
 	availableCategoriesIn,
+	defaultImportSelection,
 	parseSettingsBundle,
 } from './settings-bundle-import';
 import type { SettingsBundleFile } from './settings-bundle-types';
@@ -98,6 +99,26 @@ test('availableCategoriesIn reports only what the file actually has', () => {
 		recipes: false,
 		appRules: false,
 	});
+});
+
+test('a file never checks the learning switch for the person', () => {
+	const file: SettingsBundleFile = {
+		version: 1,
+		exportedAt: 'now',
+		preferences: {
+			sounds: { soundManualStart: true },
+			correctionLearning: { learnFromCorrectionsEnabled: true },
+		},
+		snippets: [{ trigger: 'brb', replacement: 'be right back' }],
+	};
+	const available = availableCategoriesIn(file);
+	// The file offers it, so it can still be checked by hand...
+	expect(available.preferences).toContain('correctionLearning');
+	// ...but it starts unchecked.
+	expect([...defaultImportSelection(available)].sort()).toEqual([
+		'snippets',
+		'sounds',
+	]);
 });
 
 test('applies only checked-and-present categories, leaves the rest untouched', () => {

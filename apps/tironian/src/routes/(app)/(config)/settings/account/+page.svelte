@@ -23,6 +23,7 @@
 	import {
 		applySettingsBundle,
 		availableCategoriesIn,
+		defaultImportSelection,
 		parseSettingsBundle,
 	} from '$lib/app/settings-bundle-import';
 	import type {
@@ -162,12 +163,7 @@
 		importFile = data;
 		importProblem = null;
 		const available = availableCategoriesIn(data);
-		importSelected = new Set<string>([
-			...available.preferences,
-			...(available.snippets ? ['snippets'] : []),
-			...(available.recipes ? ['recipes'] : []),
-			...(available.appRules ? ['appRules'] : []),
-		]);
+		importSelected = defaultImportSelection(available);
 	}
 
 	function handleApplyImport() {
