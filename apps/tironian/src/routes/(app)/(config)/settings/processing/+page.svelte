@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { os } from '#platform/os';
 	import { m } from '$lib/paraglide/messages';
-	import { pageTitle } from '$lib/constants/brand';
+	import { PRODUCT_NAME, pageTitle } from '$lib/constants/brand';
 	import * as Field from '@tironian/ui/field';
 	import {
 		CompletionRuntimeConfig,
@@ -8,8 +9,9 @@
 		TranscriptionRuntimeConfig,
 	} from '$lib/components/settings';
 
-	// Three stages, one short section each (Vivavoce 4d): where audio becomes
-	// text, where text goes for cleanup, and what happens near a password field.
+	// Four stages, one short section each (Vivavoce 4d): where audio becomes
+	// text, where text goes for cleanup, what happens near a password field,
+	// and whether to learn from corrections.
 	// Each section shows only the route in use; the rest waits behind its picker.
 </script>
 
@@ -57,3 +59,21 @@
 		</Field.Group>
 	</Field.Set>
 </section>
+
+{#if os.isWindows}
+	<section class="flex flex-col gap-4 border-t border-border/60 py-6">
+		<Field.Set>
+			{@render legend(m.processing_learning_from_corrections())}
+			<Field.Description>
+				{m.processing_learning_from_corrections_description({ productName: PRODUCT_NAME })}
+			</Field.Description>
+			<Field.Group class="gap-4">
+				<SettingSwitch
+					key="learnFromCorrectionsEnabled"
+					label={m.processing_learn_from_my_corrections()}
+					description={m.processing_learned_terms_reach_providers_once_accepted()}
+				/>
+			</Field.Group>
+		</Field.Set>
+	</section>
+{/if}
