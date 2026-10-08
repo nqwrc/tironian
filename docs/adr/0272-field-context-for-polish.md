@@ -70,11 +70,11 @@ is online, and it is untrusted input to a language model.
    that has focus when it runs, and never returns `Err`. The webview calls it
    once per dictation (once per utterance in hands-free): in
    `startManualRecording` after the secure-field capture gate (this covers the
-   record button, the toggle shortcut and push-to-talk), and on each VAD speech
-   start. A manual start that finds a manual recording already live or
-   starting makes no read. It is never called while the switch is off, for a
-   file import, a retry from the recordings list, a Recipe, or a repeat of the
-   last dictation.
+   record button, the toggle shortcut, push-to-talk and the hands-free lock),
+   and on each VAD speech start. A manual start that finds a manual recording
+   already live or starting makes no read. It is never called while the switch
+   is off, for a file import, a retry from the recordings list, a Recipe, or a
+   repeat of the last dictation.
 3. **The same gate, without a target.** The host splits the existing gate into
    `gate_focus` (every check up to the control type, in the same order) and
    `gate` (`gate_focus`, then `Moved`). The capture read runs `gate_focus`, so

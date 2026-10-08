@@ -143,15 +143,16 @@ field that does not say whether it is one, a window running as
 administrator, a console window or terminal (Windows Terminal, WezTerm,
 Alacritty), Remote Desktop, KeePass, KeePassXC, 1Password, Bitwarden or
 Tironian itself. It also never reads a page body, a PDF or a reading pane,
-which accept no typing, or a control that is not a text field. The text before the cursor goes with that
-dictation to the transcription provider when it is local Whisper, OpenAI,
-Groq or Speaches; all of it goes to the Polish provider, inside a block that
-tells the model it is quoted data and not instructions. Polish uses an online
-provider unless you chose a local one, so with the defaults this text leaves
-the computer. It is kept in memory until Polish finishes. Tironian never
-saves or logs it and never adds it to your recordings, but a recognizer may
-repeat part of it into the transcript, and the transcript is saved like any
-other. Lengths count UTF-16 code units, as above.
+which accept no typing, or a control that is not a text field. The text
+before the cursor goes with that dictation to the transcription provider when
+it is local Whisper, OpenAI, Groq or Speaches; all of it goes to the Polish
+provider, inside a block that tells the model it is quoted data and not
+instructions. Polish uses an online provider unless you chose a local one, so
+with the defaults this text leaves the computer. It is kept in memory until
+Polish finishes. Tironian never saves or logs it and never adds it to your
+recordings, but a recognizer may repeat part of it into the transcript, and
+the transcript is saved like any other. Lengths count UTF-16 code units, as
+above.
 
 ### What the brand is allowed to claim today
 
