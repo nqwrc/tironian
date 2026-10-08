@@ -85,21 +85,27 @@ export type DeliveryResult = {
  * the structured outcome plus a human notice; it does not toast. The dictation
  * path reads the outcome to drive the pill; file import and row actions show
  * the notice.
+ *
+ * `pressEnter` asks for Enter after this one write, on top of the setting: a
+ * dictation that closed with "press enter". It only acts where the setting
+ * would, after a clean write at the cursor.
  */
 export async function deliverTranscriptionResult(
 	app: TironianApp,
 	{
 		text,
 		source = 'recording',
+		pressEnter = false,
 	}: {
 		text: string;
 		source?: TranscriptionSource;
+		pressEnter?: boolean;
 	},
 ): Promise<DeliveryResult> {
 	return deliverToSink(app, {
 		text,
 		successCopy: TRANSCRIPTION_SUCCESS_COPY[source],
-		sink: resolveSettingsSink(app, 'transcription'),
+		sink: resolveSettingsSink(app, 'transcription', { pressEnter }),
 		// A transcription always belongs to a recording, so its history is reachable.
 		linkedRecording: true,
 	});
@@ -133,6 +139,7 @@ export async function deliverRecipeResult(
 function resolveSettingsSink(
 	app: TironianApp,
 	settingsScope: OutputScope,
+	{ pressEnter = false }: { pressEnter?: boolean } = {},
 ): Sink {
 	const keys = OUTPUT_KEYS[settingsScope];
 	const cursorRequested = app.settings.get(keys.cursor);
@@ -141,7 +148,7 @@ function resolveSettingsSink(
 	return cursorRequested
 		? createCursorSink({
 				keepOnClipboard: clipboardRequested,
-				pressEnter: app.settings.get(keys.enter),
+				pressEnter: pressEnter || app.settings.get(keys.enter),
 			})
 		: clipboardRequested
 			? clipboardSink

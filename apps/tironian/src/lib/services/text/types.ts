@@ -101,4 +101,16 @@ export type TextService = {
 	 * keystrokes for security reasons.
 	 */
 	simulateBackspaces: (count: number) => Promise<Result<void, TextError>>;
+
+	/**
+	 * Waits, bounded by `timeoutMs`, until the Ctrl/Cmd, Shift, Alt/Option and
+	 * Win keys are all up, so a synthetic paste or copy sent from a global chord
+	 * does not inherit the chord's modifiers. The webview cannot see the global
+	 * keyboard state, so the host answers.
+	 *
+	 * @returns `true` when the modifiers are up, `false` when they were still
+	 *   held at the deadline. Never an error: the caller decides what a held key
+	 *   means for its keystroke. Always `true` where the host reads no modifiers.
+	 */
+	waitForModifiersReleased: (timeoutMs: number) => Promise<boolean>;
 };

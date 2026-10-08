@@ -9,6 +9,10 @@ import {
 	toggleManualRecording,
 	toggleVadRecording,
 } from '$lib/operations/recording';
+import {
+	copyLastDictation,
+	pasteLastDictation,
+} from '$lib/operations/repeat-last-dictation';
 import type { Reach } from '$lib/utils/key-binding';
 import { m } from './paraglide/messages';
 
@@ -123,6 +127,33 @@ const sharedCommands = [
 		reach: 'global',
 		on: ['Pressed'],
 		run: () => runRecipeOnClipboard(),
+	},
+	{
+		id: 'pasteLastDictation',
+		title: m.commands_paste_last_dictation(),
+		category: 'Recording',
+		reach: 'global',
+		// Fire on release, like openRecipePicker (commands.tauri.ts): the paste
+		// synthesizes Ctrl/Cmd+V, and doing that while the chord's own modifiers are
+		// still down sends Ctrl+Shift+V or Ctrl+Alt+V instead. The operation also
+		// waits in the host for the modifiers to lift, which covers a release edge
+		// that arrives before the modifiers do. Both edges are listed because the
+		// in-app shortcut manager only arms a command on keydown when `on`
+		// includes 'Pressed'.
+		on: ['Pressed', 'Released'],
+		run: (app, state?: ShortcutEventState) => {
+			if (state === 'Released' || state === undefined)
+				void pasteLastDictation(app);
+		},
+	},
+	{
+		id: 'copyLastDictation',
+		title: m.commands_copy_last_dictation(),
+		category: 'Recording',
+		reach: 'global',
+		// A clipboard write synthesizes no keys, so the press is fine.
+		on: ['Pressed'],
+		run: (app) => void copyLastDictation(app),
 	},
 	{
 		id: 'openSettings',

@@ -26,7 +26,14 @@ export const commands = {
 		typedError<WriteTextOutcome, string>(
 			__TAURI_INVOKE('write_text', { text, keepOnClipboard }),
 		),
-	/**  Simulates pressing the Enter/Return key. */
+	/**
+	 *  Simulates pressing the Enter/Return key.
+	 *
+	 *  Refuses on Windows when injected input cannot reach the foreground window,
+	 *  like `write_text` and the copy keystroke. After a paste the check repeats one
+	 *  `write_text` already passed, but a spoken "press enter" alone sends Enter with
+	 *  no paste before it, and UIPI would drop that key without an error.
+	 */
 	simulateEnterKeystroke: () =>
 		typedError<null, string>(__TAURI_INVOKE('simulate_enter_keystroke')),
 	/**
@@ -38,8 +45,8 @@ export const commands = {
 	 *  dropped copy produces a plausible wrong answer: `captureSelection` posts the
 	 *  copy, waits, then reads the clipboard, so a copy UIPI swallowed hands back
 	 *  whatever the user already had there as if they had selected it, and that
-	 *  text goes on to a transformation provider. Enter and Backspace need no such
-	 *  gate: Enter follows a paste already proved reachable, and backspaces that go
+	 *  text goes on to a transformation provider. Enter has the same gate
+	 *  (`simulate_enter_keystroke`). Backspace needs none: backspaces that go
 	 *  nowhere leave the text visibly undeleted rather than answering wrongly.
 	 */
 	simulateCopyKeystroke: () =>
@@ -52,6 +59,18 @@ export const commands = {
 	 */
 	simulateBackspaces: (count: number) =>
 		typedError<null, string>(__TAURI_INVOKE('simulate_backspaces', { count })),
+	/**
+	 *  Waits, bounded, until Ctrl, Shift, Alt and Win (Control, Shift, Option and
+	 *  Command on macOS) are all up, so a synthetic Ctrl/Cmd+V or Ctrl/Cmd+C sent
+	 *  from a global chord does not inherit the chord's modifiers. The webview
+	 *  cannot see the global keyboard state, so the wait runs here.
+	 *
+	 *  Returns whether the modifiers lifted within `timeout_ms` (capped at one
+	 *  second). The caller decides what to do when they did not. Platforms with no
+	 *  modifier read answer `true` at once.
+	 */
+	waitForModifiersReleased: (timeoutMs: number) =>
+		__TAURI_INVOKE<boolean>('wait_for_modifiers_released', { timeoutMs }),
 	enumerateRecordingDevices: () =>
 		typedError<string[], RecorderError>(
 			__TAURI_INVOKE('enumerate_recording_devices'),

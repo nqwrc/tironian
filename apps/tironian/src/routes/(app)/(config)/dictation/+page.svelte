@@ -180,7 +180,7 @@
 				<SettingSwitch
 					key="commandModeEnabled"
 					label={m.dictation_act_on_spoken_commands()}
-					description={m.dictation_off_by_default_because_these_phrases_stop()}
+					description={m.dictation_while_on_these_phrases_act()}
 				/>
 				{#if app.settings.get('commandModeEnabled')}
 					<ul class="text-muted-foreground space-y-1 text-sm">
@@ -193,6 +193,12 @@
 						<li>
 							<span class="text-foreground font-medium">{m.dictation_stop_listening()}</span>
 							{m.dictation_ends_a_voice_activated_session()}
+						</li>
+						<li>
+							<span class="text-foreground font-medium">{m.dictation_press_enter()}</span>
+							or
+							<span class="text-foreground font-medium">{m.dictation_premi_invio()}</span>
+							{m.dictation_presses_enter_alone_or_at_the_end()}
 						</li>
 					</ul>
 				{/if}

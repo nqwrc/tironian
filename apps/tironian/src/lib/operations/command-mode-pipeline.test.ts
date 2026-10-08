@@ -10,11 +10,13 @@ import { generateBlobId } from '@tironian/blobs';
 import { Ok } from 'wellcrafted/result';
 import type { RecordingId } from '$lib/workspace';
 import { expandSnippets } from './expand-snippets';
-import { matchCommand } from './match-command';
+import { matchCommand, splitTrailingEnter } from './match-command';
 
 let commandModeEnabled = true;
 let transcript = 'scratch that';
 let applies = true;
+// Whether "press enter" can act, which is whether output writes at the cursor.
+let enterApplies = true;
 // Off by default, matching speed mode: most tests want the matcher's input to
 // stay the raw transcript. Flipped on by the one test that proves Polish never
 // gets a look at a phrase Command Mode is going to intercept.
@@ -42,9 +44,13 @@ const dictationReset = mock();
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // The matcher is pure, so the real one runs here: a stub would hide the very
 // coupling this file exists to check.
-mock.module('$lib/operations/match-command', () => ({ matchCommand }));
+mock.module('$lib/operations/match-command', () => ({
+	matchCommand,
+	splitTrailingEnter,
+}));
 mock.module('$lib/operations/run-voice-command', () => ({
-	commandApplies: () => applies,
+	commandApplies: (_app: unknown, id: string) =>
+		id === 'pressEnter' ? enterApplies : applies,
 	runVoiceCommand,
 }));
 mock.module('$lib/operations/delivery', () => ({ deliverTranscriptionResult }));
@@ -64,8 +70,9 @@ mock.module('$lib/operations/transcribe', () => ({
 	transcribeAndPersist: async () =>
 		Ok({ text: transcript, history: Ok(undefined) }),
 }));
+const saveRecordingHistory = mock(async () => Ok(undefined));
 mock.module('$lib/operations/transcription-history', () => ({
-	saveRecordingHistory: mock(async () => Ok(undefined)),
+	saveRecordingHistory,
 }));
 mock.module('$lib/report', () => ({
 	log: { warn: mock() },
@@ -87,6 +94,9 @@ mock.module('$lib/state/dictation-lifecycle.svelte', () => ({
 mock.module('$lib/state/polish-hud.svelte', () => ({
 	polishHud: { begin: mock(), end: mock() },
 }));
+mock.module('$lib/state/last-dictation.svelte', () => ({
+	lastDictation: { record: mock(), peek: () => null, clear: mock() },
+}));
 mock.module('$lib/state/last-delivery.svelte', () => ({
 	lastDelivery: { record: recordDelivery, take: mock(), clear: clearDelivery },
 }));
@@ -104,6 +114,7 @@ const app = {
 			...fields,
 			id: 'recording-1' as RecordingId,
 		}),
+		get: (id: string) => ({ id, transcript: '', polishedTranscript: null }),
 		update: mock(async () => Ok(undefined)),
 	},
 	snippets: { all: [] },
@@ -121,6 +132,7 @@ afterEach(() => {
 	commandModeEnabled = true;
 	transcript = 'scratch that';
 	applies = true;
+	enterApplies = true;
 	willPolish = false;
 	runVoiceCommand.mockClear();
 	deliverTranscriptionResult.mockClear();
@@ -156,6 +168,7 @@ test('the setting gates the whole branch', async () => {
 	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
 		text: 'scratch that',
 		source: 'recording',
+		pressEnter: false,
 	});
 });
 
@@ -167,6 +180,7 @@ test('an inapplicable command delivers as text instead of vanishing', async () =
 	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
 		text: 'stop listening',
 		source: 'recording',
+		pressEnter: false,
 	});
 });
 
@@ -207,4 +221,54 @@ test('a delivered dictation is held for undo, an import clears without re-holdin
 	// than the stale record from the dictation above.
 	expect(clearDelivery).toHaveBeenCalledTimes(1);
 	expect(recordDelivery).not.toHaveBeenCalled();
+});
+
+test('a closing "press enter" ships the words without it and asks for Enter', async () => {
+	transcript = 'Run the tests. Press enter.';
+	saveRecordingHistory.mockClear();
+	await run();
+	expect(runVoiceCommand).not.toHaveBeenCalled();
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'Run the tests.',
+		source: 'recording',
+		pressEnter: true,
+	});
+	// Speed mode writes no polished text, but history must still show what
+	// shipped rather than a phrase that was never typed.
+	expect(saveRecordingHistory).toHaveBeenLastCalledWith(app, 'recording-1', {
+		polishedTranscript: 'Run the tests.',
+	});
+});
+
+test('Polish never sees a closing "press enter"', async () => {
+	transcript = 'Run the tests. Press enter.';
+	willPolish = true;
+	await run();
+	// The stub rewords whatever it gets, so what matters is the flag that
+	// survived: the split happened before Polish could swallow the phrase.
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'Scratch that, please.',
+		source: 'recording',
+		pressEnter: true,
+	});
+});
+
+test('a closing "press enter" stays text where Enter cannot act', async () => {
+	transcript = 'Run the tests. Press enter.';
+	enterApplies = false;
+	await run();
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'Run the tests. Press enter.',
+		source: 'recording',
+		pressEnter: false,
+	});
+
+	enterApplies = true;
+	commandModeEnabled = false;
+	await run();
+	expect(deliverTranscriptionResult).toHaveBeenLastCalledWith(app, {
+		text: 'Run the tests. Press enter.',
+		source: 'recording',
+		pressEnter: false,
+	});
 });

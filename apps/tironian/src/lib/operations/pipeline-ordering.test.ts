@@ -10,6 +10,8 @@
  * - `lastDelivery` is left holding the run that actually delivered last, which
  *   is what "scratch that" backspaces
  * - A failed run does not poison the queue for the runs behind it
+ * - A run that throws mid-dictation marks the lifecycle failed, so the pill
+ *   and the repeat commands are not left reading `transcribing`
  */
 import { afterEach, expect, mock, test } from 'bun:test';
 import { generateBlobId } from '@tironian/blobs';
@@ -26,6 +28,8 @@ let failingRuns: number[] = [];
 let transcribeCalls = 0;
 
 const delivered: string[] = [];
+/** Whether the next delivery reports the secure-field guard withheld it. */
+let withheld = false;
 const deliverTranscriptionResult = mock(async ({ text }: { text: string }) => {
 	delivered.push(text);
 	return {
@@ -33,18 +37,23 @@ const deliverTranscriptionResult = mock(async ({ text }: { text: string }) => {
 			reach: 'output',
 			sinkKind: 'cursor',
 			pressedEnter: false,
-			withheld: false,
+			withheld,
 		} as const,
 		notice: { title: 'done' },
 	};
 });
 const record = mock();
+const recordDictation = mock();
 
 mock.module('$lib/operations/expand-snippets', () => ({ expandSnippets }));
 // Command mode is off in this fixture: these exist so the pipeline's own
 // imports resolve under bun, which cannot follow the `$lib` alias here.
+// Every export the pipeline imports, not just the one this file cares about:
+// bun keeps one module registry per run, so a partial stub breaks whichever
+// file imports the pipeline next.
 mock.module('$lib/operations/match-command', () => ({
 	matchCommand: () => null,
+	splitTrailingEnter: (text: string) => ({ body: text, pressEnter: false }),
 }));
 mock.module('$lib/operations/run-voice-command', () => ({
 	commandApplies: () => false,
@@ -89,10 +98,20 @@ mock.module('$lib/report', () => ({
 		loading: () => ({ resolve: mock(), reject: mock() }),
 	},
 }));
+/** What the lifecycle outcome reads, driven by the markers the fake receives. */
+let outcomeKind = 'none';
+const markFailed = mock((_failure: { tier: string }) => {
+	outcomeKind = 'failed';
+});
 mock.module('$lib/state/dictation-lifecycle.svelte', () => ({
 	dictationLifecycle: {
-		markTranscribing: mock(),
-		markFailed: mock(),
+		get current() {
+			return { capture: { kind: 'idle' }, outcome: { kind: outcomeKind } };
+		},
+		markTranscribing: mock(() => {
+			outcomeKind = 'transcribing';
+		}),
+		markFailed,
 		markPolishing: mock(),
 		markDelivered: mock(),
 		markWithheld: mock(),
@@ -105,6 +124,9 @@ mock.module('$lib/state/last-delivery.svelte', () => ({
 		canUndo: () => false,
 		take: () => null,
 	},
+}));
+mock.module('$lib/state/last-dictation.svelte', () => ({
+	lastDictation: { record: recordDictation, peek: () => null, clear: mock() },
 }));
 mock.module('$lib/state/polish-hud.svelte', () => ({
 	polishHud: { begin: mock(), end: mock() },
@@ -119,6 +141,12 @@ const app = {
 		create(fields: Record<string, unknown>) {
 			return { ...fields, id: 'recording-1' as RecordingId };
 		},
+		// The row as the pipeline reads it back after the transcript was patched in.
+		get: (id: string) => ({
+			id,
+			transcript: 'raw words',
+			polishedTranscript: null,
+		}),
 		update: mock(async () => Ok(undefined)),
 	},
 	snippets: { all: [] },
@@ -138,7 +166,11 @@ afterEach(() => {
 	failingRuns = [];
 	transcribeCalls = 0;
 	delivered.length = 0;
+	withheld = false;
+	outcomeKind = 'none';
+	markFailed.mockClear();
 	record.mockClear();
+	recordDictation.mockClear();
 });
 
 /**
@@ -194,4 +226,67 @@ test('a failed run does not poison the queue behind it', async () => {
 	await second;
 
 	expect(delivered).toEqual(['delivered anyway']);
+});
+
+/**
+ * The repeat commands refuse while the outcome reads in-flight, so a throw
+ * that skipped every terminal marker would lock them until the next dictation.
+ * The throw still reaches the caller.
+ */
+test('a run that throws mid-dictation marks the lifecycle failed and still rejects', async () => {
+	failingRuns = [0];
+
+	await expect(start()).rejects.toThrow('transcription 0 failed');
+
+	expect(markFailed).toHaveBeenCalledTimes(1);
+	expect(markFailed.mock.calls[0]?.[0]).toMatchObject({
+		tier: 'transcription',
+	});
+	expect(outcomeKind).toBe('failed');
+});
+
+test('a file import that throws leaves the dictation lifecycle alone', async () => {
+	failingRuns = [0];
+	// An in-flight outcome, so only the delivery source can explain the skip.
+	outcomeKind = 'transcribing';
+
+	await expect(
+		processRecordingPipeline(app, {
+			audioBlobId: generateBlobId(),
+			durationMs: 100,
+			deliverySource: 'import',
+		}),
+	).rejects.toThrow('transcription 0 failed');
+
+	expect(markFailed).not.toHaveBeenCalled();
+});
+
+/**
+ * "Paste last dictation" repeats what shipped, so the pipeline hands the
+ * holder the delivered text with the row's transcript fields as they stand
+ * when it ships. The row is read back, not taken from the one `create`
+ * returned, which still has an empty transcript.
+ */
+test('a delivered dictation is held with the row it came from', async () => {
+	transcripts = ['hello there'];
+
+	await start();
+
+	expect(recordDictation).toHaveBeenCalledTimes(1);
+	expect(recordDictation).toHaveBeenCalledWith({
+		text: 'hello there',
+		recordingId: 'recording-1',
+		transcript: 'raw words',
+		polishedTranscript: null,
+	});
+});
+
+/** The guard promised withheld text lives only in history. */
+test('a withheld dictation is not held', async () => {
+	transcripts = ['a secret'];
+	withheld = true;
+
+	await start();
+
+	expect(recordDictation).not.toHaveBeenCalled();
 });

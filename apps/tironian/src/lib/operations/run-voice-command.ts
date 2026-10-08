@@ -49,13 +49,18 @@ const MAX_BACKSPACES = 2000;
  * delivers without recording one (a file import, a recordings row, a recipe),
  * nothing is undoable. Unconditionally swallowing the utterance in those
  * states would eat the words and do nothing.
+ *
+ * "press enter" applies when transcriptions write at the cursor, the only
+ * output where a keystroke lands next to the text it follows.
  */
-export function commandApplies(id: VoiceCommandId): boolean {
+export function commandApplies(app: TironianApp, id: VoiceCommandId): boolean {
 	switch (id) {
 		case 'scratchThat':
 			return lastDelivery.canUndo();
 		case 'stopListening':
 			return isVadRecordingActive();
+		case 'pressEnter':
+			return app.settings.get('outputTranscriptionCursor');
 	}
 }
 
@@ -69,7 +74,24 @@ export async function runVoiceCommand(
 		case 'stopListening':
 			log.info('Voice command stopped the listening session');
 			return stopVadRecording(app);
+		case 'pressEnter':
+			return pressEnter();
 	}
+}
+
+async function pressEnter(): Promise<void> {
+	// Whatever was held for "scratch that" may now be submitted out of the
+	// input, so an undo could no longer find it at the cursor.
+	lastDelivery.clear();
+	const { error } = await services.text.simulateEnterKeystroke();
+	if (error !== null) {
+		report.error({
+			title: m.run_voice_command_couldn_t_press_enter(),
+			cause: error,
+		});
+		return;
+	}
+	log.info('Voice command pressed Enter');
 }
 
 async function scratchThat(): Promise<void> {

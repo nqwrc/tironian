@@ -28,7 +28,12 @@ mock.module('$lib/state/last-delivery.svelte', () => ({
 	},
 }));
 
+// bun keeps one module registry per run, so a stub missing a name breaks any
+// other file that imports it: keep the real exports and pin the one this file
+// asserts on.
+const urls = await import('../src/lib/constants/urls.js');
 mock.module('$lib/constants/urls', () => ({
+	...urls,
 	DICTATION_RECORDINGS_PATHNAME: '/apps/dictation/recordings',
 }));
 

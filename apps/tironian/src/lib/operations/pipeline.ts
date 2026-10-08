@@ -1,12 +1,16 @@
 import type { BlobId } from '@tironian/blobs';
 import { InstantString } from '@tironian/field';
+import { defineErrors, extractErrorMessage } from 'wellcrafted/error';
 import type { TironianApp } from '$lib/app/app';
 import {
 	deliverTranscriptionResult,
 	type TranscriptionSource,
 } from '$lib/operations/delivery';
 import { expandSnippets } from '$lib/operations/expand-snippets';
-import { matchCommand } from '$lib/operations/match-command';
+import {
+	matchCommand,
+	splitTrailingEnter,
+} from '$lib/operations/match-command';
 import { polishWillRun, runPolish } from '$lib/operations/run-polish';
 import { runRecipe } from '$lib/operations/run-recipe';
 import {
@@ -19,11 +23,19 @@ import { saveRecordingHistory } from '$lib/operations/transcription-history';
 import { report } from '$lib/report';
 import { dictationLifecycle } from '$lib/state/dictation-lifecycle.svelte';
 import { lastDelivery } from '$lib/state/last-delivery.svelte';
+import { lastDictation } from '$lib/state/last-dictation.svelte';
 import { polishHud } from '$lib/state/polish-hud.svelte';
 import { m } from '../paraglide/messages';
 import type { ForegroundSnapshot } from './foreground-context';
 import { matchAppRule } from './match-app-rule';
 import { deadlineForCapture } from './transcription-deadline';
+
+const PipelineError = defineErrors({
+	RunFailed: ({ cause }: { cause: unknown }) => ({
+		message: `Dictation pipeline threw: ${extractErrorMessage(cause)}`,
+		cause,
+	}),
+});
 
 /**
  * Argument shape for the pipeline. The recorder produces a
@@ -92,10 +104,39 @@ export function processRecordingPipeline(
 }
 
 /**
- * One run, start to finish. `deliverySource` only shapes the success copy
- * (recording vs file import).
+ * One run, start to finish, with a throw from anywhere in it kept from
+ * stranding the dictation pill.
+ *
+ * `markTranscribing` is the first thing a live dictation does, and the outcome
+ * stays `transcribing` or `polishing` until a terminal marker lands. A throw
+ * (row creation rethrows, for one) skips every marker, and the repeat commands
+ * refuse for as long as the outcome reads in-flight, so the stuck pill would
+ * lock them until the next dictation. The throw still reaches the caller: this
+ * only settles the lifecycle. A run that already reached a terminal outcome
+ * keeps it.
  */
-async function runRecordingPipeline(
+function runRecordingPipeline(
+	app: TironianApp,
+	input: PipelineInput,
+): Promise<void> {
+	return pipelineBody(app, input).catch((cause: unknown) => {
+		const { kind } = dictationLifecycle.current.outcome;
+		const inFlight = kind === 'transcribing' || kind === 'polishing';
+		if ((input.deliverySource ?? 'recording') === 'recording' && inFlight) {
+			dictationLifecycle.markFailed({
+				tier: 'transcription',
+				error: PipelineError.RunFailed({ cause }).error,
+			});
+		}
+		throw cause;
+	});
+}
+
+/**
+ * The run itself. `deliverySource` only shapes the success copy (recording vs
+ * file import).
+ */
+async function pipelineBody(
 	app: TironianApp,
 	{
 		audioBlobId,
@@ -199,9 +240,10 @@ async function runRecordingPipeline(
 	// Live capture only, and applicable only. `isDictation` is true in manual
 	// mode as well as VAD, so a phrase whose target is not live falls through and
 	// delivers as ordinary text rather than silently eating the utterance.
-	if (isDictation && app.settings.get('commandModeEnabled')) {
+	const commandMode = isDictation && app.settings.get('commandModeEnabled');
+	if (commandMode) {
 		const command = matchCommand(transcribedText);
-		if (command !== null && commandApplies(command)) {
+		if (command !== null && commandApplies(app, command)) {
 			await runVoiceCommand(app, command);
 			// A command delivers no text, so there is no outcome to show. Clear the
 			// `transcribing` marker set on the way in, or the pill spins forever on
@@ -219,6 +261,17 @@ async function runRecordingPipeline(
 			return;
 		}
 	}
+
+	// A dictation that closes with "press enter" ships without the phrase and
+	// sends Enter after the write. Split here, before Polish, for the reason the
+	// intercept above sits here: Polish would turn the phrase into prose. Like
+	// every command it acts only where it can, so with cursor output off the
+	// words stay text.
+	const trailingEnter =
+		commandMode && commandApplies(app, 'pressEnter')
+			? splitTrailingEnter(transcribedText)
+			: { body: transcribedText, pressEnter: false };
+	const spokenText = trailingEnter.body;
 
 	// Which per-app rule applies, decided from the app in front at capture
 	// start. Resolved after the command-mode intercept (commands stay senior to
@@ -247,7 +300,7 @@ async function runRecordingPipeline(
 	// import has no pill to cancel from and keeps its own progress toast. The pill
 	// shows the HUD only when an AI pass actually runs (not in speed mode); begin/end
 	// bracket the call so the controller is dropped on success, failure, or abort.
-	const willPolish = polishWillRun(app, transcribedText);
+	const willPolish = polishWillRun(app, spokenText);
 	const showPolishHud = willPolish && isDictation;
 	let signal: AbortSignal | undefined;
 	if (showPolishHud) {
@@ -255,7 +308,7 @@ async function runRecordingPipeline(
 		signal = polishHud.begin();
 	}
 	const { data: polishedText, error: polishError } = await runPolish(app, {
-		input: transcribedText,
+		input: spokenText,
 		signal,
 		// The rule's directive and its standing travel together: a rule minted by
 		// a settings bundle is untrusted until the person vouches for it, and a
@@ -343,8 +396,13 @@ async function runRecordingPipeline(
 	// which is the existing speed-mode tradeoff and not something snippets change.
 	// A rule's recipe reshaping also earns the write: even in speed mode, a
 	// reshaped delivery differs from the raw transcript and history should show
-	// what actually shipped.
-	if ((willPolish && !polishError) || recipeReshaped) {
+	// what actually shipped. A closing "press enter" earns it for the same
+	// reason: the phrase is in the raw transcript and not in what shipped.
+	if (
+		(willPolish && !polishError) ||
+		recipeReshaped ||
+		trailingEnter.pressEnter
+	) {
 		const polishedHistory = await saveRecordingHistory(app, recording.id, {
 			polishedTranscript: deliveredText,
 		});
@@ -358,6 +416,7 @@ async function runRecordingPipeline(
 		await deliverTranscriptionResult(app, {
 			text: deliveredText,
 			source: deliverySource,
+			pressEnter: trailingEnter.pressEnter,
 		});
 
 	// Hold what was delivered so "scratch that" has something to take back.
@@ -374,6 +433,20 @@ async function runRecordingPipeline(
 			pressedEnter: transcriptDelivery.pressedEnter,
 			appId: transcriptDelivery.deliveredToAppId,
 		});
+		// What "paste/copy last dictation" repeats: the text as shipped, held past
+		// Enter and later deliveries, and never when the guard withheld it. The
+		// row is read now, not taken from `recording` above, which is the row as
+		// created: the transcript and the polished text were patched in since.
+		// The snapshot lets the repeat notice an edit made in Recordings.
+		const row = app.recordings.get(recording.id);
+		if (row !== undefined) {
+			lastDictation.record({
+				text: deliveredText,
+				recordingId: row.id,
+				transcript: row.transcript,
+				polishedTranscript: row.polishedTranscript,
+			});
+		}
 	}
 	if (isDictation) {
 		if (transcriptDelivery.withheld) {

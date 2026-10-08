@@ -104,6 +104,11 @@ export function defaultGlobalBindings(platform: GlobalBindingPlatform) {
 		toggleVadRecording: null,
 		openRecipePicker: null,
 		runRecipeOnClipboard: null,
+		// Unbound: every obvious chord (Ctrl/Cmd+Shift+V, Ctrl+Alt+V) already
+		// means "paste plain" or "paste special" somewhere, and a global default
+		// takes it from every app. Opt-in, like the recipe gestures.
+		pasteLastDictation: null,
+		copyLastDictation: null,
 		// Focused-reach command (ADR-0052): its reach ceiling clamps any key to the
 		// in-app store, so the router never writes this global slot. It stays here
 		// only so the system backend's all-commands sync keeps one entry per

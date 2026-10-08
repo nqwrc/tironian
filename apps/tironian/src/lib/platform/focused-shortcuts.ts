@@ -64,6 +64,14 @@ const SHORTCUT_KEYS = {
 		modifiers: 'shortcutRunRecipeOnClipboardModifiers',
 		keys: 'shortcutRunRecipeOnClipboardKeys',
 	},
+	pasteLastDictation: {
+		modifiers: 'shortcutPasteLastDictationModifiers',
+		keys: 'shortcutPasteLastDictationKeys',
+	},
+	copyLastDictation: {
+		modifiers: 'shortcutCopyLastDictationModifiers',
+		keys: 'shortcutCopyLastDictationKeys',
+	},
 	openSettings: {
 		modifiers: 'shortcutOpenSettingsModifiers',
 		keys: 'shortcutOpenSettingsKeys',

@@ -45,4 +45,7 @@ export const TextServiceLive = {
 		if (error !== null) return TextError.SimulateKeystroke({ cause: error });
 		return Ok(undefined);
 	},
+
+	waitForModifiersReleased: (timeoutMs) =>
+		commands.waitForModifiersReleased(timeoutMs),
 } satisfies TextService;

@@ -35,7 +35,7 @@
 	},
 	"scripts": {
 		"dev": "vite dev",
-		"test": "bun test",
+		"test": "bun test --isolate",
 		"build": "NODE_ENV=production vite build",
 		"build:tironian-host": "TIRONIAN_HOST=1 bun run build",
 		"check": "bun run typecheck",

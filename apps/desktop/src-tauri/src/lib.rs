@@ -57,7 +57,8 @@ use download::{cancel_download, DownloadManager};
 
 mod delivery;
 use delivery::{
-    simulate_backspaces, simulate_copy_keystroke, simulate_enter_keystroke, write_text,
+    simulate_backspaces, simulate_copy_keystroke, simulate_enter_keystroke,
+    wait_for_modifiers_released, write_text,
 };
 
 mod foreground;
@@ -298,6 +299,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             simulate_enter_keystroke,
             simulate_copy_keystroke,
             simulate_backspaces,
+            wait_for_modifiers_released,
             enumerate_recording_devices,
             start_recording,
             stop_recording,

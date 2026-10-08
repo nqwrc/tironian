@@ -136,6 +136,14 @@ const DEVICE_DEFINITIONS = {
 		globalBinding,
 		DEFAULT_GLOBAL_BINDINGS.runRecipeOnClipboard,
 	),
+	'shortcuts.global.pasteLastDictation': defineEntry(
+		globalBinding,
+		DEFAULT_GLOBAL_BINDINGS.pasteLastDictation,
+	),
+	'shortcuts.global.copyLastDictation': defineEntry(
+		globalBinding,
+		DEFAULT_GLOBAL_BINDINGS.copyLastDictation,
+	),
 	// Always null: `openSettings` is focused-reach, so the router never routes a
 	// write here. Present only to keep one global slot per command for the system
 	// backend's uniform sync (see DEFAULT_GLOBAL_BINDINGS.openSettings).
